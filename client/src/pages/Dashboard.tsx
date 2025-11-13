@@ -57,6 +57,15 @@ function DashboardContent() {
   const { activeRoles, isLoading, userRoles } = useUserRoles(currentUser?.uid);
   const [, setLocation] = useLocation();
 
+  useEffect(() => {
+    if (!isLoading && activeRoles.length === 1) {
+      const dashboard = roleDashboards.find(d => d.role === activeRoles[0]);
+      if (dashboard) {
+        setLocation(dashboard.path);
+      }
+    }
+  }, [activeRoles, isLoading, setLocation]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -67,15 +76,6 @@ function DashboardContent() {
       </div>
     );
   }
-
-  useEffect(() => {
-    if (!isLoading && activeRoles.length === 1) {
-      const dashboard = roleDashboards.find(d => d.role === activeRoles[0]);
-      if (dashboard) {
-        setLocation(dashboard.path);
-      }
-    }
-  }, [activeRoles, isLoading, setLocation]);
 
   if (activeRoles.length === 0) {
     return (
