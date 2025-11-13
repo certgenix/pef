@@ -39,10 +39,8 @@ export default function Footer() {
             <ul className="space-y-2">
               {quickLinks.map((link) => (
                 <li key={link.path}>
-                  <Link href={link.path}>
-                    <a className="text-sm text-white/70 hover:text-white transition-colors" data-testid={`link-footer-${link.label.toLowerCase()}`}>
-                      {link.label}
-                    </a>
+                  <Link href={link.path} className="text-sm text-white/70 hover:text-white transition-colors" data-testid={`link-footer-${link.label.toLowerCase()}`}>
+                    {link.label}
                   </Link>
                 </li>
               ))}
@@ -108,10 +106,8 @@ export default function Footer() {
             <ul className="space-y-1">
               {legalLinks.map((link) => (
                 <li key={link.path}>
-                  <Link href={link.path}>
-                    <a className="text-sm text-white/70 hover:text-white transition-colors">
-                      {link.label}
-                    </a>
+                  <Link href={link.path} className="text-sm text-white/70 hover:text-white transition-colors">
+                    {link.label}
                   </Link>
                 </li>
               ))}
