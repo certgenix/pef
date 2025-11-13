@@ -12,6 +12,12 @@ import News from "@/pages/News";
 import Contact from "@/pages/Contact";
 import Register from "@/pages/Register";
 import Login from "@/pages/Login";
+import Dashboard from "@/pages/Dashboard";
+import ProfessionalDashboard from "@/pages/dashboards/ProfessionalDashboard";
+import JobSeekerDashboard from "@/pages/dashboards/JobSeekerDashboard";
+import EmployerDashboard from "@/pages/dashboards/EmployerDashboard";
+import BusinessOwnerDashboard from "@/pages/dashboards/BusinessOwnerDashboard";
+import InvestorDashboard from "@/pages/dashboards/InvestorDashboard";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -25,6 +31,12 @@ function Router() {
       <Route path="/contact" component={Contact} />
       <Route path="/register" component={Register} />
       <Route path="/login" component={Login} />
+      <Route path="/dashboard" component={Dashboard} />
+      <Route path="/dashboard/professional" component={ProfessionalDashboard} />
+      <Route path="/dashboard/job-seeker" component={JobSeekerDashboard} />
+      <Route path="/dashboard/employer" component={EmployerDashboard} />
+      <Route path="/dashboard/business-owner" component={BusinessOwnerDashboard} />
+      <Route path="/dashboard/investor" component={InvestorDashboard} />
       <Route component={NotFound} />
     </Switch>
   );

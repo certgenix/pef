@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Globe, Menu, X, User, LogOut } from "lucide-react";
+import { Globe, Menu, X, User, LogOut, LayoutDashboard } from "lucide-react";
 import { Link } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -61,6 +61,18 @@ export default function Header() {
                 </Button>
               </Link>
             ))}
+            {currentUser && (
+              <Link href="/dashboard">
+                <Button
+                  variant="ghost"
+                  className="text-white hover:bg-white/10"
+                  data-testid="link-nav-dashboard"
+                >
+                  <LayoutDashboard className="w-4 h-4 mr-2" />
+                  Dashboard
+                </Button>
+              </Link>
+            )}
           </nav>
 
           <div className="hidden lg:flex items-center gap-3">
@@ -75,6 +87,12 @@ export default function Header() {
                 <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuLabel>My Account</DropdownMenuLabel>
                   <DropdownMenuSeparator />
+                  <Link href="/dashboard">
+                    <DropdownMenuItem data-testid="menu-item-dashboard">
+                      <LayoutDashboard className="w-4 h-4 mr-2" />
+                      Dashboard
+                    </DropdownMenuItem>
+                  </Link>
                   <DropdownMenuItem data-testid="menu-item-profile">
                     <User className="w-4 h-4 mr-2" />
                     Profile
@@ -130,6 +148,17 @@ export default function Header() {
             ))}
             {currentUser ? (
               <>
+                <Link href="/dashboard">
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start text-white hover:bg-white/10"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    data-testid="button-mobile-dashboard"
+                  >
+                    <LayoutDashboard className="w-4 h-4 mr-2" />
+                    Dashboard
+                  </Button>
+                </Link>
                 <Button
                   variant="ghost"
                   className="w-full justify-start text-white hover:bg-white/10"
