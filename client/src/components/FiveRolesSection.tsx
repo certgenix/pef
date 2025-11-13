@@ -5,38 +5,43 @@ import { Briefcase, Search, Building2, Handshake, TrendingUp } from "lucide-reac
 const roles = [
   {
     icon: Briefcase,
-    title: "Professional",
+    title: "Professionals",
     color: "bg-blue-500",
     borderColor: "border-blue-500",
-    description: "Network, showcase your skills, and gain career visibility on the global stage",
+    description: "Individuals looking to enhance their visibility, expand their network, and access new opportunities.",
+    infoCollected: "experience, skills, certifications, industry focus",
   },
   {
     icon: Search,
-    title: "Job Seeker",
+    title: "Job Seekers",
     color: "bg-green-500",
     borderColor: "border-green-500",
-    description: "Actively looking for jobs locally or internationally with access to verified employers",
+    description: "Professionals actively exploring new employment opportunities locally or internationally.",
+    infoCollected: "target roles, industries, salary expectations, preferred countries, availability",
   },
   {
     icon: Building2,
-    title: "Employer",
+    title: "Employers",
     color: "bg-purple-500",
     borderColor: "border-purple-500",
-    description: "Post job openings, hire talent, and find qualified candidates for your organization",
+    description: "Organizations or individuals offering job openings and seeking qualified candidates.",
+    infoCollected: "job titles, descriptions, required skills, job location, hiring urgency",
   },
   {
     icon: Handshake,
-    title: "Business Owner",
+    title: "Business Owners",
     color: "bg-orange-500",
     borderColor: "border-orange-500",
-    description: "Seek partnerships, expansion support, investors, and talent for your company",
+    description: "Entrepreneurs and company leaders seeking investors, collaborators, or growth opportunities.",
+    infoCollected: "company details, sector, team size, expansion goals, capital requirements",
   },
   {
     icon: TrendingUp,
-    title: "Investor",
+    title: "Investors",
     color: "bg-amber-500",
     borderColor: "border-amber-500",
-    description: "Invest in startups, SMEs, new projects, and market opportunities worldwide",
+    description: "Individuals or firms seeking investment-ready companies or projects.",
+    infoCollected: "investment range, sectors of interest, target countries, type of investment, investment thesis",
   },
 ];
 
@@ -50,16 +55,11 @@ export default function FiveRolesSection() {
           className="text-3xl md:text-4xl lg:text-5xl font-display font-bold text-center mb-4"
           data-testid="text-section-title"
         >
-          Five Roles – Choose Any Combination
+          Member Roles
         </h2>
-        <p className="text-center text-muted-foreground mb-6 max-w-3xl mx-auto text-lg">
-          A single person can select one or more roles. Register, provide structured information for each role you choose, and become part of our global database—no separate accounts, no duplication, no confusion.
+        <p className="text-center text-muted-foreground mb-12 max-w-3xl mx-auto text-lg">
+          Choose any combination of roles that fits your needs. One profile, multiple roles—no separate accounts, no duplication.
         </p>
-        <div className="text-center mb-12 max-w-2xl mx-auto">
-          <p className="text-sm text-primary font-semibold">
-            Phase 1: We're collecting high-quality data to build the foundation for intelligent matching in Phase 2
-          </p>
-        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
           {roles.map((role, index) => {
@@ -76,18 +76,20 @@ export default function FiveRolesSection() {
                 onMouseLeave={() => setHoveredIndex(null)}
                 data-testid={`card-role-${role.title.toLowerCase().replace(/\s+/g, "-")}`}
               >
-                <CardContent className="p-6 text-center">
+                <CardContent className="p-6">
                   <div className={`w-16 h-16 ${role.color} rounded-full flex items-center justify-center mx-auto mb-4`}>
                     <Icon className="w-8 h-8 text-white" />
                   </div>
-                  <h3 className="text-xl font-display font-semibold mb-3">{role.title}</h3>
-                  <p
-                    className={`text-sm text-muted-foreground transition-all duration-300 ${
-                      isHovered ? "opacity-100 max-h-32" : "opacity-60 max-h-0 md:max-h-32 md:opacity-100"
-                    }`}
-                  >
+                  <h3 className="text-xl font-display font-semibold mb-3 text-center">{role.title}</h3>
+                  <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
                     {role.description}
                   </p>
+                  <div className="mt-4 pt-4 border-t border-border">
+                    <p className="text-xs font-semibold text-primary mb-2">Information collected:</p>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      {role.infoCollected}
+                    </p>
+                  </div>
                 </CardContent>
               </Card>
             );
