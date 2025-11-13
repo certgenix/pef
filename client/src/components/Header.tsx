@@ -1,7 +1,16 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Globe, Menu, X } from "lucide-react";
+import { Globe, Menu, X, User, LogOut } from "lucide-react";
 import { Link } from "wouter";
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const navItems = [
   { label: "Home", path: "/" },
@@ -15,6 +24,7 @@ const navItems = [
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { currentUser, logout } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -54,12 +64,41 @@ export default function Header() {
           </nav>
 
           <div className="hidden lg:flex items-center gap-3">
-            <Button
-              className="bg-accent hover:bg-accent text-accent-foreground font-semibold"
-              data-testid="button-join-now"
-            >
-              Join Now
-            </Button>
+            {currentUser ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="bg-transparent border-white/20 hover:bg-white/10 text-white" data-testid="button-user-menu">
+                    <User className="w-4 h-4 mr-2" />
+                    {currentUser.displayName || currentUser.email}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem data-testid="menu-item-profile">
+                    <User className="w-4 h-4 mr-2" />
+                    Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={logout} data-testid="menu-item-logout">
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <>
+                <Link href="/login">
+                  <Button variant="ghost" className="text-white hover:bg-white/10" data-testid="button-login">
+                    Login
+                  </Button>
+                </Link>
+                <Link href="/register">
+                  <Button className="bg-accent hover:bg-accent text-accent-foreground font-semibold" data-testid="button-join-now">
+                    Join Now
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
 
           <Button
@@ -89,12 +128,50 @@ export default function Header() {
                 </Button>
               </Link>
             ))}
-            <Button
-              className="w-full bg-accent hover:bg-accent text-accent-foreground font-semibold mt-4"
-              data-testid="button-mobile-join"
-            >
-              Join Now
-            </Button>
+            {currentUser ? (
+              <>
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start text-white hover:bg-white/10"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  data-testid="button-mobile-profile"
+                >
+                  <User className="w-4 h-4 mr-2" />
+                  Profile
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start text-white hover:bg-white/10"
+                  onClick={() => { logout(); setIsMobileMenuOpen(false); }}
+                  data-testid="button-mobile-logout"
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Logout
+                </Button>
+              </>
+            ) : (
+              <>
+                <Link href="/login">
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start text-white hover:bg-white/10"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    data-testid="button-mobile-login"
+                  >
+                    Login
+                  </Button>
+                </Link>
+                <Link href="/register">
+                  <Button
+                    className="w-full bg-accent hover:bg-accent text-accent-foreground font-semibold"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    data-testid="button-mobile-join"
+                  >
+                    Join Now
+                  </Button>
+                </Link>
+              </>
+            )}
           </nav>
         </div>
       )}
