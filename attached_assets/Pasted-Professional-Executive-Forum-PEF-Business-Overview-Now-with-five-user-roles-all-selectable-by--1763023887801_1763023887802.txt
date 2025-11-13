@@ -1,0 +1,193 @@
+Professional Executive Forum (PEF) – Business Overview
+Now with five user roles, all selectable by a single person.
+PEF is a global digital platform that collects structured information from professionals at all levels — including job seekers, employers, business owners, and investors — and uses that data to later power intelligent opportunity matching.
+This creates a massive, high-quality global database of talent, business opportunities, and investment prospects.
+________________________________________
+🧑‍💼 Five Roles a Single Person Can Choose (Any Combination)
+When registering, any person can select one or more of the following:
+1. Professional
+People who want to network, showcase skills, and join the platform for career visibility.
+2. Job Seeker
+People actively looking for a job (locally or internationally).
+3. Employer
+Organizations or individuals who are offering jobs, hiring talent, or looking for potential candidates.
+4. Business Owner
+Founders and entrepreneurs who want:
+•	Partnerships
+•	Expansion
+•	Investors
+•	Talent for their company
+5. Investor
+People or firms who invest in:
+•	Startups
+•	SMEs
+•	New projects
+•	Market opportunities
+A single person can be all five at the same time, and the system adapts to whatever roles they choose.
+________________________________________
+🔍 How the Multi-Role System Works (Simple Explanation)
+When a person registers:
+1.	They enter basic information (name, country, email).
+2.	They select their roles (any combination).
+3.	For each role, the system asks a few short, relevant questions:
+o	Investor → investment size, industries
+o	Employer → job positions they are offering
+o	Job Seeker → fields they are applying to
+o	Business Owner → business details, partnership needs
+o	Professional → skills, experience
+The platform stores all role data under one single profile.
+No separate accounts.
+No duplication.
+No confusion.
+________________________________________
+🏗 What the Platform Does (Phase 1 – Data Collection)
+✔ Accepts registrations from all over the world
+Saudi Arabia first launch, but open to Canada, UK, Germany, Italy, and others from day one.
+✔ Stores structured information
+This means high-quality, consistent data that can be used later for matching.
+✔ Shows a public “Member Directory”
+Visitors can filter by:
+•	Country
+•	Industry
+•	Role (Investor / Employer / Business Owner / etc.)
+Only approved members appear.
+✔ Allows Employers to Post Jobs
+Employers can post job openings that appear in the opportunity board (once approved by admin).
+✔ Allows Investors & Business Owners to Post Opportunities
+Investment openings
+Business partnership requests
+Expansion plans
+Market collaboration offers
+✔ Strong Admin Approval
+Every member and every opportunity is reviewed before going live — ensuring serious, high-quality, spam-free data.
+✔ Content Publishing
+Platform includes:
+•	News
+•	Videos
+•	Newsletters
+•	Announcements
+•	Weekly updates
+This keeps the community active while data grows.
+________________________________________
+🧠 Future Benefits (Phase 2 – AI Matching)
+Once enough data is collected, PEF will be able to:
+🔸 Match investors with businesses
+“Here are 10 investors interested in your sector.”
+🔸 Match job seekers with employers
+“These are 5 companies hiring in your field.”
+🔸 Match professionals with partnerships or opportunities
+“You share industry interest with these companies.”
+🔸 Provide analytics to chambers or government
+Industry trends
+Skill gaps
+Investment patterns
+Sector demand
+This is where the real power and value of the platform will emerge.
+
+
+Data Collected From Every Member (Basic Information)
+(Collected once, no matter how many roles they choose)
+Personal Information
+•	Full Name
+•	Email (required for verification)
+•	Phone (optional)
+•	Country
+•	City
+•	Languages spoken
+•	Short professional headline (one sentence)
+•	Short bio/description (2–3 lines)
+•	Links (optional):
+o	LinkedIn
+o	Website
+o	Portfolio / Social media
+________________________________________
+✅ Role-Based Data (Collected only if user chooses that role)
+A single person can choose any or all of the five roles.
+Below is what we collect per role.
+________________________________________
+1️⃣ Professional (general skilled person)
+•	Years of experience
+•	Industry/sector
+•	Skills (top 5–10)
+•	Certifications (optional)
+•	Current job title (optional)
+•	Name of current employer (if applicable)
+________________________________________
+2️⃣ Job Seeker
+•	Target job titles (e.g., Marketing Manager, Project Lead)
+•	Preferred industries
+•	Employment type: full-time / part-time / remote / contract
+•	Salary expectation range (optional)
+•	Availability: immediately / 30 days / 60 days
+•	Willingness to relocate (yes/no)
+•	Countries they want to work in
+________________________________________
+3️⃣ Employer (someone offering jobs)
+This is collected from someone who is hiring:
+•	Company name
+•	Industry/sector
+•	Open job positions (titles)
+•	Job descriptions (short)
+•	Required skills
+•	Is the job local or remote?
+•	Country/city of the job
+•	Salary range (optional)
+•	Hiring urgency (low / medium / high)
+________________________________________
+4️⃣ Business Owner
+•	Business/Company name
+•	Industry/sector
+•	Company size (1–10 employees, 11–50, etc.)
+•	Years in operation
+•	Country & city of business
+•	What they are looking for:
+o	Investors
+o	Partners
+o	Distributors
+o	Expansion support
+o	Skilled employees
+•	Revenue range (optional)
+•	Capital required (if seeking investment)
+•	Export/expansion countries (optional)
+________________________________________
+5️⃣ Investor
+•	Investment amount range (e.g., $10k–$50k, $100k–$500k)
+•	Preferred sectors/industries
+•	Preferred countries to invest in
+•	Investment stage:
+o	Idea
+o	Startup
+o	Growth
+o	Mature business
+•	Investment type:
+o	Equity
+o	Partnership
+o	Joint venture
+•	Short investment thesis (1 paragraph)
+•	How they prefer to be contacted
+________________________________________
+📦 Additional Data Collected From Everyone (Platform Needs)
+Membership & Activity
+•	Registration date
+•	Approval status
+•	Last login
+•	Opportunities posted
+•	Jobs posted
+•	Business listings created
+Opportunity Listings (if member posts something)
+Types of opportunities:
+•	Job offering
+•	Investment opportunity
+•	Business partnership
+•	Project collaboration
+For each opportunity:
+•	Title
+•	Description
+•	Sector
+•	Country/city
+•	Budget or salary (optional)
+•	Contact preference
+•	Status (open/closed)
+
+
+
