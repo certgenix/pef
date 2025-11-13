@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button";
 const benefits = [
   {
     icon: Globe2,
-    title: "Global Reach",
-    description: "Connect with members from multiple countries and industries worldwide",
+    title: "Global Member Directory",
+    description: "Browse approved members by country, industry, and role with high-quality, structured data",
     color: "from-blue-500 to-cyan-500",
     iconBg: "bg-blue-500/10",
     iconColor: "text-blue-600",
@@ -15,31 +15,31 @@ const benefits = [
   {
     icon: Users,
     title: "One Profile, Multiple Roles",
-    description: "A single person can participate in multiple capacities on one platform",
+    description: "No separate accounts or duplication—choose any combination of the five roles under one profile",
     color: "from-purple-500 to-pink-500",
     iconBg: "bg-purple-500/10",
     iconColor: "text-purple-600",
   },
   {
     icon: Shield,
-    title: "Verified Membership",
-    description: "Each profile is reviewed and approved to ensure accuracy and quality",
+    title: "Strong Admin Approval",
+    description: "Every member and opportunity is reviewed before going live—ensuring serious, high-quality, spam-free data",
     color: "from-green-500 to-emerald-500",
     iconBg: "bg-green-500/10",
     iconColor: "text-green-600",
   },
   {
     icon: FileText,
-    title: "Structured Opportunities",
-    description: "Access curated listings for jobs, investments, and business partnerships",
+    title: "Post & Explore Opportunities",
+    description: "Employers post jobs, investors share opportunities, business owners seek partnerships—all in one place",
     color: "from-orange-500 to-amber-500",
     iconBg: "bg-orange-500/10",
     iconColor: "text-orange-600",
   },
   {
     icon: Newspaper,
-    title: "Engaging Content",
-    description: "Stay informed through newsletters, insights, and video interviews",
+    title: "Active Community Content",
+    description: "Stay engaged with news, videos, newsletters, and weekly updates while data grows",
     color: "from-indigo-500 to-blue-500",
     iconBg: "bg-indigo-500/10",
     iconColor: "text-indigo-600",
@@ -84,11 +84,17 @@ export default function PlatformBenefitsSection() {
             className="text-3xl md:text-4xl lg:text-5xl font-display font-bold mb-4"
             data-testid="text-benefits-title"
           >
-            Why Join PEF?
+            What PEF Does – Phase 1
           </h2>
-          <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-            Experience a trusted, professional environment designed for global business collaboration and career advancement
+          <p className="text-lg text-muted-foreground max-w-3xl mx-auto mb-6">
+            We're building a massive, high-quality global database of talent, business opportunities, and investment prospects
           </p>
+          <div className="bg-primary/5 border border-primary/20 rounded-lg p-6 max-w-3xl mx-auto">
+            <h3 className="text-xl font-bold mb-2 text-primary">Future Benefits – Phase 2 (AI Matching)</h3>
+            <p className="text-sm text-muted-foreground">
+              Once enough data is collected, PEF will match investors with businesses, job seekers with employers, professionals with partnerships, and provide analytics to chambers and government on industry trends, skill gaps, and investment patterns.
+            </p>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">

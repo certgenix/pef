@@ -72,8 +72,8 @@ export default function GlobalReachSection() {
         >
           Global Reach
         </h2>
-        <p className="text-center text-muted-foreground mb-12 max-w-2xl mx-auto">
-          Connecting professionals and businesses across continents
+        <p className="text-center text-muted-foreground mb-12 max-w-2xl mx-auto text-lg">
+          Launching first in Saudi Arabia, open to Canada, UK, Germany, Italy, and others from day one
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-12">

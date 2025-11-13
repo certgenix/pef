@@ -8,35 +8,35 @@ const roles = [
     title: "Professional",
     color: "bg-blue-500",
     borderColor: "border-blue-500",
-    description: "Enhance your visibility, expand your network, and access new opportunities globally",
+    description: "Network, showcase your skills, and gain career visibility on the global stage",
   },
   {
     icon: Search,
     title: "Job Seeker",
     color: "bg-green-500",
     borderColor: "border-green-500",
-    description: "Explore employment opportunities locally and internationally with verified employers",
+    description: "Actively looking for jobs locally or internationally with access to verified employers",
   },
   {
     icon: Building2,
     title: "Employer",
     color: "bg-purple-500",
     borderColor: "border-purple-500",
-    description: "Find qualified candidates and build your team with trusted professional profiles",
+    description: "Post job openings, hire talent, and find qualified candidates for your organization",
   },
   {
     icon: Handshake,
     title: "Business Owner",
     color: "bg-orange-500",
     borderColor: "border-orange-500",
-    description: "Seek investors, partners, and growth opportunities for your business ventures",
+    description: "Seek partnerships, expansion support, investors, and talent for your company",
   },
   {
     icon: TrendingUp,
     title: "Investor",
     color: "bg-amber-500",
     borderColor: "border-amber-500",
-    description: "Discover investment-ready companies and projects across multiple sectors and regions",
+    description: "Invest in startups, SMEs, new projects, and market opportunities worldwide",
   },
 ];
 
@@ -50,10 +50,10 @@ export default function FiveRolesSection() {
           className="text-3xl md:text-4xl lg:text-5xl font-display font-bold text-center mb-4"
           data-testid="text-section-title"
         >
-          Who We Serve
+          Five Roles – Choose Any Combination
         </h2>
-        <p className="text-center text-muted-foreground mb-12 max-w-2xl mx-auto">
-          One platform, multiple roles. Join as a professional, job seeker, employer, business owner, or investor.
+        <p className="text-center text-muted-foreground mb-12 max-w-3xl mx-auto text-lg">
+          A single person can select one or more roles. Whether you're a professional seeking opportunities, an employer hiring talent, a business owner seeking partners, or an investor looking for opportunities—the system adapts to whatever roles you choose.
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">

@@ -75,14 +75,14 @@ export default function HeroSection() {
           className="text-4xl md:text-6xl lg:text-7xl font-display font-bold text-white mb-6 animate-in fade-in slide-in-from-bottom-4 duration-700"
           data-testid="text-hero-title"
         >
-          A Global Platform Connecting Talent, Capital, and Opportunity
+          Professional Executive Forum
         </h1>
 
         <p
           className="text-lg md:text-xl lg:text-2xl text-white/90 max-w-4xl mx-auto mb-10 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-150"
           data-testid="text-hero-subtitle"
         >
-          PEF brings together professionals, employers, business owners, and investors from across the world
+          A global digital platform collecting structured information from professionals, job seekers, employers, business owners, and investors to power intelligent opportunity matching
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
