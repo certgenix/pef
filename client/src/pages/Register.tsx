@@ -371,7 +371,6 @@ export default function Register() {
                                 </div>
                                 <Checkbox
                                   checked={isSelected}
-                                  onCheckedChange={() => handleRoleToggle(role.id as keyof typeof selectedRoles)}
                                   data-testid={`checkbox-${role.id}`}
                                 />
                               </div>
