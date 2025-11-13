@@ -52,9 +52,14 @@ export default function FiveRolesSection() {
         >
           Five Roles – Choose Any Combination
         </h2>
-        <p className="text-center text-muted-foreground mb-12 max-w-3xl mx-auto text-lg">
-          A single person can select one or more roles. Whether you're a professional seeking opportunities, an employer hiring talent, a business owner seeking partners, or an investor looking for opportunities—the system adapts to whatever roles you choose.
+        <p className="text-center text-muted-foreground mb-6 max-w-3xl mx-auto text-lg">
+          A single person can select one or more roles. Register, provide structured information for each role you choose, and become part of our global database—no separate accounts, no duplication, no confusion.
         </p>
+        <div className="text-center mb-12 max-w-2xl mx-auto">
+          <p className="text-sm text-primary font-semibold">
+            Phase 1: We're collecting high-quality data to build the foundation for intelligent matching in Phase 2
+          </p>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
           {roles.map((role, index) => {

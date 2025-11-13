@@ -63,9 +63,14 @@ export default function HowItWorksSection() {
         >
           How It Works
         </h2>
-        <p className="text-center text-muted-foreground mb-16 max-w-2xl mx-auto">
-          Join our global community in five simple steps
+        <p className="text-center text-muted-foreground mb-6 max-w-3xl mx-auto text-lg">
+          Join our global community by providing structured information that will power future opportunity matching
         </p>
+        <div className="text-center mb-12 max-w-2xl mx-auto bg-primary/5 border border-primary/20 rounded-lg p-4">
+          <p className="text-sm text-primary font-semibold">
+            Phase 1: Building a massive, high-quality database of talent, business opportunities, and investment prospects
+          </p>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-5 gap-8 max-w-6xl mx-auto">
           {steps.map((step, index) => {

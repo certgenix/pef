@@ -22,10 +22,10 @@ export default function CTASection() {
           className="text-3xl md:text-4xl lg:text-5xl font-display font-bold text-white mb-6"
           data-testid="text-cta-title"
         >
-          Join Today
+          Register and Be Part of the Future
         </h2>
-        <p className="text-lg md:text-xl text-white/90 mb-10 max-w-2xl mx-auto" data-testid="text-cta-description">
-          Become part of a growing global ecosystem where business, talent, and investment intersect
+        <p className="text-lg md:text-xl text-white/90 mb-10 max-w-3xl mx-auto" data-testid="text-cta-description">
+          Provide your structured information today and join the global database that will power intelligent opportunity matching tomorrow. Every registration helps build the foundation for Phase 2.
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
