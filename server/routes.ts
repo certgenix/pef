@@ -105,14 +105,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ error: "Firebase Admin SDK not configured yet" });
       }
 
-      const user = await storage.getUserById(uid);
-      if (!user) {
+      const result = await storage.getUserWithRoles(uid);
+      if (!result) {
         return res.status(404).json({ error: "User not found" });
       }
 
       await storage.updateUserLastLogin(uid);
 
-      return res.json({ user });
+      return res.json({ 
+        user: result.user,
+        roles: result.roles 
+      });
     } catch (error) {
       console.error("Auth error:", error);
       return res.status(500).json({ error: "Authentication failed" });

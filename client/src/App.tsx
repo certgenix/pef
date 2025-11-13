@@ -12,6 +12,7 @@ import News from "@/pages/News";
 import Contact from "@/pages/Contact";
 import Register from "@/pages/Register";
 import Login from "@/pages/Login";
+import CompleteProfile from "@/pages/CompleteProfile";
 import Dashboard from "@/pages/Dashboard";
 import ProfessionalDashboard from "@/pages/dashboards/ProfessionalDashboard";
 import JobSeekerDashboard from "@/pages/dashboards/JobSeekerDashboard";
@@ -31,6 +32,7 @@ function Router() {
       <Route path="/contact" component={Contact} />
       <Route path="/register" component={Register} />
       <Route path="/login" component={Login} />
+      <Route path="/complete-profile" component={CompleteProfile} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/dashboard/professional" component={ProfessionalDashboard} />
       <Route path="/dashboard/job-seeker" component={JobSeekerDashboard} />

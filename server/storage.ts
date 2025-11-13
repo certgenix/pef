@@ -33,6 +33,7 @@ export interface RegistrationData {
 export interface IStorage {
   getUserById(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
+  getUserWithRoles(id: string): Promise<{ user: User; roles: UserRoles | null } | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUserLastLogin(id: string): Promise<void>;
   
@@ -57,6 +58,24 @@ export class DatabaseStorage implements IStorage {
   async getUserByEmail(email: string): Promise<User | undefined> {
     const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
     return result[0];
+  }
+
+  async getUserWithRoles(id: string): Promise<{ user: User; roles: UserRoles | null } | undefined> {
+    const user = await this.getUserById(id);
+    if (!user) {
+      return undefined;
+    }
+
+    const rolesResult = await db
+      .select()
+      .from(userRoles)
+      .where(eq(userRoles.userId, id))
+      .limit(1);
+
+    return {
+      user,
+      roles: rolesResult[0] || null,
+    };
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
