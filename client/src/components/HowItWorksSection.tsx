@@ -67,14 +67,14 @@ export default function HowItWorksSection() {
           Join our global community in five simple steps
         </p>
 
-        <div className="relative">
-          <div className="hidden md:block absolute top-1/2 left-0 right-0 h-1 bg-primary/20 -translate-y-1/2" />
+        <div className="relative px-8">
+          <div className="hidden md:block absolute top-[40px] left-[10%] right-[10%] h-1 bg-primary/20" />
           <div
-            className="hidden md:block absolute top-1/2 left-0 h-1 bg-primary -translate-y-1/2 transition-all duration-1000"
-            style={{ width: `${(visibleSteps.length / steps.length) * 100}%` }}
+            className="hidden md:block absolute top-[40px] left-[10%] h-1 bg-primary transition-all duration-1000"
+            style={{ width: `${((visibleSteps.length / steps.length) * 80)}%` }}
           />
 
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-8 relative">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-6 relative">
             {steps.map((step, index) => {
               const Icon = step.icon;
               const isVisible = visibleSteps.includes(index);
@@ -93,8 +93,8 @@ export default function HowItWorksSection() {
                     </div>
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 bg-primary/20 rounded-full blur-sm" />
                   </div>
-                  <h3 className="text-lg font-display font-semibold mb-2">{step.title}</h3>
-                  <p className="text-sm text-muted-foreground">{step.description}</p>
+                  <h3 className="text-base md:text-lg font-display font-semibold mb-2">{step.title}</h3>
+                  <p className="text-xs md:text-sm text-muted-foreground leading-relaxed">{step.description}</p>
                 </div>
               );
             })}
