@@ -2,18 +2,6 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Globe, Menu, X } from "lucide-react";
 import { Link } from "wouter";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-
-const languages = [
-  { code: "en", label: "English", flag: "🇬🇧" },
-  { code: "ar", label: "العربية", flag: "🇸🇦" },
-  { code: "ur", label: "اردو", flag: "🇵🇰" },
-];
 
 const navItems = [
   { label: "Home", path: "/" },
@@ -27,7 +15,6 @@ const navItems = [
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [selectedLanguage, setSelectedLanguage] = useState(languages[0]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -67,27 +54,6 @@ export default function Header() {
           </nav>
 
           <div className="hidden lg:flex items-center gap-3">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="text-white hover:bg-white/10 gap-2" data-testid="button-language">
-                  <span className="text-lg">{selectedLanguage.flag}</span>
-                  <span className="text-sm">{selectedLanguage.label}</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {languages.map((lang) => (
-                  <DropdownMenuItem
-                    key={lang.code}
-                    onClick={() => setSelectedLanguage(lang)}
-                    data-testid={`option-lang-${lang.code}`}
-                  >
-                    <span className="mr-2 text-lg">{lang.flag}</span>
-                    {lang.label}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-
             <Button
               className="bg-accent hover:bg-accent text-accent-foreground font-semibold"
               data-testid="button-join-now"
@@ -123,20 +89,6 @@ export default function Header() {
                 </Button>
               </Link>
             ))}
-            <div className="flex gap-2 pt-2">
-              {languages.map((lang) => (
-                <Button
-                  key={lang.code}
-                  variant="ghost"
-                  size="sm"
-                  className={`text-white ${selectedLanguage.code === lang.code ? "bg-white/20" : ""}`}
-                  onClick={() => setSelectedLanguage(lang)}
-                  data-testid={`button-mobile-lang-${lang.code}`}
-                >
-                  {lang.flag}
-                </Button>
-              ))}
-            </div>
             <Button
               className="w-full bg-accent hover:bg-accent text-accent-foreground font-semibold mt-4"
               data-testid="button-mobile-join"
