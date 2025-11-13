@@ -369,10 +369,12 @@ export default function Register() {
                                 <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
                                   <Icon className="w-6 h-6 text-primary" />
                                 </div>
-                                <Checkbox
-                                  checked={isSelected}
-                                  data-testid={`checkbox-${role.id}`}
-                                />
+                                <div className="pointer-events-none">
+                                  <Checkbox
+                                    checked={isSelected}
+                                    data-testid={`checkbox-${role.id}`}
+                                  />
+                                </div>
                               </div>
                               <h4 className="font-bold mb-2">{role.title}</h4>
                               <p className="text-sm text-muted-foreground">{role.description}</p>
