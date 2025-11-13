@@ -1,0 +1,130 @@
+import { Globe } from "lucide-react";
+import { Link } from "wouter";
+import { SiLinkedin, SiYoutube, SiX } from "react-icons/si";
+
+const quickLinks = [
+  { label: "Home", path: "/" },
+  { label: "About", path: "/about" },
+  { label: "Membership", path: "/membership" },
+  { label: "Opportunities", path: "/opportunities" },
+  { label: "News", path: "/news" },
+  { label: "Contact", path: "/contact" },
+];
+
+const legalLinks = [
+  { label: "Privacy Policy", path: "/privacy" },
+  { label: "Terms of Use", path: "/terms" },
+];
+
+export default function Footer() {
+  return (
+    <footer className="bg-[hsl(213,58%,15%)] text-white/90">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
+          <div>
+            <div className="flex items-center gap-2 mb-4">
+              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-accent">
+                <Globe className="w-6 h-6 text-accent-foreground" />
+              </div>
+              <span className="text-2xl font-display font-bold text-white">PEF</span>
+            </div>
+            <p className="text-sm text-white/70 mb-4">
+              A global platform dedicated to connecting professionals, business owners, employers, and investors
+              through trusted data and structured opportunities.
+            </p>
+          </div>
+
+          <div>
+            <h3 className="text-lg font-semibold text-white mb-4">Quick Links</h3>
+            <ul className="space-y-2">
+              {quickLinks.map((link) => (
+                <li key={link.path}>
+                  <Link href={link.path}>
+                    <a className="text-sm text-white/70 hover:text-white transition-colors" data-testid={`link-footer-${link.label.toLowerCase()}`}>
+                      {link.label}
+                    </a>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div>
+            <h3 className="text-lg font-semibold text-white mb-4">Contact</h3>
+            <ul className="space-y-2 text-sm text-white/70">
+              <li>
+                <strong className="text-white">Email:</strong>
+                <br />
+                <a href="mailto:info@pef.org" className="hover:text-white transition-colors" data-testid="link-email">
+                  info@pef.org
+                </a>
+              </li>
+              <li>
+                <strong className="text-white">Phone:</strong>
+                <br />
+                +966-XXX-XXXX
+              </li>
+              <li>
+                <strong className="text-white">Head Office:</strong>
+                <br />
+                Riyadh, Saudi Arabia
+              </li>
+            </ul>
+          </div>
+
+          <div>
+            <h3 className="text-lg font-semibold text-white mb-4">Follow Us</h3>
+            <div className="flex gap-4 mb-6">
+              <a
+                href="https://linkedin.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-10 h-10 rounded-md bg-white/10 flex items-center justify-center hover-elevate transition-colors"
+                data-testid="link-linkedin"
+              >
+                <SiLinkedin className="w-5 h-5" />
+              </a>
+              <a
+                href="https://youtube.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-10 h-10 rounded-md bg-white/10 flex items-center justify-center hover-elevate transition-colors"
+                data-testid="link-youtube"
+              >
+                <SiYoutube className="w-5 h-5" />
+              </a>
+              <a
+                href="https://x.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-10 h-10 rounded-md bg-white/10 flex items-center justify-center hover-elevate transition-colors"
+                data-testid="link-x"
+              >
+                <SiX className="w-5 h-5" />
+              </a>
+            </div>
+
+            <h4 className="text-sm font-semibold text-white mb-2">Legal</h4>
+            <ul className="space-y-1">
+              {legalLinks.map((link) => (
+                <li key={link.path}>
+                  <Link href={link.path}>
+                    <a className="text-sm text-white/70 hover:text-white transition-colors">
+                      {link.label}
+                    </a>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
+        <div className="border-t border-white/10 pt-8 text-center">
+          <p className="text-sm text-white/70">
+            &copy; {new Date().getFullYear()} Professional Executive Forum. All rights reserved.
+          </p>
+        </div>
+      </div>
+    </footer>
+  );
+}
