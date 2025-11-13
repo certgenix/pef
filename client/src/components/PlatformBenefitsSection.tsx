@@ -1,36 +1,54 @@
 import { useEffect, useRef, useState } from "react";
-import { Check, Globe2, Users, Shield, FileText, Newspaper } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Globe2, Users, Shield, FileText, Newspaper, ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const benefits = [
   {
     icon: Globe2,
     title: "Global Reach",
     description: "Connect with members from multiple countries and industries worldwide",
+    color: "from-blue-500 to-cyan-500",
+    iconBg: "bg-blue-500/10",
+    iconColor: "text-blue-600",
   },
   {
     icon: Users,
     title: "One Profile, Multiple Roles",
     description: "A single person can participate in multiple capacities on one platform",
+    color: "from-purple-500 to-pink-500",
+    iconBg: "bg-purple-500/10",
+    iconColor: "text-purple-600",
   },
   {
     icon: Shield,
     title: "Verified Membership",
     description: "Each profile is reviewed and approved to ensure accuracy and quality",
+    color: "from-green-500 to-emerald-500",
+    iconBg: "bg-green-500/10",
+    iconColor: "text-green-600",
   },
   {
     icon: FileText,
     title: "Structured Opportunities",
     description: "Access curated listings for jobs, investments, and business partnerships",
+    color: "from-orange-500 to-amber-500",
+    iconBg: "bg-orange-500/10",
+    iconColor: "text-orange-600",
   },
   {
     icon: Newspaper,
     title: "Engaging Content",
     description: "Stay informed through newsletters, insights, and video interviews",
+    color: "from-indigo-500 to-blue-500",
+    iconBg: "bg-indigo-500/10",
+    iconColor: "text-indigo-600",
   },
 ];
 
 export default function PlatformBenefitsSection() {
   const [isVisible, setIsVisible] = useState(false);
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -40,7 +58,7 @@ export default function PlatformBenefitsSection() {
           setIsVisible(true);
         }
       },
-      { threshold: 0.2 }
+      { threshold: 0.1 }
     );
 
     if (ref.current) {
@@ -51,68 +69,82 @@ export default function PlatformBenefitsSection() {
   }, []);
 
   return (
-    <section className="py-16 md:py-24 bg-background" ref={ref}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
-          <div>
-            <h2
-              className="text-3xl md:text-4xl lg:text-5xl font-display font-bold mb-6"
-              data-testid="text-benefits-title"
-            >
-              Why Join PEF?
-            </h2>
-            <p className="text-lg text-muted-foreground mb-8">
-              Professional Executive Forum provides a trusted environment for global business collaboration and
-              professional growth.
-            </p>
+    <section className="py-16 md:py-24 bg-gradient-to-br from-background via-secondary/5 to-accent/5 relative overflow-hidden" ref={ref}>
+      <div className="absolute inset-0 opacity-5">
+        <div className="absolute top-0 left-0 w-96 h-96 bg-secondary rounded-full blur-3xl" />
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-accent rounded-full blur-3xl" />
+      </div>
 
-            <div className="space-y-6">
-              {benefits.map((benefit, index) => {
-                const Icon = benefit.icon;
-                return (
-                  <div
-                    key={benefit.title}
-                    className={`flex gap-4 transition-all duration-500 ${
-                      isVisible
-                        ? "opacity-100 translate-x-0"
-                        : "opacity-0 -translate-x-8"
-                    }`}
-                    style={{ transitionDelay: `${index * 100}ms` }}
-                    data-testid={`benefit-${benefit.title.toLowerCase().replace(/\s+/g, "-")}`}
-                  >
-                    <div className="flex-shrink-0 w-12 h-12 bg-primary/10 rounded-md flex items-center justify-center">
-                      <Check className="w-6 h-6 text-primary" />
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-semibold mb-2">{benefit.title}</h3>
-                      <p className="text-muted-foreground">{benefit.description}</p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="text-center mb-16">
+          <div className="inline-block px-4 py-2 bg-primary/10 rounded-full mb-4">
+            <span className="text-sm font-semibold text-primary">Platform Benefits</span>
           </div>
+          <h2
+            className="text-3xl md:text-4xl lg:text-5xl font-display font-bold mb-4"
+            data-testid="text-benefits-title"
+          >
+            Why Join PEF?
+          </h2>
+          <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
+            Experience a trusted, professional environment designed for global business collaboration and career advancement
+          </p>
+        </div>
 
-          <div className="relative">
-            <div className="grid grid-cols-2 gap-6">
-              {benefits.map((benefit, index) => {
-                const Icon = benefit.icon;
-                return (
-                  <div
-                    key={benefit.title}
-                    className={`p-6 bg-card border border-card-border rounded-md hover-elevate transition-all duration-500 ${
-                      isVisible
-                        ? "opacity-100 translate-y-0"
-                        : "opacity-0 translate-y-8"
-                    }`}
-                    style={{ transitionDelay: `${index * 150}ms` }}
-                  >
-                    <Icon className="w-10 h-10 text-primary mb-3" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+          {benefits.map((benefit, index) => {
+            const Icon = benefit.icon;
+            const isHovered = hoveredIndex === index;
+
+            return (
+              <Card
+                key={benefit.title}
+                className={`group relative overflow-hidden border-2 transition-all duration-500 hover-elevate ${
+                  isVisible
+                    ? "opacity-100 translate-y-0"
+                    : "opacity-0 translate-y-12"
+                } ${isHovered ? "shadow-2xl border-primary/30 scale-105" : "border-transparent shadow-lg"}`}
+                style={{ transitionDelay: `${index * 100}ms` }}
+                onMouseEnter={() => setHoveredIndex(index)}
+                onMouseLeave={() => setHoveredIndex(null)}
+                data-testid={`benefit-${benefit.title.toLowerCase().replace(/\s+/g, "-")}`}
+              >
+                <div className={`absolute inset-0 bg-gradient-to-br ${benefit.color} opacity-0 group-hover:opacity-5 transition-opacity duration-300`} />
+                
+                <CardContent className="p-8 relative">
+                  <div className={`w-16 h-16 ${benefit.iconBg} rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
+                    <Icon className={`w-8 h-8 ${benefit.iconColor}`} />
                   </div>
-                );
-              })}
-            </div>
-          </div>
+                  
+                  <h3 className="text-xl font-display font-bold mb-3 group-hover:text-primary transition-colors">
+                    {benefit.title}
+                  </h3>
+                  
+                  <p className="text-muted-foreground leading-relaxed mb-4">
+                    {benefit.description}
+                  </p>
+
+                  <div className={`flex items-center text-primary font-semibold text-sm transition-all duration-300 ${
+                    isHovered ? "translate-x-2 opacity-100" : "opacity-0"
+                  }`}>
+                    Learn more
+                    <ArrowRight className="w-4 h-4 ml-1" />
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+
+        <div className="text-center">
+          <Button
+            size="lg"
+            className="bg-primary hover:bg-primary text-primary-foreground font-semibold px-8 min-h-12 group"
+            data-testid="button-get-started"
+          >
+            Get Started Today
+            <ArrowRight className="ml-2 w-5 h-5 transition-transform group-hover:translate-x-1" />
+          </Button>
         </div>
       </div>
     </section>
