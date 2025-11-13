@@ -7,11 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { auth } from "@/lib/firebase";
-import { Briefcase, Search, Building2, Handshake, TrendingUp, ArrowRight, ArrowLeft } from "lucide-react";
+import { Briefcase, Search, Building2, Handshake, TrendingUp, ArrowRight, ArrowLeft, CheckCircle, Circle } from "lucide-react";
 
 const roles = [
   {
@@ -369,12 +368,11 @@ export default function Register() {
                                 <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
                                   <Icon className="w-6 h-6 text-primary" />
                                 </div>
-                                <div className="pointer-events-none">
-                                  <Checkbox
-                                    checked={isSelected}
-                                    data-testid={`checkbox-${role.id}`}
-                                  />
-                                </div>
+                                {isSelected ? (
+                                  <CheckCircle className="w-6 h-6 text-primary" data-testid={`checkbox-${role.id}`} />
+                                ) : (
+                                  <Circle className="w-6 h-6 text-muted-foreground" data-testid={`checkbox-${role.id}`} />
+                                )}
                               </div>
                               <h4 className="font-bold mb-2">{role.title}</h4>
                               <p className="text-sm text-muted-foreground">{role.description}</p>
