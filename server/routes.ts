@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage-pg";
 import { z } from "zod";
-import { insertUserProfileSchema, insertUserRolesSchema, insertOpportunitySchema, jobDetailsSchema } from "@shared/schema";
+import { insertUserProfileSchema, insertUserRolesSchema, insertOpportunitySchema, insertApplicationSchema, jobDetailsSchema } from "@shared/schema";
 
 const AUTO_APPROVE_JOBS = true;
 
@@ -305,6 +305,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Opportunity deletion error:", error);
       return res.status(500).json({ error: "Failed to delete opportunity" });
+    }
+  });
+
+  app.post("/api/applications", async (req, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const token = authHeader.substring(7);
+      let uid: string;
+
+      if (!process.env.FIREBASE_ADMIN_SERVICE_ACCOUNT) {
+        const decodedToken = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+        uid = decodedToken.user_id;
+      } else {
+        return res.status(500).json({ error: "Firebase Admin SDK not configured yet" });
+      }
+
+      const validationResult = insertApplicationSchema.safeParse({
+        ...req.body,
+        userId: uid,
+      });
+
+      if (!validationResult.success) {
+        return res.status(400).json({
+          error: "Invalid request data",
+          details: validationResult.error.issues
+        });
+      }
+
+      const existingApplication = await storage.checkExistingApplication(
+        uid,
+        validationResult.data.opportunityId
+      );
+
+      if (existingApplication) {
+        return res.status(400).json({ error: "You have already applied to this opportunity" });
+      }
+
+      const application = await storage.createApplication(validationResult.data);
+      return res.json(application);
+    } catch (error) {
+      console.error("Application creation error:", error);
+      return res.status(500).json({ error: "Failed to create application" });
+    }
+  });
+
+  app.get("/api/applications/me", async (req, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const token = authHeader.substring(7);
+      let uid: string;
+
+      if (!process.env.FIREBASE_ADMIN_SERVICE_ACCOUNT) {
+        const decodedToken = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+        uid = decodedToken.user_id;
+      } else {
+        return res.status(500).json({ error: "Firebase Admin SDK not configured yet" });
+      }
+
+      const applications = await storage.getApplicationsByUser(uid);
+      return res.json(applications);
+    } catch (error) {
+      console.error("Applications fetch error:", error);
+      return res.status(500).json({ error: "Failed to fetch applications" });
     }
   });
 
