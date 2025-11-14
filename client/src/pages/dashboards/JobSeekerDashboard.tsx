@@ -3,23 +3,70 @@ import { useUserRoles } from "@/hooks/useUserRoles";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, Briefcase, MapPin, DollarSign, Clock, BookmarkPlus, FileText } from "lucide-react";
+import { Search, Briefcase, MapPin, DollarSign, Clock, FileText, CheckCircle2 } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useLocation } from "wouter";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import type { Opportunity, Application } from "@shared/schema";
+import { format } from "date-fns";
+import { useState } from "react";
+
+type ApplicationWithOpportunity = Application & { opportunity: Opportunity };
 
 export default function JobSeekerDashboard() {
-  const { currentUser, userData, loading: authLoading } = useAuth();
+  const { currentUser, loading: authLoading } = useAuth();
   const { hasRole, isLoading: rolesLoading } = useUserRoles(currentUser?.uid);
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
+  const [searchQuery, setSearchQuery] = useState("");
 
-  // ✅ FIX: Safe fallback for jobSeekerData - never undefined
-  const jobSeekerData = userData?.jobSeekerData || {};
-  
-  // ✅ FIX: Combined loading state - wait for both auth and roles
   const isLoading = authLoading || rolesLoading;
 
-  // ✅ FIX: Show loading spinner while Firestore is fetching data
+  const { data: opportunities = [], isLoading: opportunitiesLoading } = useQuery<Opportunity[]>({
+    queryKey: ["/api/opportunities"],
+    queryFn: async () => {
+      const params = new URLSearchParams({ type: "job" });
+      const response = await fetch(`/api/opportunities?${params}`);
+      if (!response.ok) throw new Error("Failed to fetch opportunities");
+      return response.json();
+    },
+    enabled: !isLoading && hasRole("jobSeeker"),
+  });
+
+  const { data: applications = [], isLoading: applicationsLoading } = useQuery<ApplicationWithOpportunity[]>({
+    queryKey: ["/api/applications/me"],
+    enabled: !isLoading && hasRole("jobSeeker"),
+  });
+
+  const applyMutation = useMutation({
+    mutationFn: async (opportunityId: string) => {
+      return apiRequest("/api/applications", {
+        method: "POST",
+        body: JSON.stringify({ 
+          opportunityId,
+          status: "applied",
+        }),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/applications/me"] });
+      toast({
+        title: "Success",
+        description: "Your application has been submitted!",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to submit application",
+        variant: "destructive",
+      });
+    },
+  });
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -31,7 +78,6 @@ export default function JobSeekerDashboard() {
     );
   }
 
-  // Check role access only after loading is complete
   if (!hasRole("jobSeeker")) {
     return (
       <div className="min-h-screen">
@@ -54,11 +100,66 @@ export default function JobSeekerDashboard() {
     );
   }
 
-  // Safe access to jobSeekerData fields with fallbacks
-  const targetRole = jobSeekerData.targetRole || "Not specified";
-  const expectedSalary = jobSeekerData.expectedSalary || "Not specified";
-  const availability = jobSeekerData.availability || "Not specified";
-  const skills = jobSeekerData.skills || [];
+  const applicationMap = new Map(
+    applications.map(app => [app.opportunityId, app])
+  );
+
+  const filteredOpportunities = opportunities.filter(opp => {
+    if (!searchQuery) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      opp.title.toLowerCase().includes(query) ||
+      opp.description.toLowerCase().includes(query) ||
+      (opp.location && opp.location.toLowerCase().includes(query))
+    );
+  });
+
+  const recentApplications = applications
+    .sort((a, b) => new Date(b.appliedAt).getTime() - new Date(a.appliedAt).getTime())
+    .slice(0, 5);
+
+  const statusCounts = applications.reduce((acc, app) => {
+    acc[app.status] = (acc[app.status] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const getStatusBadgeVariant = (status: string) => {
+    switch (status) {
+      case "applied":
+        return "secondary";
+      case "under_review":
+        return "default";
+      case "interview":
+        return "default";
+      case "offer":
+        return "default";
+      case "rejected":
+        return "destructive";
+      case "withdrawn":
+        return "outline";
+      default:
+        return "secondary";
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case "applied":
+        return "Applied";
+      case "under_review":
+        return "Under Review";
+      case "interview":
+        return "Interview";
+      case "offer":
+        return "Offer Received";
+      case "rejected":
+        return "Rejected";
+      case "withdrawn":
+        return "Withdrawn";
+      default:
+        return status;
+    }
+  };
 
   return (
     <div className="min-h-screen">
@@ -72,45 +173,55 @@ export default function JobSeekerDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Applications</CardTitle>
+              <CardTitle className="text-sm font-medium">Total Applications</CardTitle>
               <FileText className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">12</div>
-              <p className="text-xs text-muted-foreground">3 awaiting response</p>
+              <div className="text-2xl font-bold" data-testid="text-total-applications">
+                {applications.length}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {statusCounts.under_review || 0} under review
+              </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Saved Jobs</CardTitle>
-              <BookmarkPlus className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">Interviews</CardTitle>
+              <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">28</div>
-              <p className="text-xs text-muted-foreground">5 new this week</p>
+              <div className="text-2xl font-bold" data-testid="text-interviews">
+                {statusCounts.interview || 0}
+              </div>
+              <p className="text-xs text-muted-foreground">Scheduled</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Job Matches</CardTitle>
+              <CardTitle className="text-sm font-medium">Available Jobs</CardTitle>
               <Search className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">45</div>
-              <p className="text-xs text-muted-foreground">Based on your profile</p>
+              <div className="text-2xl font-bold" data-testid="text-available-jobs">
+                {opportunities.length}
+              </div>
+              <p className="text-xs text-muted-foreground">Open positions</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Profile Strength</CardTitle>
+              <CardTitle className="text-sm font-medium">Offers</CardTitle>
               <Briefcase className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">85%</div>
-              <p className="text-xs text-muted-foreground">Good visibility</p>
+              <div className="text-2xl font-bold" data-testid="text-offers">
+                {statusCounts.offer || 0}
+              </div>
+              <p className="text-xs text-muted-foreground">Pending decision</p>
             </CardContent>
           </Card>
         </div>
@@ -120,83 +231,127 @@ export default function JobSeekerDashboard() {
             <Card>
               <CardHeader>
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <CardTitle>Recommended Jobs</CardTitle>
-                  <Button variant="outline" size="sm" data-testid="button-search-jobs">
-                    <Search className="w-4 h-4 mr-2" />
-                    Search More
-                  </Button>
+                  <CardTitle>Available Jobs</CardTitle>
+                  <div className="flex flex-wrap gap-2">
+                    <input
+                      type="text"
+                      placeholder="Search jobs..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="px-3 py-1 text-sm border rounded-md min-h-8"
+                      data-testid="input-search-jobs"
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setLocation("/opportunities")}
+                      data-testid="button-view-all"
+                    >
+                      View All
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                {[
-                  {
-                    title: "Senior Frontend Developer",
-                    company: "TechCorp International",
-                    location: "Riyadh, Saudi Arabia",
-                    type: "Full-time",
-                    salary: "$80k - $120k",
-                    posted: "2 days ago",
-                    match: "95%"
-                  },
-                  {
-                    title: "React Developer",
-                    company: "Digital Solutions Ltd",
-                    location: "Remote",
-                    type: "Remote",
-                    salary: "$70k - $100k",
-                    posted: "1 week ago",
-                    match: "88%"
-                  },
-                  {
-                    title: "Full Stack Engineer",
-                    company: "Innovation Hub",
-                    location: "Dubai, UAE",
-                    type: "Full-time",
-                    salary: "$90k - $130k",
-                    posted: "3 days ago",
-                    match: "82%"
-                  },
-                ].map((job, idx) => (
-                  <div key={idx} className="p-4 rounded-md border hover-elevate">
-                    <div className="flex flex-wrap items-start justify-between gap-2 mb-3">
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-lg mb-1">{job.title}</h3>
-                        <p className="text-muted-foreground mb-2">{job.company}</p>
-                      </div>
-                      <Badge className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100">
-                        {job.match} Match
-                      </Badge>
-                    </div>
-                    <div className="flex flex-wrap gap-4 text-sm text-muted-foreground mb-3">
-                      <div className="flex items-center gap-1">
-                        <MapPin className="w-4 h-4" />
-                        {job.location}
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Briefcase className="w-4 h-4" />
-                        {job.type}
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <DollarSign className="w-4 h-4" />
-                        {job.salary}
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Clock className="w-4 h-4" />
-                        {job.posted}
-                      </div>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      <Button size="sm" data-testid={`button-apply-${idx}`}>Apply Now</Button>
-                      <Button size="sm" variant="outline" data-testid={`button-save-${idx}`}>
-                        <BookmarkPlus className="w-4 h-4 mr-2" />
-                        Save
-                      </Button>
-                      <Button size="sm" variant="ghost" data-testid={`button-details-${idx}`}>
-                        View Details
-                      </Button>
-                    </div>
+                {opportunitiesLoading ? (
+                  <div className="text-center py-8">
+                    <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground">Loading jobs...</p>
                   </div>
-                ))}
+                ) : filteredOpportunities.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground">
+                      {searchQuery ? "No jobs found matching your search" : "No jobs available"}
+                    </p>
+                  </div>
+                ) : (
+                  filteredOpportunities.slice(0, 6).map((job) => {
+                    const application = applicationMap.get(job.id);
+                    const hasApplied = !!application;
+
+                    return (
+                      <div
+                        key={job.id}
+                        className="p-4 rounded-md border hover-elevate"
+                        data-testid={`card-job-${job.id}`}
+                      >
+                        <div className="flex flex-wrap items-start justify-between gap-2 mb-3">
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-lg mb-1">{job.title}</h3>
+                            <p className="text-muted-foreground mb-2">{job.companyName}</p>
+                          </div>
+                          {hasApplied && (
+                            <Badge
+                              variant={getStatusBadgeVariant(application.status)}
+                              data-testid={`badge-status-${job.id}`}
+                            >
+                              {getStatusLabel(application.status)}
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+                          {job.description}
+                        </p>
+                        <div className="flex flex-wrap gap-4 text-sm text-muted-foreground mb-3">
+                          {job.location && (
+                            <div className="flex items-center gap-1">
+                              <MapPin className="w-4 h-4" />
+                              {job.location}
+                            </div>
+                          )}
+                          {job.details?.employmentType && (
+                            <div className="flex items-center gap-1">
+                              <Briefcase className="w-4 h-4" />
+                              {job.details.employmentType}
+                            </div>
+                          )}
+                          {job.details?.salaryMin && job.details?.salaryMax && (
+                            <div className="flex items-center gap-1">
+                              <DollarSign className="w-4 h-4" />
+                              {job.details.salaryCurrency || "$"}
+                              {job.details.salaryMin.toLocaleString()} -{" "}
+                              {job.details.salaryMax.toLocaleString()}
+                            </div>
+                          )}
+                          <div className="flex items-center gap-1">
+                            <Clock className="w-4 h-4" />
+                            {format(new Date(job.createdAt), "MMM d, yyyy")}
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {hasApplied ? (
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              disabled
+                              data-testid={`button-applied-${job.id}`}
+                            >
+                              <CheckCircle2 className="w-4 h-4 mr-2" />
+                              Applied
+                            </Button>
+                          ) : (
+                            <Button
+                              size="sm"
+                              onClick={() => applyMutation.mutate(job.id)}
+                              disabled={applyMutation.isPending}
+                              data-testid={`button-apply-${job.id}`}
+                            >
+                              {applyMutation.isPending ? "Applying..." : "Apply Now"}
+                            </Button>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setLocation(`/opportunities/${job.id}`)}
+                            data-testid={`button-details-${job.id}`}
+                          >
+                            View Details
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
               </CardContent>
             </Card>
 
@@ -205,22 +360,38 @@ export default function JobSeekerDashboard() {
                 <CardTitle>Recent Applications</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {[
-                  { job: "Product Manager", company: "StartupX", status: "Under Review", date: "2 days ago" },
-                  { job: "Tech Lead", company: "Enterprise Co", status: "Interview Scheduled", date: "1 week ago" },
-                  { job: "Software Engineer", company: "CloudTech", status: "Application Sent", date: "2 weeks ago" },
-                ].map((app, idx) => (
-                  <div key={idx} className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-md border">
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium">{app.job}</p>
-                      <p className="text-sm text-muted-foreground">{app.company}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="secondary">{app.status}</Badge>
-                      <span className="text-xs text-muted-foreground">{app.date}</span>
-                    </div>
+                {applicationsLoading ? (
+                  <div className="text-center py-4">
+                    <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
                   </div>
-                ))}
+                ) : recentApplications.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-4">
+                    No applications yet. Start applying to jobs above!
+                  </p>
+                ) : (
+                  recentApplications.map((app) => (
+                    <div
+                      key={app.id}
+                      className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-md border"
+                      data-testid={`card-application-${app.id}`}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium">{app.opportunity.title}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {app.opportunity.companyName}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant={getStatusBadgeVariant(app.status)}>
+                          {getStatusLabel(app.status)}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">
+                          {format(new Date(app.appliedAt), "MMM d")}
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                )}
               </CardContent>
             </Card>
           </div>
@@ -228,56 +399,52 @@ export default function JobSeekerDashboard() {
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Job Preferences</CardTitle>
+                <CardTitle>Application Status</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div>
-                  <p className="text-sm font-medium mb-1">Target Role</p>
-                  <p className="text-sm text-muted-foreground">{targetRole}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium mb-1">Expected Salary</p>
-                  <p className="text-sm text-muted-foreground">{expectedSalary}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium mb-1">Availability</p>
-                  <p className="text-sm text-muted-foreground">{availability}</p>
-                </div>
-                {skills.length > 0 && (
-                  <div>
-                    <p className="text-sm font-medium mb-2">Skills</p>
-                    <div className="flex flex-wrap gap-1">
-                      {skills.slice(0, 5).map((skill, idx) => (
-                        <Badge key={idx} variant="secondary">{skill}</Badge>
-                      ))}
+                <div className="space-y-2">
+                  {[
+                    { label: "Applied", count: statusCounts.applied || 0 },
+                    { label: "Under Review", count: statusCounts.under_review || 0 },
+                    { label: "Interview", count: statusCounts.interview || 0 },
+                    { label: "Offer", count: statusCounts.offer || 0 },
+                    { label: "Rejected", count: statusCounts.rejected || 0 },
+                  ].map((item, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-center justify-between p-2 rounded-md bg-muted"
+                    >
+                      <span className="text-sm">{item.label}</span>
+                      <span className="text-sm font-semibold">{item.count}</span>
                     </div>
-                  </div>
-                )}
-                <Button className="w-full" variant="outline" size="sm" onClick={() => setLocation("/edit-profile")} data-testid="button-edit-preferences">
-                  Edit Preferences
-                </Button>
+                  ))}
+                </div>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
-                <CardTitle>Tips & Resources</CardTitle>
+                <CardTitle>Quick Actions</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="p-3 bg-muted rounded-md">
-                  <p className="text-sm font-medium mb-1">Resume Tips</p>
-                  <p className="text-xs text-muted-foreground">Improve your resume to get more interviews</p>
-                  <Button size="sm" variant="ghost" className="h-auto p-0 mt-2" data-testid="button-resume-tips">
-                    Learn More →
-                  </Button>
-                </div>
-                <div className="p-3 bg-muted rounded-md">
-                  <p className="text-sm font-medium mb-1">Interview Prep</p>
-                  <p className="text-xs text-muted-foreground">Practice common interview questions</p>
-                  <Button size="sm" variant="ghost" className="h-auto p-0 mt-2" data-testid="button-interview-prep">
-                    Start Practicing →
-                  </Button>
-                </div>
+              <CardContent className="space-y-2">
+                <Button
+                  className="w-full"
+                  variant="outline"
+                  onClick={() => setLocation("/opportunities")}
+                  data-testid="button-browse-all"
+                >
+                  <Search className="w-4 h-4 mr-2" />
+                  Browse All Jobs
+                </Button>
+                <Button
+                  className="w-full"
+                  variant="outline"
+                  onClick={() => setLocation("/edit-profile")}
+                  data-testid="button-edit-profile"
+                >
+                  <FileText className="w-4 h-4 mr-2" />
+                  Edit Profile
+                </Button>
               </CardContent>
             </Card>
           </div>
