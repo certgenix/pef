@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 
 const countries = [
   { name: "Saudi Arabia", code: "SA", isPrimary: true },
+  { name: "United States", code: "US", isPrimary: false },
   { name: "Canada", code: "CA", isPrimary: false },
   { name: "United Kingdom", code: "UK", isPrimary: false },
   { name: "Germany", code: "DE", isPrimary: false },
@@ -23,10 +24,10 @@ export default function GlobalReachSection() {
           Global Reach
         </h2>
         <p className="text-center text-muted-foreground mb-12 max-w-3xl mx-auto text-lg">
-          Launching first in Saudi Arabia, open to Canada, UK, Germany, Italy, and others from day one
+          Launching first in Saudi Arabia, open to USA, Canada, UK, Germany, Italy, and others from day one
         </p>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
           {countries.map((country) => (
             <Card
               key={country.code}

@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
+import { Link } from "wouter";
 import heroImage from "@assets/generated_images/Professional_business_handshake_hero_9421906c.png";
 
 export default function HeroSection() {
@@ -30,22 +31,26 @@ export default function HeroSection() {
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
-          <Button
-            size="lg"
-            className="bg-accent hover:bg-accent text-accent-foreground font-semibold text-lg px-8 py-6 min-h-14"
-            data-testid="button-join-forum"
-          >
-            Join the Forum
-            <ArrowRight className="ml-2 w-5 h-5" />
-          </Button>
-          <Button
-            size="lg"
-            variant="outline"
-            className="border-2 border-white text-white hover:bg-white/10 backdrop-blur-sm font-semibold text-lg px-8 py-6 min-h-14"
-            data-testid="button-explore"
-          >
-            Explore Opportunities
-          </Button>
+          <Link href="/register">
+            <Button
+              size="lg"
+              className="bg-accent hover:bg-accent text-accent-foreground font-semibold text-lg px-8 py-6 min-h-14"
+              data-testid="button-join-forum"
+            >
+              Join the Forum
+              <ArrowRight className="ml-2 w-5 h-5" />
+            </Button>
+          </Link>
+          <Link href="/opportunities">
+            <Button
+              size="lg"
+              variant="outline"
+              className="border-2 border-white text-white hover:bg-white/10 backdrop-blur-sm font-semibold text-lg px-8 py-6 min-h-14"
+              data-testid="button-explore"
+            >
+              Explore Opportunities
+            </Button>
+          </Link>
         </div>
       </div>
     </section>
