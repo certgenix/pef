@@ -10,14 +10,17 @@ import {
   businessOwnerProfiles,
   investorProfiles,
   opportunities,
+  applications,
   type User,
   type UserProfile,
   type UserRoles,
   type Opportunity,
+  type Application,
   type InsertUser,
   type InsertUserProfile,
   type InsertUserRoles,
   type InsertOpportunity,
+  type InsertApplication,
   type InsertProfessionalProfile,
   type InsertJobSeekerProfile,
   type InsertEmployerProfile,
@@ -66,6 +69,12 @@ export interface IStorage {
   getPublicOpportunities(type?: string): Promise<Opportunity[]>;
   updateOpportunity(id: string, data: Partial<InsertOpportunity>): Promise<Opportunity | undefined>;
   deleteOpportunity(id: string): Promise<void>;
+  
+  createApplication(application: InsertApplication): Promise<Application>;
+  getApplicationsByUser(userId: string): Promise<Array<Application & { opportunity: Opportunity }>>;
+  getApplicationsByOpportunity(opportunityId: string): Promise<Array<Application & { user: User }>>;
+  updateApplicationStatus(id: string, status: Application['status']): Promise<Application | undefined>;
+  checkExistingApplication(userId: string, opportunityId: string): Promise<Application | undefined>;
   
   getTalentByRole(role: "professional" | "jobSeeker"): Promise<TalentProfile[]>;
 }
@@ -209,6 +218,56 @@ export class PostgresStorage implements IStorage {
 
   async deleteOpportunity(id: string): Promise<void> {
     await db.delete(opportunities).where(eq(opportunities.id, id));
+  }
+
+  async createApplication(insertApplication: InsertApplication): Promise<Application> {
+    const result = await db.insert(applications).values(insertApplication).returning();
+    return result[0];
+  }
+
+  async getApplicationsByUser(userId: string): Promise<Array<Application & { opportunity: Opportunity }>> {
+    const result = await db.select({
+      application: applications,
+      opportunity: opportunities,
+    })
+      .from(applications)
+      .innerJoin(opportunities, eq(applications.opportunityId, opportunities.id))
+      .where(eq(applications.userId, userId));
+    
+    return result.map(row => ({ ...row.application, opportunity: row.opportunity }));
+  }
+
+  async getApplicationsByOpportunity(opportunityId: string): Promise<Array<Application & { user: User }>> {
+    const result = await db.select({
+      application: applications,
+      user: users,
+    })
+      .from(applications)
+      .innerJoin(users, eq(applications.userId, users.id))
+      .where(eq(applications.opportunityId, opportunityId));
+    
+    return result.map(row => ({ ...row.application, user: row.user }));
+  }
+
+  async updateApplicationStatus(id: string, status: Application['status']): Promise<Application | undefined> {
+    const result = await db.update(applications)
+      .set({ status, updatedAt: new Date() })
+      .where(eq(applications.id, id))
+      .returning();
+    
+    return result[0];
+  }
+
+  async checkExistingApplication(userId: string, opportunityId: string): Promise<Application | undefined> {
+    const result = await db.select()
+      .from(applications)
+      .where(and(
+        eq(applications.userId, userId),
+        eq(applications.opportunityId, opportunityId)
+      ))
+      .limit(1);
+    
+    return result[0];
   }
 
   async getTalentByRole(role: "professional" | "jobSeeker"): Promise<TalentProfile[]> {
