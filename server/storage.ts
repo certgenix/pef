@@ -11,7 +11,7 @@ import {
   Timestamp,
   addDoc
 } from "firebase/firestore";
-import { db } from "../client/src/lib/firebase";
+import { db } from "./firebase-admin";
 import { 
   type User,
   type UserProfile,
