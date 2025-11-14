@@ -20,6 +20,7 @@ export const investmentStageEnum = pgEnum("investment_stage", ["idea", "startup"
 export const investmentTypeEnum = pgEnum("investment_type", ["equity", "partnership", "joint-venture"]);
 export const opportunityTypeEnum = pgEnum("opportunity_type", ["job", "investment", "partnership", "collaboration"]);
 export const opportunityStatusEnum = pgEnum("opportunity_status", ["open", "closed"]);
+export const applicationStatusEnum = pgEnum("application_status", ["applied", "under_review", "interview", "offer", "rejected", "withdrawn"]);
 
 export const users = pgTable("users", {
   id: varchar("id", { length: 128 }).primaryKey(),
@@ -145,6 +146,18 @@ export const opportunities = pgTable("opportunities", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const applications = pgTable("applications", {
+  id: varchar("id", { length: 128 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 128 }).notNull().references(() => users.id, { onDelete: "cascade" }),
+  opportunityId: varchar("opportunity_id", { length: 128 }).notNull().references(() => opportunities.id, { onDelete: "cascade" }),
+  status: applicationStatusEnum("status").default("applied").notNull(),
+  metadata: json("metadata"),
+  appliedAt: timestamp("applied_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  uniqueUserOpportunity: sql`UNIQUE (${table.userId}, ${table.opportunityId})`,
+}));
+
 export const insertUserSchema = createInsertSchema(users).omit({ createdAt: true, lastLogin: true });
 export const selectUserSchema = createSelectSchema(users);
 
@@ -171,6 +184,9 @@ export const selectInvestorProfileSchema = createSelectSchema(investorProfiles);
 
 export const insertOpportunitySchema = createInsertSchema(opportunities).omit({ id: true, createdAt: true, updatedAt: true });
 export const selectOpportunitySchema = createSelectSchema(opportunities);
+
+export const insertApplicationSchema = createInsertSchema(applications).omit({ id: true, appliedAt: true, updatedAt: true });
+export const selectApplicationSchema = createSelectSchema(applications);
 
 export const jobDetailsSchema = z.object({
   employmentType: z.enum(["full-time", "part-time", "remote", "contract"]).optional(),
@@ -212,3 +228,6 @@ export type InsertInvestorProfile = z.infer<typeof insertInvestorProfileSchema>;
 
 export type Opportunity = typeof opportunities.$inferSelect;
 export type InsertOpportunity = z.infer<typeof insertOpportunitySchema>;
+
+export type Application = typeof applications.$inferSelect;
+export type InsertApplication = z.infer<typeof insertApplicationSchema>;
