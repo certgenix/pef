@@ -1,25 +1,43 @@
+import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRoles } from "@/hooks/useUserRoles";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Users, Briefcase, TrendingUp, Eye, FileText, Edit } from "lucide-react";
+import { Plus, Users, Briefcase, TrendingUp, Eye, FileText } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import PostJobDialog from "@/components/PostJobDialog";
+import TalentBrowser from "@/components/TalentBrowser";
 import { useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
+import { auth } from "@/lib/firebase";
+import type { Opportunity } from "@shared/schema";
 
 export default function EmployerDashboard() {
   const { currentUser, userData, loading: authLoading } = useAuth();
   const { hasRole, isLoading: rolesLoading } = useUserRoles(currentUser?.uid);
   const [, setLocation] = useLocation();
+  const [showPostJobDialog, setShowPostJobDialog] = useState(false);
 
-  // ✅ FIX: Safe fallback for employerData - never undefined
+  const { data: myJobs = [], isLoading: jobsLoading } = useQuery<Opportunity[]>({
+    queryKey: ["/api/opportunities", "my-jobs"],
+    queryFn: async () => {
+      const token = await auth.currentUser?.getIdToken();
+      const response = await fetch("/api/opportunities?myOpportunities=true", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!response.ok) throw new Error("Failed to fetch jobs");
+      return response.json();
+    },
+    enabled: !!currentUser,
+  });
+
   const employerData = userData?.employerData || {};
-  
-  // ✅ FIX: Combined loading state - wait for both auth and roles
   const isLoading = authLoading || rolesLoading;
 
-  // ✅ FIX: Show loading spinner while Firestore is fetching data
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -31,7 +49,6 @@ export default function EmployerDashboard() {
     );
   }
 
-  // Check role access only after loading is complete
   if (!hasRole("employer")) {
     return (
       <div className="min-h-screen">
@@ -54,10 +71,13 @@ export default function EmployerDashboard() {
     );
   }
 
-  // Safe access to employerData fields with fallbacks
   const companyName = employerData.companyName || "Not specified";
   const industry = employerData.industry || "Not specified";
   const companySize = employerData.companySize || "Not specified";
+
+  const activeJobs = myJobs.filter(job => job.status === "open");
+  const approvedJobs = myJobs.filter(job => job.approvalStatus === "approved" && job.status === "open");
+  const pendingJobs = myJobs.filter(job => job.approvalStatus === "pending");
 
   return (
     <div className="min-h-screen">
@@ -66,7 +86,7 @@ export default function EmployerDashboard() {
         <div className="mb-8">
           <div className="flex flex-wrap items-center justify-between gap-4 mb-2">
             <h1 className="text-3xl font-bold">Employer Dashboard</h1>
-            <Button data-testid="button-post-job">
+            <Button onClick={() => setShowPostJobDialog(true)} data-testid="button-post-job">
               <Plus className="w-4 h-4 mr-2" />
               Post New Job
             </Button>
@@ -78,44 +98,54 @@ export default function EmployerDashboard() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Active Jobs</CardTitle>
-              <Briefcase className="h-4 w-4 text-muted-foreground" />
+              <Briefcase className="h-4 h-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">8</div>
-              <p className="text-xs text-muted-foreground">2 pending approval</p>
+              <div className="text-2xl font-bold">{activeJobs.length}</div>
+              <p className="text-xs text-muted-foreground">{pendingJobs.length} pending approval</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Applications</CardTitle>
-              <FileText className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">156</div>
-              <p className="text-xs text-muted-foreground">+23 this week</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Job Views</CardTitle>
+              <CardTitle className="text-sm font-medium">Approved Jobs</CardTitle>
               <Eye className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">2,847</div>
-              <p className="text-xs text-muted-foreground">+12% from last month</p>
+              <div className="text-2xl font-bold">{approvedJobs.length}</div>
+              <p className="text-xs text-muted-foreground">Live on opportunities page</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Shortlisted</CardTitle>
+              <CardTitle className="text-sm font-medium">Total Postings</CardTitle>
+              <FileText className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{myJobs.length}</div>
+              <p className="text-xs text-muted-foreground">All time</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Browse Talent</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">34</div>
-              <p className="text-xs text-muted-foreground">Across all jobs</p>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full mt-1" 
+                onClick={() => {
+                  const talentSection = document.getElementById("talent-section");
+                  talentSection?.scrollIntoView({ behavior: "smooth" });
+                }}
+                data-testid="button-view-talent"
+              >
+                View Candidates
+              </Button>
             </CardContent>
           </Card>
         </div>
@@ -124,118 +154,78 @@ export default function EmployerDashboard() {
           <div className="lg:col-span-2 space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Active Job Postings</CardTitle>
-                <CardDescription>Manage your current openings</CardDescription>
+                <CardTitle>Your Job Postings</CardTitle>
+                <CardDescription>
+                  {jobsLoading ? "Loading..." : `${myJobs.length} total jobs posted`}
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {[
-                  {
-                    title: "Senior Software Engineer",
-                    status: "approved",
-                    applications: 45,
-                    views: 892,
-                    posted: "2 weeks ago"
-                  },
-                  {
-                    title: "Product Manager",
-                    status: "approved",
-                    applications: 32,
-                    views: 654,
-                    posted: "1 week ago"
-                  },
-                  {
-                    title: "UI/UX Designer",
-                    status: "pending",
-                    applications: 0,
-                    views: 0,
-                    posted: "1 day ago"
-                  },
-                ].map((job, idx) => (
-                  <div key={idx} className="p-4 rounded-md border hover-elevate">
-                    <div className="flex flex-wrap items-start justify-between gap-2 mb-3">
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-lg mb-1">{job.title}</h3>
-                        <p className="text-sm text-muted-foreground">Posted {job.posted}</p>
-                      </div>
-                      <Badge 
-                        className={
-                          job.status === "approved" 
-                            ? "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100"
-                            : "bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-100"
-                        }
-                      >
-                        {job.status === "approved" ? "Live" : "Pending Approval"}
-                      </Badge>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4 mb-3 text-sm">
-                      <div>
-                        <p className="text-muted-foreground">Applications</p>
-                        <p className="font-semibold">{job.applications}</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground">Views</p>
-                        <p className="font-semibold">{job.views}</p>
-                      </div>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      <Button size="sm" data-testid={`button-view-applicants-${idx}`}>
-                        View Applicants
-                      </Button>
-                      <Button size="sm" variant="outline" data-testid={`button-edit-job-${idx}`}>
-                        <Edit className="w-4 h-4 mr-2" />
-                        Edit
-                      </Button>
-                      <Button size="sm" variant="ghost" data-testid={`button-job-details-${idx}`}>
-                        Details
-                      </Button>
-                    </div>
+                {jobsLoading ? (
+                  <div className="text-center py-8">
+                    <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground">Loading your jobs...</p>
                   </div>
-                ))}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Recent Applications</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {[
-                  {
-                    applicant: "Ahmed Al-Rashid",
-                    job: "Senior Software Engineer",
-                    experience: "8 years",
-                    match: "92%",
-                    time: "2 hours ago"
-                  },
-                  {
-                    applicant: "Sarah Johnson",
-                    job: "Product Manager",
-                    experience: "6 years",
-                    match: "88%",
-                    time: "5 hours ago"
-                  },
-                  {
-                    applicant: "Mohammed Hassan",
-                    job: "Senior Software Engineer",
-                    experience: "10 years",
-                    match: "95%",
-                    time: "1 day ago"
-                  },
-                ].map((app, idx) => (
-                  <div key={idx} className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-md border">
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium">{app.applicant}</p>
-                      <p className="text-sm text-muted-foreground">{app.job}</p>
-                      <p className="text-xs text-muted-foreground">{app.experience} experience</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100">
-                        {app.match}
-                      </Badge>
-                      <Button size="sm" data-testid={`button-review-${idx}`}>Review</Button>
-                    </div>
+                ) : myJobs.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Briefcase className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="font-semibold mb-2">No jobs posted yet</h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Start by posting your first job opening
+                    </p>
+                    <Button onClick={() => setShowPostJobDialog(true)} data-testid="button-post-first-job">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Post Your First Job
+                    </Button>
                   </div>
-                ))}
+                ) : (
+                  myJobs.map((job, idx) => (
+                    <div key={job.id} className="p-4 rounded-md border hover-elevate">
+                      <div className="flex flex-wrap items-start justify-between gap-2 mb-3">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-lg mb-1">{job.title}</h3>
+                          <p className="text-sm text-muted-foreground">
+                            {job.city ? `${job.city}, ` : ""}{job.country}
+                          </p>
+                        </div>
+                        <Badge 
+                          className={
+                            job.approvalStatus === "approved" 
+                              ? "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100"
+                              : job.approvalStatus === "rejected"
+                              ? "bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-100"
+                              : "bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-100"
+                          }
+                        >
+                          {job.approvalStatus === "approved" 
+                            ? "Approved" 
+                            : job.approvalStatus === "rejected"
+                            ? "Rejected"
+                            : "Pending Approval"}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+                        {job.description}
+                      </p>
+                      {job.budgetOrSalary && (
+                        <p className="text-sm font-medium mb-2">{job.budgetOrSalary}</p>
+                      )}
+                      <div className="flex flex-wrap gap-2">
+                        <Badge variant="secondary" className="text-xs">
+                          {job.sector || "General"}
+                        </Badge>
+                        {job.status === "open" ? (
+                          <Badge variant="secondary" className="text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100">
+                            Open
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary" className="text-xs">
+                            Closed
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
               </CardContent>
             </Card>
           </div>
@@ -258,32 +248,14 @@ export default function EmployerDashboard() {
                   <p className="text-sm font-medium mb-1">Company Size</p>
                   <p className="text-sm text-muted-foreground">{companySize}</p>
                 </div>
-                <Button className="w-full" variant="outline" size="sm" onClick={() => setLocation("/edit-profile")} data-testid="button-edit-company">
+                <Button 
+                  className="w-full" 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setLocation("/edit-profile")} 
+                  data-testid="button-edit-company"
+                >
                   Edit Profile
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Hiring Analytics</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Average Time to Hire</span>
-                  <span className="text-sm font-semibold">28 days</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Application Rate</span>
-                  <span className="text-sm font-semibold">19.5/job</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Response Rate</span>
-                  <span className="text-sm font-semibold">67%</span>
-                </div>
-                <Button className="w-full" variant="outline" size="sm" data-testid="button-view-analytics">
-                  <TrendingUp className="w-4 h-4 mr-2" />
-                  View Full Analytics
                 </Button>
               </CardContent>
             </Card>
@@ -293,20 +265,39 @@ export default function EmployerDashboard() {
                 <CardTitle>Quick Actions</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
-                <Button className="w-full" variant="outline" data-testid="button-search-candidates">
+                <Button 
+                  className="w-full" 
+                  variant="outline" 
+                  onClick={() => setLocation("/opportunities")}
+                  data-testid="button-view-all-opportunities"
+                >
+                  <Eye className="w-4 h-4 mr-2" />
+                  View All Opportunities
+                </Button>
+                <Button 
+                  className="w-full" 
+                  variant="outline"
+                  onClick={() => {
+                    const talentSection = document.getElementById("talent-section");
+                    talentSection?.scrollIntoView({ behavior: "smooth" });
+                  }}
+                  data-testid="button-search-candidates"
+                >
                   <Users className="w-4 h-4 mr-2" />
                   Search Candidates
-                </Button>
-                <Button className="w-full" variant="outline" data-testid="button-draft-jobs">
-                  <FileText className="w-4 h-4 mr-2" />
-                  View Draft Jobs
                 </Button>
               </CardContent>
             </Card>
           </div>
         </div>
+
+        <div id="talent-section" className="mt-8">
+          <TalentBrowser />
+        </div>
       </main>
       <Footer />
+      
+      <PostJobDialog open={showPostJobDialog} onOpenChange={setShowPostJobDialog} />
     </div>
   );
 }

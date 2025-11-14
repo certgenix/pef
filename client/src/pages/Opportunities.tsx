@@ -1,9 +1,11 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Briefcase, TrendingUp, Handshake, Building2, MapPin, Calendar } from "lucide-react";
+import { Briefcase, TrendingUp, Handshake, Building2, MapPin, Calendar, Mail } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import type { Opportunity, JobDetails } from "@shared/schema";
 
 const opportunityTypes = [
   {
@@ -32,34 +34,16 @@ const opportunityTypes = [
   },
 ];
 
-const sampleOpportunities = [
-  {
-    type: "Job Opening",
-    title: "Senior Software Engineer",
-    company: "Tech Solutions Inc.",
-    location: "Riyadh, Saudi Arabia",
-    posted: "2 days ago",
-    badge: "Full-time",
-  },
-  {
-    type: "Investment",
-    title: "E-commerce Platform Seeking Series A",
-    company: "ShopLocal Platform",
-    location: "Dubai, UAE",
-    posted: "1 week ago",
-    badge: "$2M-5M",
-  },
-  {
-    type: "Partnership",
-    title: "Distribution Partner for MENA Region",
-    company: "GlobalTech Manufacturing",
-    location: "Multiple Locations",
-    posted: "3 days ago",
-    badge: "Strategic",
-  },
-];
-
 export default function Opportunities() {
+  const { data: opportunities = [], isLoading } = useQuery<Opportunity[]>({
+    queryKey: ["/api/opportunities"],
+    queryFn: async () => {
+      const response = await fetch("/api/opportunities?type=job");
+      if (!response.ok) throw new Error("Failed to fetch opportunities");
+      return response.json();
+    },
+  });
+
   return (
     <div className="min-h-screen">
       <Header />
@@ -122,45 +106,117 @@ export default function Opportunities() {
             </div>
 
             <h3 className="text-2xl md:text-3xl font-display font-bold mb-8 text-center">
-              Featured Opportunities
+              Available Job Opportunities
             </h3>
 
-            <div className="space-y-6">
-              {sampleOpportunities.map((opportunity, index) => (
-                <Card key={index} className="border-2 hover:border-primary/30 transition-all" data-testid={`card-opportunity-${index}`}>
-                  <CardHeader>
-                    <div className="flex flex-wrap items-start justify-between gap-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Badge variant="secondary" data-testid={`badge-type-${index}`}>{opportunity.type}</Badge>
-                          <Badge variant="outline" data-testid={`badge-status-${index}`}>{opportunity.badge}</Badge>
+            {isLoading ? (
+              <div className="text-center py-12">
+                <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+                <p className="text-muted-foreground">Loading opportunities...</p>
+              </div>
+            ) : opportunities.length === 0 ? (
+              <div className="text-center py-12">
+                <Briefcase className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                <h4 className="text-xl font-semibold mb-2">No opportunities available yet</h4>
+                <p className="text-muted-foreground mb-6">
+                  Check back soon for new job postings and other opportunities
+                </p>
+                <Button onClick={() => window.location.href = "/login"} data-testid="button-post-opportunity">
+                  Login to Post an Opportunity
+                </Button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+                {opportunities.map((opportunity, idx) => {
+                  const details = (opportunity.details as JobDetails | null) || {};
+                  
+                  return (
+                    <Card key={opportunity.id} className="hover:border-primary/30 transition-all hover-elevate" data-testid={`card-opportunity-${idx}`}>
+                      <CardHeader>
+                        <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
+                          <Badge variant="secondary" className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100">
+                            Job Opening
+                          </Badge>
+                          <Badge variant="secondary" className="text-xs">
+                            {opportunity.status === "open" ? "Open" : "Closed"}
+                          </Badge>
                         </div>
-                        <CardTitle className="text-xl mb-2" data-testid={`text-opportunity-title-${index}`}>{opportunity.title}</CardTitle>
-                        <p className="text-muted-foreground" data-testid={`text-company-${index}`}>{opportunity.company}</p>
-                      </div>
-                      <Button data-testid={`button-view-details-${index}`}>View Details</Button>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                      <div className="flex items-center gap-2">
-                        <MapPin className="w-4 h-4" />
-                        <span>{opportunity.location}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4" />
-                        <span>Posted {opportunity.posted}</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                        <CardTitle className="text-xl">{opportunity.title}</CardTitle>
+                        <CardDescription className="flex items-center gap-1 text-sm">
+                          <MapPin className="w-3 h-3" />
+                          {opportunity.city ? `${opportunity.city}, ` : ""}{opportunity.country}
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <p className="text-sm text-muted-foreground line-clamp-3">
+                          {opportunity.description}
+                        </p>
+                        
+                        {details.employmentType && (
+                          <Badge variant="outline" className="capitalize">
+                            {details.employmentType}
+                          </Badge>
+                        )}
+                        
+                        {opportunity.budgetOrSalary && (
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium">Salary:</span>
+                            <span className="text-sm text-muted-foreground">{opportunity.budgetOrSalary}</span>
+                          </div>
+                        )}
+                        
+                        {details.experienceRequired && (
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium">Experience:</span>
+                            <span className="text-sm text-muted-foreground">{details.experienceRequired}</span>
+                          </div>
+                        )}
+                        
+                        {opportunity.sector && (
+                          <Badge variant="secondary" className="text-xs">
+                            {opportunity.sector}
+                          </Badge>
+                        )}
+                        
+                        {details.applicationEmail && (
+                          <div className="pt-3 border-t">
+                            <Button 
+                              size="sm" 
+                              className="w-full"
+                              onClick={() => window.location.href = `mailto:${details.applicationEmail}`}
+                              data-testid={`button-apply-${idx}`}
+                            >
+                              <Mail className="w-4 h-4 mr-2" />
+                              Apply Now
+                            </Button>
+                          </div>
+                        )}
+                        
+                        {details.skills && Array.isArray(details.skills) && details.skills.length > 0 && (
+                          <div>
+                            <p className="text-xs font-medium mb-2">Required Skills:</p>
+                            <div className="flex flex-wrap gap-1">
+                              {details.skills.slice(0, 4).map((skill, i) => (
+                                <Badge key={i} variant="outline" className="text-xs">
+                                  {skill}
+                                </Badge>
+                              ))}
+                              {details.skills.length > 4 && (
+                                <Badge variant="outline" className="text-xs">
+                                  +{details.skills.length - 4} more
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
 
-            <div className="text-center mt-12">
-              <Button size="lg" className="min-h-12" data-testid="button-view-all">
-                View All Opportunities
-              </Button>
+            <div className="text-center">
               <p className="text-sm text-muted-foreground mt-4">
                 Login required to post or view full opportunity details
               </p>

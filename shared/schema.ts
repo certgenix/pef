@@ -138,6 +138,7 @@ export const opportunities = pgTable("opportunities", {
   city: varchar("city", { length: 100 }),
   budgetOrSalary: varchar("budget_or_salary", { length: 100 }),
   contactPreference: text("contact_preference"),
+  details: json("details"),
   status: opportunityStatusEnum("status").default("open").notNull(),
   approvalStatus: approvalStatusEnum("approval_status").default("pending").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -170,6 +171,20 @@ export const selectInvestorProfileSchema = createSelectSchema(investorProfiles);
 
 export const insertOpportunitySchema = createInsertSchema(opportunities).omit({ id: true, createdAt: true, updatedAt: true });
 export const selectOpportunitySchema = createSelectSchema(opportunities);
+
+export const jobDetailsSchema = z.object({
+  employmentType: z.enum(["full-time", "part-time", "remote", "contract"]).optional(),
+  salaryMin: z.number().optional(),
+  salaryMax: z.number().optional(),
+  salaryCurrency: z.string().optional(),
+  experienceRequired: z.string().optional(),
+  skills: z.array(z.string()).optional(),
+  benefits: z.array(z.string()).optional(),
+  applicationUrl: z.string().url().optional(),
+  applicationEmail: z.string().email().optional(),
+});
+
+export type JobDetails = z.infer<typeof jobDetailsSchema>;
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;

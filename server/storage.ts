@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, and, or } from "drizzle-orm";
 import { db } from "./db";
 import { 
   users, 
@@ -9,17 +9,22 @@ import {
   employerProfiles,
   businessOwnerProfiles,
   investorProfiles,
+  opportunities,
   type User,
   type UserProfile,
   type UserRoles,
+  type Opportunity,
   type InsertUser,
   type InsertUserProfile,
   type InsertUserRoles,
+  type InsertOpportunity,
   type InsertProfessionalProfile,
   type InsertJobSeekerProfile,
   type InsertEmployerProfile,
   type InsertBusinessOwnerProfile,
   type InsertInvestorProfile,
+  type ProfessionalProfile,
+  type JobSeekerProfile,
 } from "@shared/schema";
 
 export interface RegistrationData {
@@ -28,6 +33,12 @@ export interface RegistrationData {
   displayName: string;
   profile: Omit<InsertUserProfile, "userId">;
   roles: Omit<InsertUserRoles, "userId">;
+}
+
+export interface TalentProfile {
+  user: User;
+  profile: UserProfile;
+  roleSpecificProfile: ProfessionalProfile | JobSeekerProfile | null;
 }
 
 export interface IStorage {
@@ -47,6 +58,15 @@ export interface IStorage {
   createEmployerProfile(profile: InsertEmployerProfile): Promise<void>;
   createBusinessOwnerProfile(profile: InsertBusinessOwnerProfile): Promise<void>;
   createInvestorProfile(profile: InsertInvestorProfile): Promise<void>;
+  
+  createOpportunity(opportunity: InsertOpportunity): Promise<Opportunity>;
+  getOpportunityById(id: string): Promise<Opportunity | undefined>;
+  getOpportunitiesByUserId(userId: string): Promise<Opportunity[]>;
+  getPublicOpportunities(type?: string): Promise<Opportunity[]>;
+  updateOpportunity(id: string, data: Partial<InsertOpportunity>): Promise<Opportunity | undefined>;
+  deleteOpportunity(id: string): Promise<void>;
+  
+  getTalentByRole(role: "professional" | "jobSeeker"): Promise<TalentProfile[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -150,6 +170,89 @@ export class DatabaseStorage implements IStorage {
 
   async createInvestorProfile(profile: InsertInvestorProfile): Promise<void> {
     await db.insert(investorProfiles).values(profile);
+  }
+
+  async createOpportunity(opportunity: InsertOpportunity): Promise<Opportunity> {
+    const result = await db.insert(opportunities).values(opportunity).returning();
+    return result[0];
+  }
+
+  async getOpportunityById(id: string): Promise<Opportunity | undefined> {
+    const result = await db.select().from(opportunities).where(eq(opportunities.id, id)).limit(1);
+    return result[0];
+  }
+
+  async getOpportunitiesByUserId(userId: string): Promise<Opportunity[]> {
+    return await db.select().from(opportunities).where(eq(opportunities.userId, userId));
+  }
+
+  async getPublicOpportunities(type?: string): Promise<Opportunity[]> {
+    const conditions = [
+      eq(opportunities.approvalStatus, "approved"),
+      eq(opportunities.status, "open")
+    ];
+    
+    if (type) {
+      conditions.push(eq(opportunities.type, type as any));
+    }
+    
+    return await db.select().from(opportunities).where(and(...conditions));
+  }
+
+  async updateOpportunity(id: string, data: Partial<InsertOpportunity>): Promise<Opportunity | undefined> {
+    const result = await db.update(opportunities)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(opportunities.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async deleteOpportunity(id: string): Promise<void> {
+    await db.delete(opportunities).where(eq(opportunities.id, id));
+  }
+
+  async getTalentByRole(role: "professional" | "jobSeeker"): Promise<TalentProfile[]> {
+    const roleField = role === "professional" ? "isProfessional" : "isJobSeeker";
+    
+    const usersWithRoles = await db
+      .select()
+      .from(users)
+      .innerJoin(userRoles, eq(users.id, userRoles.userId))
+      .innerJoin(userProfiles, eq(users.id, userProfiles.userId))
+      .where(and(
+        eq(users.approvalStatus, "approved"),
+        eq(userRoles[roleField], true)
+      ));
+
+    const results: TalentProfile[] = [];
+    
+    for (const row of usersWithRoles) {
+      let roleSpecificProfile = null;
+      
+      if (role === "professional") {
+        const profProfile = await db
+          .select()
+          .from(professionalProfiles)
+          .where(eq(professionalProfiles.userId, row.users.id))
+          .limit(1);
+        roleSpecificProfile = profProfile[0] || null;
+      } else {
+        const jobSeekerProfile = await db
+          .select()
+          .from(jobSeekerProfiles)
+          .where(eq(jobSeekerProfiles.userId, row.users.id))
+          .limit(1);
+        roleSpecificProfile = jobSeekerProfile[0] || null;
+      }
+      
+      results.push({
+        user: row.users,
+        profile: row.user_profiles,
+        roleSpecificProfile
+      });
+    }
+    
+    return results;
   }
 }
 
