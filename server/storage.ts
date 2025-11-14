@@ -135,18 +135,11 @@ export class FirestoreStorage implements IStorage {
     const userData = userSnap.data();
     const user = normalizeDocData<User>({ id: userSnap.id, ...userData });
 
-    // First check for roles in the userRoles collection
-    const rolesDocRef = doc(db, "userRoles", id);
-    const rolesSnap = await getDoc(rolesDocRef);
-    
+    // Get roles from nested field in user document (consolidated structure)
     let roles: UserRoles | null = null;
     
-    if (rolesSnap.exists()) {
-      // Roles exist in separate collection
-      const rolesData = rolesSnap.data();
-      roles = normalizeDocData<UserRoles>({ id: rolesSnap.id, ...rolesData });
-    } else if (userData.roles) {
-      // Fallback: Roles embedded in user document (legacy schema)
+    if (userData.roles) {
+      // Roles embedded in user document
       // Support both naming conventions: isProfessional (backend) and professional (Firestore)
       roles = {
         id,
@@ -189,6 +182,52 @@ export class FirestoreStorage implements IStorage {
 
   async completeRegistration(data: RegistrationData): Promise<{ user: User; profile: UserProfile }> {
     try {
+      // Get existing user document to preserve fields like name, status, lastUpdated
+      const existingUserSnap = await getDoc(doc(db, "users", data.userId));
+      const existingUserData = existingUserSnap.exists() ? existingUserSnap.data() : {};
+      
+      // Consolidated structure: everything in one users document
+      // Use merge to preserve existing fields set during registration
+      const consolidatedUserData = {
+        id: data.userId,
+        email: data.email,
+        displayName: data.displayName,
+        createdAt: new Date(),
+        lastLogin: null,
+        approvalStatus: "approved",
+        // Preserve existing fields
+        name: existingUserData.name || data.profile.fullName,
+        status: existingUserData.status || "pending",
+        lastUpdated: new Date(),
+        profile: {
+          fullName: data.profile.fullName,
+          phone: data.profile.phone || null,
+          country: data.profile.country,
+          city: data.profile.city || null,
+          languages: data.profile.languages || null,
+          headline: data.profile.headline || null,
+          bio: data.profile.bio || null,
+          linkedinUrl: data.profile.linkedinUrl || null,
+          websiteUrl: data.profile.websiteUrl || null,
+          portfolioUrl: data.profile.portfolioUrl || null,
+        },
+        roles: {
+          isProfessional: data.roles.isProfessional || false,
+          isJobSeeker: data.roles.isJobSeeker || false,
+          isEmployer: data.roles.isEmployer || false,
+          isBusinessOwner: data.roles.isBusinessOwner || false,
+          isInvestor: data.roles.isInvestor || false,
+        },
+        professionalData: existingUserData.professionalData || {},
+        jobSeekerData: existingUserData.jobSeekerData || {},
+        employerData: existingUserData.employerData || {},
+        businessOwnerData: existingUserData.businessOwnerData || {},
+        investorData: existingUserData.investorData || {},
+      };
+      
+      // Use merge to preserve any existing fields
+      await setDoc(doc(db, "users", data.userId), consolidatedUserData, { merge: true });
+
       const user: User = {
         id: data.userId,
         email: data.email,
@@ -197,8 +236,6 @@ export class FirestoreStorage implements IStorage {
         lastLogin: null,
         approvalStatus: "approved",
       };
-      
-      await setDoc(doc(db, "users", data.userId), user);
 
       const profileId = this.generateId();
       const profile: UserProfile = {
@@ -217,21 +254,6 @@ export class FirestoreStorage implements IStorage {
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      
-      await setDoc(doc(db, "userProfiles", profileId), profile);
-
-      const roles: UserRoles = {
-        id: data.userId,
-        userId: data.userId,
-        isProfessional: data.roles.isProfessional || false,
-        isJobSeeker: data.roles.isJobSeeker || false,
-        isEmployer: data.roles.isEmployer || false,
-        isBusinessOwner: data.roles.isBusinessOwner || false,
-        isInvestor: data.roles.isInvestor || false,
-        createdAt: new Date(),
-      };
-      
-      await setDoc(doc(db, "userRoles", data.userId), roles);
 
       return { user, profile };
     } catch (error) {
@@ -241,6 +263,23 @@ export class FirestoreStorage implements IStorage {
   }
 
   async createUserProfile(insertProfile: InsertUserProfile): Promise<UserProfile> {
+    // Update nested profile field in user document (consolidated structure)
+    const userRef = doc(db, "users", insertProfile.userId);
+    await updateDoc(userRef, {
+      profile: {
+        fullName: insertProfile.fullName,
+        phone: insertProfile.phone || null,
+        country: insertProfile.country,
+        city: insertProfile.city || null,
+        languages: insertProfile.languages || null,
+        headline: insertProfile.headline || null,
+        bio: insertProfile.bio || null,
+        linkedinUrl: insertProfile.linkedinUrl || null,
+        websiteUrl: insertProfile.websiteUrl || null,
+        portfolioUrl: insertProfile.portfolioUrl || null,
+      }
+    });
+    
     const profileId = this.generateId();
     const profile: UserProfile = {
       id: profileId,
@@ -259,11 +298,20 @@ export class FirestoreStorage implements IStorage {
       updatedAt: new Date(),
     };
     
-    await setDoc(doc(db, "userProfiles", profileId), profile);
     return profile;
   }
 
   async createUserRoles(insertRoles: InsertUserRoles): Promise<UserRoles> {
+    // Update nested roles field in user document (consolidated structure)
+    const userRef = doc(db, "users", insertRoles.userId);
+    await updateDoc(userRef, {
+      "roles.isProfessional": insertRoles.isProfessional || false,
+      "roles.isJobSeeker": insertRoles.isJobSeeker || false,
+      "roles.isEmployer": insertRoles.isEmployer || false,
+      "roles.isBusinessOwner": insertRoles.isBusinessOwner || false,
+      "roles.isInvestor": insertRoles.isInvestor || false,
+    });
+    
     const roles: UserRoles = {
       id: insertRoles.userId,
       userId: insertRoles.userId,
@@ -275,68 +323,78 @@ export class FirestoreStorage implements IStorage {
       createdAt: new Date(),
     };
     
-    await setDoc(doc(db, "userRoles", insertRoles.userId), roles);
     return roles;
   }
 
   async updateUserRoles(userId: string, roles: Omit<InsertUserRoles, "userId">): Promise<void> {
-    const rolesRef = doc(db, "userRoles", userId);
-    await updateDoc(rolesRef, {
-      isProfessional: roles.isProfessional || false,
-      isJobSeeker: roles.isJobSeeker || false,
-      isEmployer: roles.isEmployer || false,
-      isBusinessOwner: roles.isBusinessOwner || false,
-      isInvestor: roles.isInvestor || false,
+    // Update nested roles field in user document (consolidated structure)
+    const userRef = doc(db, "users", userId);
+    await updateDoc(userRef, {
+      "roles.isProfessional": roles.isProfessional || false,
+      "roles.isJobSeeker": roles.isJobSeeker || false,
+      "roles.isEmployer": roles.isEmployer || false,
+      "roles.isBusinessOwner": roles.isBusinessOwner || false,
+      "roles.isInvestor": roles.isInvestor || false,
     });
   }
 
   async createProfessionalProfile(profile: InsertProfessionalProfile): Promise<void> {
-    const profileId = this.generateId();
-    await setDoc(doc(db, "professionalProfiles", profileId), {
-      id: profileId,
-      ...profile,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+    // Store in nested field within user document (consolidated structure)
+    const userRef = doc(db, "users", profile.userId);
+    await updateDoc(userRef, {
+      professionalData: {
+        ...profile,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }
     });
   }
 
   async createJobSeekerProfile(profile: InsertJobSeekerProfile): Promise<void> {
-    const profileId = this.generateId();
-    await setDoc(doc(db, "jobSeekerProfiles", profileId), {
-      id: profileId,
-      ...profile,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+    // Store in nested field within user document (consolidated structure)
+    const userRef = doc(db, "users", profile.userId);
+    await updateDoc(userRef, {
+      jobSeekerData: {
+        ...profile,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }
     });
   }
 
   async createEmployerProfile(profile: InsertEmployerProfile): Promise<void> {
-    const profileId = this.generateId();
-    await setDoc(doc(db, "employerProfiles", profileId), {
-      id: profileId,
-      ...profile,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+    // Store in nested field within user document (consolidated structure)
+    const userRef = doc(db, "users", profile.userId);
+    await updateDoc(userRef, {
+      employerData: {
+        ...profile,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }
     });
   }
 
   async createBusinessOwnerProfile(profile: InsertBusinessOwnerProfile): Promise<void> {
-    const profileId = this.generateId();
-    await setDoc(doc(db, "businessOwnerProfiles", profileId), {
-      id: profileId,
-      ...profile,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+    // Store in nested field within user document (consolidated structure)
+    const userRef = doc(db, "users", profile.userId);
+    await updateDoc(userRef, {
+      businessOwnerData: {
+        ...profile,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }
     });
   }
 
   async createInvestorProfile(profile: InsertInvestorProfile): Promise<void> {
-    const profileId = this.generateId();
-    await setDoc(doc(db, "investorProfiles", profileId), {
-      id: profileId,
-      ...profile,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+    // Store in nested field within user document (consolidated structure)
+    const userRef = doc(db, "users", profile.userId);
+    await updateDoc(userRef, {
+      investorData: {
+        ...profile,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }
     });
   }
 

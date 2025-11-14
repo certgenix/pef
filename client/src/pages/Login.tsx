@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -12,13 +12,19 @@ import { ArrowRight } from "lucide-react";
 
 export default function Login() {
   const [, setLocation] = useLocation();
-  const { login } = useAuth();
+  const { login, currentUser, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [credentials, setCredentials] = useState({
     email: "",
     password: "",
   });
+
+  useEffect(() => {
+    if (!authLoading && currentUser) {
+      setLocation("/dashboard");
+    }
+  }, [currentUser, authLoading, setLocation]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

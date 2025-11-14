@@ -119,11 +119,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               portfolioUrl: user.links?.portfolio || null,
             },
             roles: {
-              professional: user.roles?.professional || false,
-              jobSeeker: user.roles?.jobSeeker || false,
-              employer: user.roles?.employer || false,
-              businessOwner: user.roles?.businessOwner || false,
-              investor: user.roles?.investor || false,
+              isProfessional: user.roles?.professional || false,
+              isJobSeeker: user.roles?.jobSeeker || false,
+              isEmployer: user.roles?.employer || false,
+              isBusinessOwner: user.roles?.businessOwner || false,
+              isInvestor: user.roles?.investor || false,
             },
           }),
         });
@@ -226,6 +226,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     await sendEmailVerification(userCredential.user);
 
+    // Consolidated Firestore structure: everything in one users document
+    // Use isProfessional/isJobSeeker etc. to match backend schema
+    const firestoreData: any = {
+      name,
+      email,
+      status: "pending",
+      createdAt: serverTimestamp(),
+      lastUpdated: serverTimestamp(),
+      profile: {
+        fullName: name,
+        phone: profileData?.phone || null,
+        country: profileData?.country || null,
+        city: profileData?.city || null,
+        languages: profileData?.languages || null,
+        headline: profileData?.headline || null,
+        bio: profileData?.bio || null,
+        linkedinUrl: profileData?.linkedinUrl || null,
+        websiteUrl: profileData?.websiteUrl || null,
+        portfolioUrl: profileData?.portfolioUrl || null,
+      },
+      roles: {
+        isProfessional: roles.professional || false,
+        isJobSeeker: roles.jobSeeker || false,
+        isEmployer: roles.employer || false,
+        isBusinessOwner: roles.businessOwner || false,
+        isInvestor: roles.investor || false,
+      },
+      professionalData: {},
+      jobSeekerData: {},
+      employerData: {},
+      businessOwnerData: {},
+      investorData: {},
+    };
+
+    await setDoc(doc(db, "users", userCredential.user.uid), firestoreData);
+
     const newUser: Omit<User, "uid"> = {
       name,
       email,
@@ -245,30 +281,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         ...(profileData?.portfolioUrl && { portfolio: profileData.portfolioUrl }),
       },
     };
-
-    const links: any = {};
-    if (profileData?.linkedinUrl) links.linkedin = profileData.linkedinUrl;
-    if (profileData?.websiteUrl) links.website = profileData.websiteUrl;
-    if (profileData?.portfolioUrl) links.portfolio = profileData.portfolioUrl;
-
-    const firestoreData: any = {
-      name,
-      email,
-      roles,
-      status: "pending",
-      createdAt: serverTimestamp(),
-      lastUpdated: serverTimestamp(),
-      links,
-    };
-
-    if (profileData?.phone) firestoreData.phone = profileData.phone;
-    if (profileData?.country) firestoreData.country = profileData.country;
-    if (profileData?.city) firestoreData.city = profileData.city;
-    if (profileData?.languages) firestoreData.languages = profileData.languages;
-    if (profileData?.headline) firestoreData.headline = profileData.headline;
-    if (profileData?.bio) firestoreData.bio = profileData.bio;
-
-    await setDoc(doc(db, "users", userCredential.user.uid), firestoreData);
 
     const userData: User = {
       ...newUser,

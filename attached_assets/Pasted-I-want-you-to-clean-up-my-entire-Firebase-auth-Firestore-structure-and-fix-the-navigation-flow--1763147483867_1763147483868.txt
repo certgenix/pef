@@ -1,0 +1,130 @@
+I want you to clean up my entire Firebase auth + Firestore structure and fix the navigation flow.
+
+My app currently works, but it is not smooth:
+- After sign up, it briefly shows dashboard before redirecting.
+- After login, the user stays on login page until I manually refresh.
+- Firestore created too many collections: employerProfiles, userProfiles, userRoles, etc.
+  I DO NOT want these extra collections.
+
+I want a clean, simple, fast system.
+
+────────────────────────────────────────
+🔥 PART 1 — WHAT TO FIX IN AUTH FLOW
+────────────────────────────────────────
+
+1. FIX: After login → automatically redirect to /dashboard  
+   - The login page must listen to AuthContext.
+   - If currentUser exists, automatically navigate("/dashboard").
+
+2. FIX: After signup → create Firestore user document THEN navigate.
+   - Wait for setDoc() to finish.
+   - Do NOT render dashboard until user is fully created.
+
+3. FIX: Remove flashing Dashboard on first load.
+   - AuthContext must have:
+       loading: true | false
+   - Only render children when loading = false.
+
+4. FIX: ProtectedRoute must:
+   - If loading → show a Loading screen
+   - If user authenticated → render
+   - If not authenticated → redirect to /login
+
+5. FIX: Avoid double rendering and race conditions.
+
+────────────────────────────────────────
+🔥 PART 2 — SIMPLIFY FIRESTORE STRUCTURE
+────────────────────────────────────────
+
+DELETE these unnecessary collections:
+- employerProfiles
+- userRoles
+- userProfiles
+
+ONLY KEEP THESE:
+
+1. users/    (main profile + roles + roleData)
+2. opportunities/   (jobs, business listings, investments)
+3. settings/ (optional for admin)
+
+Update all code to use this clean structure.
+
+User document MUST look like:
+
+users/{uid}:
+  name
+  email
+  country
+  roles: {
+    professional: boolean,
+    jobSeeker: boolean,
+    employer: boolean,
+    businessOwner: boolean,
+    investor: boolean
+  }
+  professionalData: {}
+  jobSeekerData: {}
+  employerData: {}
+  businessOwnerData: {}
+  investorData: {}
+
+DO NOT create extra collections like:
+- employerProfiles
+- jobSeekerProfiles
+- userRoles
+- userProfiles
+
+Everything must stay inside users collection.
+
+────────────────────────────────────────
+🔥 PART 3 — UPDATE ALL READ/WRITE LOGIC
+────────────────────────────────────────
+
+Every dashboard must read its data from:
+
+  users/{uid}
+
+Example:
+  const docRef = doc(db, "users", currentUser.uid);
+
+Every update must be:
+
+  updateDoc(docRef, {
+    professionalData: {...}
+  });
+
+Do NOT write to any other collection.
+
+────────────────────────────────────────
+🔥 PART 4 — WHAT YOU MUST OUTPUT
+────────────────────────────────────────
+
+I want updated versions of:
+
+1. AuthContext.jsx  
+   ✓ Proper loading state  
+   ✓ Proper redirect behavior  
+   ✓ No flicker or double rendering  
+
+2. ProtectedRoute.jsx  
+   ✓ Waits for auth  
+   ✓ Redirects cleanly  
+
+3. LoginPage.jsx  
+   ✓ Auto-redirect when logged in  
+
+4. RegisterPage.jsx  
+   ✓ Creates Firestore doc before redirecting  
+   ✓ Smooth transition  
+
+5. Clean Firestore structure instructions  
+   ✓ Remove extra collections  
+   ✓ Only use the minimal structure  
+
+Make sure the final system is:
+• fast  
+• smooth  
+• no UI flicker  
+• no partial dashboard rendering  
+• clean Firestore schema  
+• no unnecessary nested collections  
