@@ -84,17 +84,11 @@ export default function PlatformBenefitsSection() {
             className="text-3xl md:text-4xl lg:text-5xl font-display font-bold mb-4"
             data-testid="text-benefits-title"
           >
-            What PEF Does – Phase 1
+            What PEF Does
           </h2>
-          <p className="text-lg text-muted-foreground max-w-3xl mx-auto mb-6">
-            We're building a massive, high-quality global database of talent, business opportunities, and investment prospects
+          <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
+            Building a high-quality global platform connecting talent, business opportunities, and investment prospects through intelligent matching and community engagement
           </p>
-          <div className="bg-primary/5 border border-primary/20 rounded-lg p-6 max-w-3xl mx-auto">
-            <h3 className="text-xl font-bold mb-2 text-primary">Future Benefits – Phase 2 (AI Matching)</h3>
-            <p className="text-sm text-muted-foreground">
-              Once enough data is collected, PEF will match investors with businesses, job seekers with employers, professionals with partnerships, and provide analytics to chambers and government on industry trends, skill gaps, and investment patterns.
-            </p>
-          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">

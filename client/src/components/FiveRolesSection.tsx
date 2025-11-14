@@ -9,7 +9,6 @@ const roles = [
     color: "bg-blue-500",
     borderColor: "border-blue-500",
     description: "Individuals looking to enhance their visibility, expand their network, and access new opportunities.",
-    infoCollected: "experience, skills, certifications, industry focus",
   },
   {
     icon: Search,
@@ -17,7 +16,6 @@ const roles = [
     color: "bg-green-500",
     borderColor: "border-green-500",
     description: "Professionals actively exploring new employment opportunities locally or internationally.",
-    infoCollected: "target roles, industries, salary expectations, preferred countries, availability",
   },
   {
     icon: Building2,
@@ -25,7 +23,6 @@ const roles = [
     color: "bg-purple-500",
     borderColor: "border-purple-500",
     description: "Organizations or individuals offering job openings and seeking qualified candidates.",
-    infoCollected: "job titles, descriptions, required skills, job location, hiring urgency",
   },
   {
     icon: Handshake,
@@ -33,7 +30,6 @@ const roles = [
     color: "bg-orange-500",
     borderColor: "border-orange-500",
     description: "Entrepreneurs and company leaders seeking investors, collaborators, or growth opportunities.",
-    infoCollected: "company details, sector, team size, expansion goals, capital requirements",
   },
   {
     icon: TrendingUp,
@@ -41,7 +37,6 @@ const roles = [
     color: "bg-amber-500",
     borderColor: "border-amber-500",
     description: "Individuals or firms seeking investment-ready companies or projects.",
-    infoCollected: "investment range, sectors of interest, target countries, type of investment, investment thesis",
   },
 ];
 
@@ -81,15 +76,9 @@ export default function FiveRolesSection() {
                     <Icon className="w-8 h-8 text-white" />
                   </div>
                   <h3 className="text-xl font-display font-semibold mb-3 text-center">{role.title}</h3>
-                  <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
+                  <p className="text-sm text-muted-foreground leading-relaxed text-center">
                     {role.description}
                   </p>
-                  <div className="mt-4 pt-4 border-t border-border">
-                    <p className="text-xs font-semibold text-primary mb-2">Information collected:</p>
-                    <p className="text-xs text-muted-foreground leading-relaxed">
-                      {role.infoCollected}
-                    </p>
-                  </div>
                 </CardContent>
               </Card>
             );
