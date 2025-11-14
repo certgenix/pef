@@ -1,0 +1,56 @@
+I need you to fix my Dashboard.jsx because it crashes when useUserRoles() is still loading
+and returns undefined or null. This causes activeRoles.length to fail and shows an
+“Error Loading Account” screen even when the user is correctly registered.
+
+Here is what I want you to do:
+
+────────────────────────────────────────
+🔥 PROBLEM TO FIX
+────────────────────────────────────────
+1. activeRoles can be undefined while Firestore is loading.
+2. activeRoles.length throws an error and the dashboard breaks.
+3. The redirect logic runs too early (before Firestore returns the roles).
+4. The filter() and includes() calls break when activeRoles is not ready.
+
+────────────────────────────────────────
+🔥 FIX REQUIREMENTS
+────────────────────────────────────────
+• Add a safe fallback:
+
+    const safeRoles = Array.isArray(activeRoles) ? activeRoles : [];
+
+• Replace ALL conditions that use activeRoles.length with:
+    
+    if (!isLoading && safeRoles.length === 0)
+    if (!isLoading && safeRoles.length === 1)
+
+• Replace all uses of activeRoles.includes with safeRoles.includes.
+
+• Update the redirect logic:
+
+    useEffect(() => {
+      if (isLoading) return;
+      if (safeRoles.length === 1) {
+        const dashboard = roleDashboards.find(d => d.role === safeRoles[0]);
+        if (dashboard) setLocation(dashboard.path);
+      }
+    }, [safeRoles, isLoading]);
+
+• Make sure the dashboard does NOT show any error page when Firestore is still loading.
+
+• Ensure the dashboard always waits for Firestore data before making decisions.
+
+────────────────────────────────────────
+🔥 OUTPUT FORMAT
+────────────────────────────────────────
+Please output the FULL corrected Dashboard.jsx file with:
+
+✓ safeRoles fallback added  
+✓ all role checks updated  
+✓ redirect logic fixed  
+✓ defensive loading logic  
+✓ no accidental redirects  
+✓ no more “Error Loading Account” due to undefined roles
+
+DO NOT change UI design.  
+Only fix role loading, redirect logic, and undefined crashes.

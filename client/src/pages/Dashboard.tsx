@@ -57,14 +57,17 @@ function DashboardContent() {
   const { activeRoles, isLoading, userRoles } = useUserRoles(currentUser?.uid);
   const [, setLocation] = useLocation();
 
+  const safeRoles = Array.isArray(activeRoles) ? activeRoles : [];
+
   useEffect(() => {
-    if (!isLoading && activeRoles.length === 1) {
-      const dashboard = roleDashboards.find(d => d.role === activeRoles[0]);
+    if (isLoading) return;
+    if (safeRoles.length === 1) {
+      const dashboard = roleDashboards.find(d => d.role === safeRoles[0]);
       if (dashboard) {
         setLocation(dashboard.path);
       }
     }
-  }, [activeRoles, isLoading, setLocation]);
+  }, [safeRoles, isLoading, setLocation]);
 
   if (isLoading) {
     return (
@@ -77,7 +80,7 @@ function DashboardContent() {
     );
   }
 
-  if (activeRoles.length === 0) {
+  if (!isLoading && safeRoles.length === 0) {
     return (
       <DashboardLayout>
         <div className="py-8">
@@ -100,7 +103,7 @@ function DashboardContent() {
     );
   }
 
-  if (activeRoles.length === 1) {
+  if (!isLoading && safeRoles.length === 1) {
     return null;
   }
 
@@ -113,13 +116,13 @@ function DashboardContent() {
         </p>
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground">Your Roles:</span>
-          <RoleBadgeList roles={activeRoles} variant="sm" />
+          <RoleBadgeList roles={safeRoles} variant="sm" />
         </div>
       </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {roleDashboards
-            .filter(dashboard => activeRoles.includes(dashboard.role))
+            .filter(dashboard => safeRoles.includes(dashboard.role))
             .map((dashboard) => {
               const Icon = dashboard.icon;
               return (
@@ -155,7 +158,7 @@ function DashboardContent() {
             })}
         </div>
 
-        {activeRoles.length > 1 && (
+        {safeRoles.length > 1 && (
           <Card className="mt-8">
             <CardHeader>
               <CardTitle>Quick Stats Overview</CardTitle>
