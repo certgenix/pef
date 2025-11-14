@@ -30,6 +30,22 @@ import {
   type JobSeekerProfile,
 } from "@shared/schema";
 
+// Helper function to convert Firestore Timestamps to Date objects
+function normalizeDate(value: any): Date {
+  if (value?.toDate) return value.toDate();
+  if (value instanceof Date) return value;
+  return new Date();
+}
+
+// Helper function to normalize document data with dates
+function normalizeDocData<T>(data: any): T {
+  const normalized = { ...data };
+  if (data.createdAt) normalized.createdAt = normalizeDate(data.createdAt);
+  if (data.updatedAt) normalized.updatedAt = normalizeDate(data.updatedAt);
+  if (data.lastLogin) normalized.lastLogin = normalizeDate(data.lastLogin);
+  return normalized as T;
+}
+
 export interface RegistrationData {
   userId: string;
   email: string;
@@ -82,7 +98,7 @@ export class FirestoreStorage implements IStorage {
     const docSnap = await getDoc(docRef);
     
     if (docSnap.exists()) {
-      return { id: docSnap.id, ...docSnap.data() } as User;
+      return normalizeDocData<User>({ id: docSnap.id, ...docSnap.data() });
     }
     return undefined;
   }
@@ -93,7 +109,7 @@ export class FirestoreStorage implements IStorage {
     
     if (!querySnapshot.empty) {
       const doc = querySnapshot.docs[0];
-      return { id: doc.id, ...doc.data() } as User;
+      return normalizeDocData<User>({ id: doc.id, ...doc.data() });
     }
     return undefined;
   }
@@ -107,7 +123,7 @@ export class FirestoreStorage implements IStorage {
     }
     
     const userData = userSnap.data();
-    const user = { id: userSnap.id, ...userData } as User;
+    const user = normalizeDocData<User>({ id: userSnap.id, ...userData });
 
     // First check for roles in the userRoles collection
     const rolesDocRef = doc(db, "userRoles", id);
@@ -117,18 +133,20 @@ export class FirestoreStorage implements IStorage {
     
     if (rolesSnap.exists()) {
       // Roles exist in separate collection
-      roles = { id: rolesSnap.id, ...rolesSnap.data() } as UserRoles;
+      const rolesData = rolesSnap.data();
+      roles = normalizeDocData<UserRoles>({ id: rolesSnap.id, ...rolesData });
     } else if (userData.roles) {
       // Fallback: Roles embedded in user document (legacy schema)
+      // Legacy schema uses isProfessional, isJobSeeker, etc. directly
       roles = {
         id,
         userId: id,
-        isProfessional: userData.roles.professional || false,
-        isJobSeeker: userData.roles.jobSeeker || false,
-        isEmployer: userData.roles.employer || false,
-        isBusinessOwner: userData.roles.businessOwner || false,
-        isInvestor: userData.roles.investor || false,
-        createdAt: userData.createdAt || new Date(),
+        isProfessional: userData.roles.isProfessional || false,
+        isJobSeeker: userData.roles.isJobSeeker || false,
+        isEmployer: userData.roles.isEmployer || false,
+        isBusinessOwner: userData.roles.isBusinessOwner || false,
+        isInvestor: userData.roles.isInvestor || false,
+        createdAt: normalizeDate(userData.createdAt),
       };
     }
     
@@ -330,7 +348,7 @@ export class FirestoreStorage implements IStorage {
     const docSnap = await getDoc(docRef);
     
     if (docSnap.exists()) {
-      return { id: docSnap.id, ...docSnap.data() } as Opportunity;
+      return normalizeDocData<Opportunity>({ id: docSnap.id, ...docSnap.data() });
     }
     return undefined;
   }
@@ -339,7 +357,9 @@ export class FirestoreStorage implements IStorage {
     const q = query(collection(db, "opportunities"), where("userId", "==", userId));
     const querySnapshot = await getDocs(q);
     
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Opportunity));
+    return querySnapshot.docs.map(doc => 
+      normalizeDocData<Opportunity>({ id: doc.id, ...doc.data() })
+    );
   }
 
   async getPublicOpportunities(type?: string): Promise<Opportunity[]> {
@@ -360,7 +380,9 @@ export class FirestoreStorage implements IStorage {
     }
     
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Opportunity));
+    return querySnapshot.docs.map(doc => 
+      normalizeDocData<Opportunity>({ id: doc.id, ...doc.data() })
+    );
   }
 
   async updateOpportunity(id: string, data: Partial<InsertOpportunity>): Promise<Opportunity | undefined> {
@@ -407,7 +429,10 @@ export class FirestoreStorage implements IStorage {
         continue;
       }
       
-      const profile = { id: profileSnapshot.docs[0].id, ...profileSnapshot.docs[0].data() } as UserProfile;
+      const profile = normalizeDocData<UserProfile>({ 
+        id: profileSnapshot.docs[0].id, 
+        ...profileSnapshot.docs[0].data() 
+      });
       
       let roleSpecificProfile = null;
       
@@ -418,7 +443,10 @@ export class FirestoreStorage implements IStorage {
         );
         const profSnapshot = await getDocs(profQuery);
         if (!profSnapshot.empty) {
-          roleSpecificProfile = { id: profSnapshot.docs[0].id, ...profSnapshot.docs[0].data() } as ProfessionalProfile;
+          roleSpecificProfile = normalizeDocData<ProfessionalProfile>({ 
+            id: profSnapshot.docs[0].id, 
+            ...profSnapshot.docs[0].data() 
+          });
         }
       } else {
         const jobSeekerQuery = query(
@@ -427,7 +455,10 @@ export class FirestoreStorage implements IStorage {
         );
         const jobSeekerSnapshot = await getDocs(jobSeekerQuery);
         if (!jobSeekerSnapshot.empty) {
-          roleSpecificProfile = { id: jobSeekerSnapshot.docs[0].id, ...jobSeekerSnapshot.docs[0].data() } as JobSeekerProfile;
+          roleSpecificProfile = normalizeDocData<JobSeekerProfile>({ 
+            id: jobSeekerSnapshot.docs[0].id, 
+            ...jobSeekerSnapshot.docs[0].data() 
+          });
         }
       }
       
