@@ -4,14 +4,25 @@ import { useUserRoles } from "@/hooks/useUserRoles";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Users, Briefcase, TrendingUp, Eye, FileText } from "lucide-react";
+import { Plus, Users, Briefcase, TrendingUp, Eye, FileText, Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import PostJobDialog from "@/components/PostJobDialog";
 import TalentBrowser from "@/components/TalentBrowser";
 import { useLocation } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { auth } from "@/lib/firebase";
+import { useToast } from "@/hooks/use-toast";
 import type { Opportunity } from "@shared/schema";
 
 export default function EmployerDashboard() {
@@ -19,6 +30,9 @@ export default function EmployerDashboard() {
   const { hasRole, isLoading: rolesLoading } = useUserRoles(currentUser?.uid);
   const [, setLocation] = useLocation();
   const [showPostJobDialog, setShowPostJobDialog] = useState(false);
+  const [deleteJobId, setDeleteJobId] = useState<string | null>(null);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { data: myJobs = [], isLoading: jobsLoading } = useQuery<Opportunity[]>({
     queryKey: ["/api/opportunities", "my-jobs"],
@@ -33,6 +47,39 @@ export default function EmployerDashboard() {
       return response.json();
     },
     enabled: !!currentUser,
+  });
+
+  const deleteJobMutation = useMutation({
+    mutationFn: async (jobId: string) => {
+      const token = await auth.currentUser?.getIdToken();
+      const response = await fetch(`/api/opportunities/${jobId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to delete job");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Job Deleted",
+        description: "The job posting has been successfully removed.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/opportunities"] });
+      setDeleteJobId(null);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete job posting.",
+        variant: "destructive",
+      });
+      setDeleteJobId(null);
+    },
   });
 
   const employerData = userData?.employerData || {};
@@ -188,22 +235,33 @@ export default function EmployerDashboard() {
                               {job.city ? `${job.city}, ` : ""}{job.country}
                             </p>
                           </div>
-                          <Badge 
-                            className={
-                              job.approvalStatus === "approved" 
-                                ? "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100"
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Badge 
+                              className={
+                                job.approvalStatus === "approved" 
+                                  ? "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100"
+                                  : job.approvalStatus === "rejected"
+                                  ? "bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-100"
+                                  : "bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-100"
+                              }
+                              data-testid={`job-status-${idx}`}
+                            >
+                              {job.approvalStatus === "approved" 
+                                ? "Approved" 
                                 : job.approvalStatus === "rejected"
-                                ? "bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-100"
-                                : "bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-100"
-                            }
-                            data-testid={`job-status-${idx}`}
-                          >
-                            {job.approvalStatus === "approved" 
-                              ? "Approved" 
-                              : job.approvalStatus === "rejected"
-                              ? "Rejected"
-                              : "Pending Approval"}
-                          </Badge>
+                                ? "Rejected"
+                                : "Pending Approval"}
+                            </Badge>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => setDeleteJobId(job.id)}
+                              disabled={deleteJobMutation.isPending}
+                              data-testid={`button-delete-job-${idx}`}
+                            >
+                              <Trash2 className="w-4 h-4 text-destructive" />
+                            </Button>
+                          </div>
                         </div>
                         <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
                           {job.description}
@@ -311,6 +369,27 @@ export default function EmployerDashboard() {
       <Footer />
       
       <PostJobDialog open={showPostJobDialog} onOpenChange={setShowPostJobDialog} />
+      
+      <AlertDialog open={!!deleteJobId} onOpenChange={(open) => !open && setDeleteJobId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Job Posting?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this job posting? This action cannot be undone and the job will be removed from the opportunities page.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-delete">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteJobId && deleteJobMutation.mutate(deleteJobId)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              data-testid="button-confirm-delete"
+            >
+              {deleteJobMutation.isPending ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
