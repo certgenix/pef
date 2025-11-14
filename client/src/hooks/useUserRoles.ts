@@ -1,26 +1,55 @@
-import { useQuery } from "@tanstack/react-query";
-import { UserRoles } from "@shared/schema";
-import { hasRole, hasAnyRole, hasAllRoles, getUserRoles, canAccessFeature, RoleType } from "@shared/roleUtils";
+import { useAuth } from "@/contexts/AuthContext";
+import { RoleType } from "@shared/roleUtils";
+import { UserRoles as FirestoreUserRoles } from "@shared/types";
+
+type RoleTypeKey = "professional" | "jobSeeker" | "employer" | "businessOwner" | "investor";
 
 export function useUserRoles(userId?: string) {
-  const { data: userRoles, isLoading, error } = useQuery<UserRoles | null>({
-    queryKey: userId ? ["/api/users", userId, "roles"] : [],
-    enabled: !!userId,
-  });
+  const { userData, loading: authLoading } = useAuth();
+  
+  const firestoreRoles: FirestoreUserRoles = userData?.roles || {
+    professional: false,
+    jobSeeker: false,
+    employer: false,
+    businessOwner: false,
+    investor: false,
+  };
+
+  const activeRoles: RoleType[] = Object.entries(firestoreRoles)
+    .filter(([key, value]) => value === true)
+    .map(([key]) => key as RoleType);
+
+  const isLoading = authLoading;
+
+  const hasRole = (role: RoleType): boolean => {
+    return firestoreRoles[role as RoleTypeKey] === true;
+  };
+
+  const hasAnyRole = (roles: RoleType[]): boolean => {
+    return roles.some(role => hasRole(role));
+  };
+
+  const hasAllRoles = (roles: RoleType[]): boolean => {
+    return roles.every(role => hasRole(role));
+  };
+
+  const canAccess = (permission: string): boolean => {
+    return activeRoles.length > 0;
+  };
 
   return {
-    userRoles,
+    userRoles: firestoreRoles,
+    activeRoles,
     isLoading,
-    error,
-    hasRole: (role: RoleType) => hasRole(userRoles ?? null, role),
-    hasAnyRole: (roles: RoleType[]) => hasAnyRole(userRoles ?? null, roles),
-    hasAllRoles: (roles: RoleType[]) => hasAllRoles(userRoles ?? null, roles),
-    activeRoles: getUserRoles(userRoles ?? null),
-    canAccess: (permission: string) => canAccessFeature(userRoles ?? null, permission),
-    isProfessional: userRoles?.isProfessional ?? false,
-    isJobSeeker: userRoles?.isJobSeeker ?? false,
-    isEmployer: userRoles?.isEmployer ?? false,
-    isBusinessOwner: userRoles?.isBusinessOwner ?? false,
-    isInvestor: userRoles?.isInvestor ?? false,
+    error: null,
+    hasRole,
+    hasAnyRole,
+    hasAllRoles,
+    canAccess,
+    isProfessional: firestoreRoles.professional,
+    isJobSeeker: firestoreRoles.jobSeeker,
+    isEmployer: firestoreRoles.employer,
+    isBusinessOwner: firestoreRoles.businessOwner,
+    isInvestor: firestoreRoles.investor,
   };
 }
