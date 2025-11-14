@@ -110,7 +110,9 @@ export default function JobSeekerDashboard() {
     return (
       opp.title.toLowerCase().includes(query) ||
       opp.description.toLowerCase().includes(query) ||
-      (opp.location && opp.location.toLowerCase().includes(query))
+      (opp.country && opp.country.toLowerCase().includes(query)) ||
+      (opp.city && opp.city.toLowerCase().includes(query)) ||
+      (opp.companyName && opp.companyName.toLowerCase().includes(query))
     );
   });
 
@@ -293,10 +295,10 @@ export default function JobSeekerDashboard() {
                           {job.description}
                         </p>
                         <div className="flex flex-wrap gap-4 text-sm text-muted-foreground mb-3">
-                          {job.location && (
+                          {(job.city || job.country) && (
                             <div className="flex items-center gap-1">
                               <MapPin className="w-4 h-4" />
-                              {job.location}
+                              {[job.city, job.country].filter(Boolean).join(", ")}
                             </div>
                           )}
                           {job.details?.employmentType && (

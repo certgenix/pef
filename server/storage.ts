@@ -17,10 +17,12 @@ import {
   type UserProfile,
   type UserRoles,
   type Opportunity,
+  type Application,
   type InsertUser,
   type InsertUserProfile,
   type InsertUserRoles,
   type InsertOpportunity,
+  type InsertApplication,
   type InsertProfessionalProfile,
   type InsertJobSeekerProfile,
   type InsertEmployerProfile,
@@ -43,6 +45,7 @@ function normalizeDocData<T>(data: any): T {
   if (data.createdAt) normalized.createdAt = normalizeDate(data.createdAt);
   if (data.updatedAt) normalized.updatedAt = normalizeDate(data.updatedAt);
   if (data.lastLogin) normalized.lastLogin = normalizeDate(data.lastLogin);
+  if (data.appliedAt) normalized.appliedAt = normalizeDate(data.appliedAt);
   return normalized as T;
 }
 
@@ -85,6 +88,12 @@ export interface IStorage {
   getPublicOpportunities(type?: string): Promise<Opportunity[]>;
   updateOpportunity(id: string, data: Partial<InsertOpportunity>): Promise<Opportunity | undefined>;
   deleteOpportunity(id: string): Promise<void>;
+  
+  createApplication(application: InsertApplication): Promise<Application>;
+  getApplicationsByUser(userId: string): Promise<Array<Application & { opportunity: Opportunity }>>;
+  getApplicationsByOpportunity(opportunityId: string): Promise<Array<Application & { user: User }>>;
+  updateApplicationStatus(id: string, status: Application['status']): Promise<Application | undefined>;
+  checkExistingApplication(userId: string, opportunityId: string): Promise<Application | undefined>;
   
   getTalentByRole(role: "professional" | "jobSeeker"): Promise<TalentProfile[]>;
 }
@@ -410,6 +419,87 @@ export class FirestoreStorage implements IStorage {
   async deleteOpportunity(id: string): Promise<void> {
     const docRef = doc(db, "opportunities", id);
     await deleteDoc(docRef);
+  }
+
+  async createApplication(insertApplication: InsertApplication): Promise<Application> {
+    const applicationId = this.generateId();
+    const newApplication: Application = {
+      id: applicationId,
+      userId: insertApplication.userId,
+      opportunityId: insertApplication.opportunityId,
+      status: insertApplication.status || "applied",
+      metadata: insertApplication.metadata || null,
+      appliedAt: new Date(),
+      updatedAt: new Date(),
+    };
+    
+    await setDoc(doc(db, "applications", applicationId), newApplication);
+    return newApplication;
+  }
+
+  async getApplicationsByUser(userId: string): Promise<Array<Application & { opportunity: Opportunity }>> {
+    const q = query(collection(db, "applications"), where("userId", "==", userId));
+    const querySnapshot = await getDocs(q);
+    
+    const results: Array<Application & { opportunity: Opportunity }> = [];
+    
+    for (const appDoc of querySnapshot.docs) {
+      const application = normalizeDocData<Application>({ id: appDoc.id, ...appDoc.data() });
+      const opportunity = await this.getOpportunityById(application.opportunityId);
+      
+      if (opportunity) {
+        results.push({ ...application, opportunity });
+      }
+    }
+    
+    return results;
+  }
+
+  async getApplicationsByOpportunity(opportunityId: string): Promise<Array<Application & { user: User }>> {
+    const q = query(collection(db, "applications"), where("opportunityId", "==", opportunityId));
+    const querySnapshot = await getDocs(q);
+    
+    const results: Array<Application & { user: User }> = [];
+    
+    for (const appDoc of querySnapshot.docs) {
+      const application = normalizeDocData<Application>({ id: appDoc.id, ...appDoc.data() });
+      const user = await this.getUserById(application.userId);
+      
+      if (user) {
+        results.push({ ...application, user });
+      }
+    }
+    
+    return results;
+  }
+
+  async updateApplicationStatus(id: string, status: Application['status']): Promise<Application | undefined> {
+    const docRef = doc(db, "applications", id);
+    await updateDoc(docRef, {
+      status,
+      updatedAt: new Date(),
+    });
+    
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      return normalizeDocData<Application>({ id: docSnap.id, ...docSnap.data() });
+    }
+    return undefined;
+  }
+
+  async checkExistingApplication(userId: string, opportunityId: string): Promise<Application | undefined> {
+    const q = query(
+      collection(db, "applications"),
+      where("userId", "==", userId),
+      where("opportunityId", "==", opportunityId)
+    );
+    const querySnapshot = await getDocs(q);
+    
+    if (!querySnapshot.empty) {
+      const doc = querySnapshot.docs[0];
+      return normalizeDocData<Application>({ id: doc.id, ...doc.data() });
+    }
+    return undefined;
   }
 
   async getTalentByRole(role: "professional" | "jobSeeker"): Promise<TalentProfile[]> {

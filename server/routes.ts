@@ -1,6 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage-pg";
+import { storage } from "./storage";
 import { z } from "zod";
 import { insertUserProfileSchema, insertUserRolesSchema, insertOpportunitySchema, insertApplicationSchema, jobDetailsSchema } from "@shared/schema";
 
@@ -326,8 +326,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const validationResult = insertApplicationSchema.safeParse({
-        ...req.body,
+        opportunityId: req.body.opportunityId,
         userId: uid,
+        status: req.body.status || "applied",
+        metadata: req.body.metadata,
       });
 
       if (!validationResult.success) {
@@ -337,19 +339,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      const opportunity = await storage.getOpportunityById(validationResult.data.opportunityId);
+
+      if (!opportunity) {
+        return res.status(404).json({ error: "Opportunity not found" });
+      }
+
+      if (opportunity.type !== "job") {
+        return res.status(400).json({ error: "Can only apply to job opportunities" });
+      }
+
+      if (opportunity.status !== "open") {
+        return res.status(400).json({ error: "This opportunity is no longer open" });
+      }
+
+      if (opportunity.approvalStatus !== "approved") {
+        return res.status(400).json({ error: "This opportunity is not yet approved" });
+      }
+
       const existingApplication = await storage.checkExistingApplication(
         uid,
         validationResult.data.opportunityId
       );
 
       if (existingApplication) {
-        return res.status(400).json({ error: "You have already applied to this opportunity" });
+        return res.status(409).json({ error: "You have already applied to this opportunity" });
       }
 
       const application = await storage.createApplication(validationResult.data);
       return res.json(application);
     } catch (error) {
       console.error("Application creation error:", error);
+      
+      if (error instanceof Error && error.message.includes("duplicate key")) {
+        return res.status(409).json({ error: "You have already applied to this opportunity" });
+      }
+      
       return res.status(500).json({ error: "Failed to create application" });
     }
   });
