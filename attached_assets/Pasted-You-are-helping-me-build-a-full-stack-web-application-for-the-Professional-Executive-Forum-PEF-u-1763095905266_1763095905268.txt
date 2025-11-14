@@ -1,0 +1,161 @@
+You are helping me build a full-stack web application for the “Professional Executive Forum (PEF)” using:
+
+- Frontend: React + Vite (or Next.js if needed)
+- Backend: Firebase
+- Database: Firestore (role-based structure)
+- Authentication: Firebase Auth (email/password)
+
+I want you to generate clean, production-ready code, components, routing, context providers, and Firestore integration.
+
+────────────────────────────────────────
+🔥 PROJECT DESCRIPTION
+────────────────────────────────────────
+PEF is a platform where users register and select any combination of 5 roles:
+
+1. Professional
+2. Job Seeker
+3. Employer
+4. Business Owner
+5. Investor
+
+A single user can choose one or multiple roles.  
+All users have ONE Firestore document storing ALL data, including role forms.
+
+The system includes:
+
+✔ Firebase Auth  
+✔ Firestore database  
+✔ Role-based dashboards  
+✔ Admin approval system  
+✔ Posting opportunities (jobs, investments, partnerships)  
+
+────────────────────────────────────────
+🔥 FIRESTORE STRUCTURE
+────────────────────────────────────────
+Create a "users" collection where each user has:
+
+users/{uid}
+  name
+  email
+  country
+  city
+  languages
+  headline
+  bio
+  links { linkedin, website, portfolio }
+  roles {
+     professional: true/false,
+     jobSeeker: true/false,
+     employer: true/false,
+     businessOwner: true/false,
+     investor: true/false
+  }
+  status: "pending" | "approved" | "rejected"
+  createdAt
+  lastUpdated
+
+  professionalData {...}
+  jobSeekerData {...}
+  employerData {...}
+  businessOwnerData {...}
+  investorData {...}
+
+Also create collections:
+- jobs
+- opportunities
+- businessListings
+- investmentListings
+
+────────────────────────────────────────
+🔥 WHAT YOU NEED TO GENERATE
+────────────────────────────────────────
+
+1. Firebase Setup
+   - firebase.js config file
+   - AuthContext.jsx with login, register, logout, get user
+   - Firestore CRUD helper functions
+
+2. Authentication Pages
+   - Login.jsx
+   - Register.jsx (with role selection checkboxes)
+   - Email verification handling
+   - ForgotPassword.jsx
+
+3. After Registration
+   - Create Firestore user document
+   - Redirect user to a “Complete Your Profile” page after signup
+
+4. Role Forms (Separate Components)
+   - ProfessionalForm.jsx
+   - JobSeekerForm.jsx
+   - EmployerForm.jsx
+   - BusinessOwnerForm.jsx
+   - InvestorForm.jsx
+
+5. Dashboard System
+   A single dashboard page:
+   Dashboard.jsx  
+   should detect the user’s roles:
+
+   If roles.professional === true → show Professional Section  
+   If roles.jobSeeker === true → show Job Seeker Section  
+   etc.
+
+   Each section:
+   - ProfessionalDashboardSection.jsx
+   - JobSeekerDashboardSection.jsx
+   - EmployerDashboardSection.jsx
+   - BusinessOwnerDashboardSection.jsx
+   - InvestorDashboardSection.jsx
+
+6. Admin Panel
+   - AdminLogin.jsx
+   - AdminDashboard.jsx
+     • Approve/Reject Users
+     • Approve job listings
+     • Approve business/investment opportunities
+
+7. Firestore Security Rules
+   Write rules so:
+   - Users can only edit their own data
+   - Admin can manage everything
+   - Unapproved listings are hidden from public pages
+
+8. UI
+   - Use TailwindCSS
+   - Clean, modern, professional layout matching my PEF website design:
+     https://25766d3e-60ad-4c6b-9116-df9f2ac7948d-00-37g8frr5vlz3u.kirk.replit.dev/
+
+9. Routes
+   - /login
+   - /register
+   - /dashboard
+   - /admin
+   - /admin/users
+   - /admin/opportunities
+
+────────────────────────────────────────
+🔥 STYLE
+────────────────────────────────────────
+• Clean code  
+• Modular components  
+• Reusable UI elements  
+• Responsive  
+• Comments explaining logic  
+• Minimal and scalable Firestore schema  
+• Role-based access control  
+
+────────────────────────────────────────
+🔥 FINAL OUTPUT EXPECTATION
+────────────────────────────────────────
+Generate:
+- File structure
+- Code for each required file
+- Components
+- Pages
+- Context
+- Firebase integration
+- Routing
+- Tailwind usage examples
+
+This project must run directly on Replit.

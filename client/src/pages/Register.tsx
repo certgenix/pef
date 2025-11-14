@@ -47,7 +47,7 @@ const roles = [
 
 export default function Register() {
   const [, setLocation] = useLocation();
-  const { register } = useAuth();
+  const { register, refreshUserData } = useAuth();
   const { toast } = useToast();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -107,43 +107,38 @@ export default function Register() {
 
     setLoading(true);
     try {
-      await register(basicInfo.email, basicInfo.password, basicInfo.fullName);
+      await register(basicInfo.email, basicInfo.password, basicInfo.fullName, selectedRoles);
       
-      const token = await auth.currentUser?.getIdToken();
+      const userId = auth.currentUser?.uid;
+      if (!userId) {
+        throw new Error("User not created");
+      }
+
+      const { updateDoc, doc } = await import("firebase/firestore");
+      const { db } = await import("@/lib/firebase");
       
-      const response = await fetch("/api/auth/complete-registration", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
+      await updateDoc(doc(db, "users", userId), {
+        phone: basicInfo.phone || null,
+        country: basicInfo.country || null,
+        city: basicInfo.city || null,
+        languages: basicInfo.languages ? basicInfo.languages.split(",").map(l => l.trim()).filter(Boolean) : [],
+        headline: basicInfo.headline || null,
+        bio: basicInfo.bio || null,
+        links: {
+          linkedin: basicInfo.linkedinUrl || null,
+          website: basicInfo.websiteUrl || null,
+          portfolio: basicInfo.portfolioUrl || null,
         },
-        body: JSON.stringify({
-          profile: {
-            fullName: basicInfo.fullName,
-            phone: basicInfo.phone,
-            country: basicInfo.country,
-            city: basicInfo.city,
-            languages: basicInfo.languages.split(",").map(l => l.trim()),
-            headline: basicInfo.headline,
-            bio: basicInfo.bio,
-            linkedinUrl: basicInfo.linkedinUrl,
-            websiteUrl: basicInfo.websiteUrl,
-            portfolioUrl: basicInfo.portfolioUrl,
-          },
-          roles: selectedRoles,
-        }),
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to complete registration");
-      }
+      await refreshUserData();
 
       toast({
         title: "Success!",
         description: "Your registration is pending admin approval. You'll receive an email once approved.",
       });
 
-      setLocation("/");
+      setLocation("/dashboard");
     } catch (error: any) {
       toast({
         title: "Registration Failed",
