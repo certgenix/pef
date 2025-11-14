@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
+import { Link } from "wouter";
 
 export default function CTASection() {
   return (
@@ -29,22 +30,26 @@ export default function CTASection() {
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-          <Button
-            size="lg"
-            className="bg-accent hover:bg-accent text-accent-foreground font-semibold text-lg px-10 py-7 min-h-14 group"
-            data-testid="button-cta-join"
-          >
-            Create Your Account
-            <ArrowRight className="ml-2 w-5 h-5 transition-transform group-hover:translate-x-1" />
-          </Button>
-          <Button
-            size="lg"
-            variant="outline"
-            className="border-2 border-white text-white hover:bg-white/10 backdrop-blur-sm font-semibold text-lg px-10 py-7 min-h-14"
-            data-testid="button-cta-learn"
-          >
-            Learn More
-          </Button>
+          <Link href="/register">
+            <Button
+              size="lg"
+              className="bg-accent hover:bg-accent text-accent-foreground font-semibold text-lg px-10 py-7 min-h-14 group"
+              data-testid="button-cta-join"
+            >
+              Create Your Account
+              <ArrowRight className="ml-2 w-5 h-5 transition-transform group-hover:translate-x-1" />
+            </Button>
+          </Link>
+          <Link href="/membership">
+            <Button
+              size="lg"
+              variant="outline"
+              className="border-2 border-white text-white hover:bg-white/10 backdrop-blur-sm font-semibold text-lg px-10 py-7 min-h-14"
+              data-testid="button-cta-learn"
+            >
+              Learn More
+            </Button>
+          </Link>
         </div>
 
         <div className="mt-12 flex items-center justify-center gap-8 text-white/80">

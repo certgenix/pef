@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Globe2, Users, Shield, FileText, Newspaper, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Link } from "wouter";
 
 const benefits = [
   {
@@ -135,14 +136,16 @@ export default function PlatformBenefitsSection() {
         </div>
 
         <div className="text-center">
-          <Button
-            size="lg"
-            className="bg-primary hover:bg-primary text-primary-foreground font-semibold px-8 min-h-12 group"
-            data-testid="button-get-started"
-          >
-            Get Started Today
-            <ArrowRight className="ml-2 w-5 h-5 transition-transform group-hover:translate-x-1" />
-          </Button>
+          <Link href="/register">
+            <Button
+              size="lg"
+              className="bg-primary hover:bg-primary text-primary-foreground font-semibold px-8 min-h-12 group"
+              data-testid="button-get-started"
+            >
+              Get Started Today
+              <ArrowRight className="ml-2 w-5 h-5 transition-transform group-hover:translate-x-1" />
+            </Button>
+          </Link>
         </div>
       </div>
     </section>
