@@ -93,10 +93,12 @@ export default function Header() {
                       Dashboard
                     </DropdownMenuItem>
                   </Link>
-                  <DropdownMenuItem data-testid="menu-item-profile">
-                    <User className="w-4 h-4 mr-2" />
-                    Profile
-                  </DropdownMenuItem>
+                  <Link href="/edit-profile">
+                    <DropdownMenuItem data-testid="menu-item-profile">
+                      <User className="w-4 h-4 mr-2" />
+                      Profile
+                    </DropdownMenuItem>
+                  </Link>
                   <DropdownMenuItem onClick={logout} data-testid="menu-item-logout">
                     <LogOut className="w-4 h-4 mr-2" />
                     Logout
@@ -159,15 +161,17 @@ export default function Header() {
                     Dashboard
                   </Button>
                 </Link>
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start text-white hover:bg-white/10"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  data-testid="button-mobile-profile"
-                >
-                  <User className="w-4 h-4 mr-2" />
-                  Profile
-                </Button>
+                <Link href="/edit-profile">
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start text-white hover:bg-white/10"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    data-testid="button-mobile-profile"
+                  >
+                    <User className="w-4 h-4 mr-2" />
+                    Profile
+                  </Button>
+                </Link>
                 <Button
                   variant="ghost"
                   className="w-full justify-start text-white hover:bg-white/10"
