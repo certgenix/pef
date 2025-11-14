@@ -135,23 +135,23 @@ export default function Register() {
     try {
       const profileData: any = {};
       
-      if (basicInfo.phone) profileData.phone = basicInfo.phone;
+      if (basicInfo.phone?.trim()) profileData.phone = basicInfo.phone.trim();
       if (basicInfo.country) profileData.country = basicInfo.country;
-      if (basicInfo.city) profileData.city = basicInfo.city;
-      if (basicInfo.languages) {
+      if (basicInfo.city?.trim()) profileData.city = basicInfo.city.trim();
+      if (basicInfo.languages?.trim()) {
         const languagesArray = basicInfo.languages.split(",").map(l => l.trim()).filter(Boolean);
         if (languagesArray.length > 0) profileData.languages = languagesArray;
       }
-      if (basicInfo.headline) profileData.headline = basicInfo.headline;
-      if (basicInfo.bio) profileData.bio = basicInfo.bio;
-      if (basicInfo.linkedinUrl) profileData.linkedinUrl = basicInfo.linkedinUrl;
-      if (basicInfo.websiteUrl) profileData.websiteUrl = basicInfo.websiteUrl;
-      if (basicInfo.portfolioUrl) profileData.portfolioUrl = basicInfo.portfolioUrl;
+      if (basicInfo.headline?.trim()) profileData.headline = basicInfo.headline.trim();
+      if (basicInfo.bio?.trim()) profileData.bio = basicInfo.bio.trim();
+      if (basicInfo.linkedinUrl?.trim()) profileData.linkedinUrl = basicInfo.linkedinUrl.trim();
+      if (basicInfo.websiteUrl?.trim()) profileData.websiteUrl = basicInfo.websiteUrl.trim();
+      if (basicInfo.portfolioUrl?.trim()) profileData.portfolioUrl = basicInfo.portfolioUrl.trim();
       
       await register(
-        basicInfo.email, 
+        basicInfo.email.trim(), 
         basicInfo.password, 
-        basicInfo.fullName, 
+        basicInfo.fullName.trim(), 
         selectedRoles,
         profileData
       );
