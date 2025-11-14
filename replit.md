@@ -42,7 +42,7 @@ Preferred communication style: Simple, everyday language.
 
 **API Design**: RESTful API structure with all routes prefixed with `/api`. Currently minimal route implementation in `server/routes.ts`, prepared for expansion.
 
-**Storage Layer**: Abstracted storage interface (`IStorage`) with an in-memory implementation (`MemStorage`) for development. This allows easy migration to database-backed storage without changing application logic.
+**Storage Layer**: Abstracted storage interface (`IStorage`) with Firestore implementation for data persistence. All user data, profiles, opportunities, and applications are stored in Firestore collections.
 
 **Session Management**: Infrastructure prepared for session handling with connect-pg-simple for PostgreSQL session storage.
 
@@ -68,25 +68,28 @@ Preferred communication style: Simple, everyday language.
 
 ### Authentication & Authorization
 
-**Current State**: Hybrid authentication system using Firebase Authentication for user identity and PostgreSQL for backend data persistence.
+**Current State**: Firebase/Firestore authentication and data persistence system.
 
 **Architecture**: 
 - **Firebase Authentication**: Handles user registration, login, password reset, and email verification
-- **Firestore**: Stores user profile data and role information (professionals, job seekers, employers, business owners, investors)
-- **PostgreSQL**: Backend database that mirrors user data from Firebase for server-side operations and future matching logic
-- **Synchronization**: AuthContext automatically syncs Firebase users to PostgreSQL on registration and login with retry logic (3 attempts, exponential backoff)
+- **Firestore**: Primary data store for all application data including:
+  - User profiles and role information (professionals, job seekers, employers, business owners, investors)
+  - Opportunities (jobs, investments, partnerships)
+  - Applications (job applications with status tracking)
+  - Role-specific profile data
+- **Server-Side API**: Express.js REST API provides server-side access to Firestore data via Firebase Admin SDK
 
 **Implementation Details**:
-- Users register through Firebase Auth and complete their profile in Firestore
-- On first authentication, user data is synced to PostgreSQL backend via `/api/auth/complete-registration`
-- Sync is blocking: users cannot access protected routes until backend sync succeeds
-- If sync fails after retries, user is signed out to prevent broken state
-- Admin approval workflow ready for implementation (approval status tracked in Firestore)
+- Users register through Firebase Auth and complete their profile via `/api/auth/complete-registration`
+- All data persisted to Firestore collections with proper typing and validation
+- Admin approval workflow tracks approval status in Firestore
+- Job Seeker Dashboard displays all opportunities and tracks application status
+- Application tracking system prevents duplicates and maintains status history
 
 **CRITICAL Security Issues - MUST FIX BEFORE PRODUCTION**:
-1. ⚠️ **Firebase ID Token Verification**: Backend currently decodes ID tokens WITHOUT signature verification. This is a severe security vulnerability. Must implement Firebase Admin SDK verification before production deployment.
-2. **Race Condition**: Registration may create Firestore document after `onAuthStateChanged` fires, potentially caching null user data. Consider moving `setDoc` before other async operations.
-3. **One-Way Sync**: Current sync only flows Firebase → PostgreSQL during auth. Profile updates in Firestore don't automatically propagate to PostgreSQL.
+1. ⚠️ **Firebase ID Token Verification**: Backend currently decodes ID tokens WITHOUT signature verification when `FIREBASE_ADMIN_SERVICE_ACCOUNT` is not configured. This is a severe security vulnerability. Must set up Firebase Admin SDK credentials before production deployment.
+2. **Duplicate Prevention**: Firestore doesn't have database-level unique constraints. While the code checks for existing applications before creating new ones, parallel requests could still create duplicates. Consider implementing Firestore security rules or transactions for atomic duplicate prevention.
+3. **Rate Limiting**: No rate limiting implemented on API endpoints. Should add rate limiting before production to prevent abuse.
 
 **Next Steps for Production**:
 - Implement Firebase Admin SDK for server-side token verification
