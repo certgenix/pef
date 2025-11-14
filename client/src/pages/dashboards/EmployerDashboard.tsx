@@ -172,60 +172,72 @@ export default function EmployerDashboard() {
                     <p className="text-sm text-muted-foreground mb-4">
                       Start by posting your first job opening
                     </p>
-                    <Button onClick={() => setShowPostJobDialog(true)} data-testid="button-post-first-job">
+                    <Button onClick={() => setShowPostJobDialog(true)} data-testid="button-post-job-cta">
                       <Plus className="w-4 h-4 mr-2" />
-                      Post Your First Job
+                      Post Job
                     </Button>
                   </div>
                 ) : (
-                  myJobs.map((job, idx) => (
-                    <div key={job.id} className="p-4 rounded-md border hover-elevate" data-testid={`job-card-${idx}`}>
-                      <div className="flex flex-wrap items-start justify-between gap-2 mb-3">
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-lg mb-1" data-testid={`job-title-${idx}`}>{job.title}</h3>
-                          <p className="text-sm text-muted-foreground">
-                            {job.city ? `${job.city}, ` : ""}{job.country}
-                          </p>
-                        </div>
-                        <Badge 
-                          className={
-                            job.approvalStatus === "approved" 
-                              ? "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100"
+                  <>
+                    {myJobs.map((job, idx) => (
+                      <div key={job.id} className="p-4 rounded-md border hover-elevate" data-testid={`job-card-${idx}`}>
+                        <div className="flex flex-wrap items-start justify-between gap-2 mb-3">
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-lg mb-1" data-testid={`job-title-${idx}`}>{job.title}</h3>
+                            <p className="text-sm text-muted-foreground">
+                              {job.city ? `${job.city}, ` : ""}{job.country}
+                            </p>
+                          </div>
+                          <Badge 
+                            className={
+                              job.approvalStatus === "approved" 
+                                ? "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100"
+                                : job.approvalStatus === "rejected"
+                                ? "bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-100"
+                                : "bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-100"
+                            }
+                            data-testid={`job-status-${idx}`}
+                          >
+                            {job.approvalStatus === "approved" 
+                              ? "Approved" 
                               : job.approvalStatus === "rejected"
-                              ? "bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-100"
-                              : "bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-100"
-                          }
-                          data-testid={`job-status-${idx}`}
-                        >
-                          {job.approvalStatus === "approved" 
-                            ? "Approved" 
-                            : job.approvalStatus === "rejected"
-                            ? "Rejected"
-                            : "Pending Approval"}
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
-                        {job.description}
-                      </p>
-                      {job.budgetOrSalary && (
-                        <p className="text-sm font-medium mb-2" data-testid={`job-salary-${idx}`}>{job.budgetOrSalary}</p>
-                      )}
-                      <div className="flex flex-wrap gap-2">
-                        <Badge variant="secondary" className="text-xs">
-                          {job.sector || "General"}
-                        </Badge>
-                        {job.status === "open" ? (
-                          <Badge variant="secondary" className="text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100">
-                            Open
+                              ? "Rejected"
+                              : "Pending Approval"}
                           </Badge>
-                        ) : (
-                          <Badge variant="secondary" className="text-xs">
-                            Closed
-                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+                          {job.description}
+                        </p>
+                        {job.budgetOrSalary && (
+                          <p className="text-sm font-medium mb-2" data-testid={`job-salary-${idx}`}>{job.budgetOrSalary}</p>
                         )}
+                        <div className="flex flex-wrap gap-2">
+                          <Badge variant="secondary" className="text-xs">
+                            {job.sector || "General"}
+                          </Badge>
+                          {job.status === "open" ? (
+                            <Badge variant="secondary" className="text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100">
+                              Open
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary" className="text-xs">
+                              Closed
+                            </Badge>
+                          )}
+                        </div>
                       </div>
+                    ))}
+                    <div className="pt-4 border-t">
+                      <Button 
+                        onClick={() => setShowPostJobDialog(true)} 
+                        className="w-full"
+                        data-testid="button-post-job-cta"
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Post Job
+                      </Button>
                     </div>
-                  ))
+                  </>
                 )}
               </CardContent>
             </Card>

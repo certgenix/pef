@@ -84,7 +84,6 @@ export default function PostJobDialog({ open, onOpenChange }: PostJobDialogProps
         description: "Your job posting has been created and is now live on the opportunities page!",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/opportunities"] });
-      onOpenChange(false);
       setFormData({
         title: "",
         description: "",
