@@ -99,17 +99,42 @@ export class FirestoreStorage implements IStorage {
   }
 
   async getUserWithRoles(id: string): Promise<{ user: User; roles: UserRoles | null } | undefined> {
-    const user = await this.getUserById(id);
-    if (!user) {
+    const userDocRef = doc(db, "users", id);
+    const userSnap = await getDoc(userDocRef);
+    
+    if (!userSnap.exists()) {
       return undefined;
     }
+    
+    const userData = userSnap.data();
+    const user = { id: userSnap.id, ...userData } as User;
 
+    // First check for roles in the userRoles collection
     const rolesDocRef = doc(db, "userRoles", id);
     const rolesSnap = await getDoc(rolesDocRef);
     
+    let roles: UserRoles | null = null;
+    
+    if (rolesSnap.exists()) {
+      // Roles exist in separate collection
+      roles = { id: rolesSnap.id, ...rolesSnap.data() } as UserRoles;
+    } else if (userData.roles) {
+      // Fallback: Roles embedded in user document (legacy schema)
+      roles = {
+        id,
+        userId: id,
+        isProfessional: userData.roles.professional || false,
+        isJobSeeker: userData.roles.jobSeeker || false,
+        isEmployer: userData.roles.employer || false,
+        isBusinessOwner: userData.roles.businessOwner || false,
+        isInvestor: userData.roles.investor || false,
+        createdAt: userData.createdAt || new Date(),
+      };
+    }
+    
     return {
       user,
-      roles: rolesSnap.exists() ? ({ id: rolesSnap.id, ...rolesSnap.data() } as UserRoles) : null,
+      roles,
     };
   }
 
