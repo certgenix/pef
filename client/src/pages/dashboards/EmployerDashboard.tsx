@@ -24,7 +24,7 @@ export default function EmployerDashboard() {
     queryKey: ["/api/opportunities", "my-jobs"],
     queryFn: async () => {
       const token = await auth.currentUser?.getIdToken();
-      const response = await fetch("/api/opportunities?myOpportunities=true", {
+      const response = await fetch("/api/opportunities?myOpportunities=true&type=job", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -75,7 +75,7 @@ export default function EmployerDashboard() {
   const industry = employerData.industry || "Not specified";
   const companySize = employerData.companySize || "Not specified";
 
-  const activeJobs = myJobs.filter(job => job.status === "open");
+  const activeJobs = myJobs.filter(job => job.approvalStatus === "approved" && job.status === "open");
   const approvedJobs = myJobs.filter(job => job.approvalStatus === "approved" && job.status === "open");
   const pendingJobs = myJobs.filter(job => job.approvalStatus === "pending");
 
@@ -179,10 +179,10 @@ export default function EmployerDashboard() {
                   </div>
                 ) : (
                   myJobs.map((job, idx) => (
-                    <div key={job.id} className="p-4 rounded-md border hover-elevate">
+                    <div key={job.id} className="p-4 rounded-md border hover-elevate" data-testid={`job-card-${idx}`}>
                       <div className="flex flex-wrap items-start justify-between gap-2 mb-3">
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-lg mb-1">{job.title}</h3>
+                          <h3 className="font-semibold text-lg mb-1" data-testid={`job-title-${idx}`}>{job.title}</h3>
                           <p className="text-sm text-muted-foreground">
                             {job.city ? `${job.city}, ` : ""}{job.country}
                           </p>
@@ -195,6 +195,7 @@ export default function EmployerDashboard() {
                               ? "bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-100"
                               : "bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-100"
                           }
+                          data-testid={`job-status-${idx}`}
                         >
                           {job.approvalStatus === "approved" 
                             ? "Approved" 
@@ -207,7 +208,7 @@ export default function EmployerDashboard() {
                         {job.description}
                       </p>
                       {job.budgetOrSalary && (
-                        <p className="text-sm font-medium mb-2">{job.budgetOrSalary}</p>
+                        <p className="text-sm font-medium mb-2" data-testid={`job-salary-${idx}`}>{job.budgetOrSalary}</p>
                       )}
                       <div className="flex flex-wrap gap-2">
                         <Badge variant="secondary" className="text-xs">
