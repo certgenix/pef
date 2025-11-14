@@ -1,0 +1,98 @@
+I am using Firebase Auth + Firestore and I already confirmed that the user IS created correctly in Firestore.
+
+But after login or registration, my app shows this page:
+“Error Loading Account — We’re having trouble loading your account information.”
+
+I want you to FIX ALL of the following problems:
+
+────────────────────────────────────────
+🔥 WHAT IS WRONG (Fix These)
+────────────────────────────────────────
+
+1. My dashboard tries to load user data from Firestore before it is available.
+   → You must add a proper loading state until Firestore returns actual data.
+
+2. My dashboard code assumes role data exists.
+   → If professionalData, jobSeekerData, employerData, businessOwnerData, or investorData 
+     is undefined, the UI crashes and shows the “Error Loading Account” screen.
+
+3. My code relies on fields that may not exist yet.
+   → You must add safe fallback values for:
+        - user.roles
+        - user.professionalData
+        - user.jobSeekerData
+        - all other role objects
+
+4. If the user doc loads as undefined (Firestore delay), the app incorrectly thinks the account is broken.
+   → You must replace the error page with:
+       “Loading your account…”
+       until Firestore confirms document exists.
+
+5. AuthContext or Dashboard might be checking userDoc incorrectly.
+   → You must fix the data fetching logic and ensure:
+       - Firebase Auth `onAuthStateChanged()` finishes first
+       - Firestore `getDoc()` or `onSnapshot()` completes second
+
+────────────────────────────────────────
+🔥 WHAT I WANT YOU TO GENERATE
+────────────────────────────────────────
+
+1. A **fixed Dashboard.jsx** that:
+   - Loads user data safely
+   - Shows a loading spinner while fetching
+   - Creates fallback objects instead of throwing errors
+   - NEVER shows “Error Loading Account” unless truly necessary
+
+2. A **fixed AuthContext.jsx** that:
+   - Waits for Firebase Auth state to finish
+   - Exposes a proper loading state
+   - Ensures user is authenticated before dashboard loads
+
+3. A safe Firestore fetch helper:
+   Example:
+      if (!doc.exists()) → auto-create minimal user doc
+
+4. Example code:
+   const roles = user.roles || {
+      professional: false,
+      jobSeeker: false,
+      employer: false,
+      businessOwner: false,
+      investor: false
+   };
+
+   const professional = user.professionalData || {};
+
+5. Replace CRASHES with safeguards:
+   - No more "cannot read properties of undefined"
+   - No more error page for missing fields
+   - No more dashboard failures due to slow Firestore
+
+6. OPTIONAL:
+   If helpful, you may wrap userDoc loading in:
+     useEffect(() => onSnapshot(...))
+
+────────────────────────────────────────
+🔥 REQUIREMENTS
+────────────────────────────────────────
+
+• The code must run in React (Replit environment)
+• Use Firebase v9 modular SDK
+• Use async/await properly
+• Include comments explaining each fix
+• Keep the UI clean and simple
+• Ensure the dashboard loads correctly for ALL role combinations
+
+────────────────────────────────────────
+🔥 FINAL OUTPUT FORMAT
+────────────────────────────────────────
+
+Please output:
+
+1. Updated AuthContext.jsx (full file)
+2. Updated Dashboard.jsx (full file)
+3. Fallback helpers for undefined role data
+4. Optional Firebase rules for safe reads
+
+Make sure the final result FIXES the “Error Loading Account” issue completely.
+
