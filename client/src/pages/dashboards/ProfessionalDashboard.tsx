@@ -3,21 +3,26 @@ import { useUserRoles } from "@/hooks/useUserRoles";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Briefcase, Award, Building2, TrendingUp, Users, Edit, Plus } from "lucide-react";
+import { Briefcase, Award, Building2, TrendingUp, Users, Edit, Plus, Eye, Network, Target } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
+import type { Opportunity } from "@shared/schema";
+import { format } from "date-fns";
 
 export default function ProfessionalDashboard() {
   const { currentUser, userData, loading: authLoading } = useAuth();
   const { hasRole, isLoading: rolesLoading } = useUserRoles(currentUser?.uid);
   const [, setLocation] = useLocation();
 
-  // ✅ FIX: Safe fallback for professionalData - never undefined
   const professionalData = userData?.professionalData || {};
-  
-  // ✅ FIX: Combined loading state - wait for both auth and roles
   const isLoading = authLoading || rolesLoading;
+
+  const { data: opportunities = [], isLoading: opportunitiesLoading } = useQuery<Opportunity[]>({
+    queryKey: ["/api/opportunities"],
+    enabled: !isLoading && hasRole("professional"),
+  });
 
   // ✅ FIX: Show loading spinner while Firestore is fetching data
   if (isLoading) {
@@ -54,11 +59,27 @@ export default function ProfessionalDashboard() {
     );
   }
 
-  // Safe access to professionalData fields with fallbacks
-  const currentJobTitle = professionalData.title || "Not specified";
-  const currentEmployer = professionalData.experience || "Not specified";
+  const currentJobTitle = professionalData.title || userData?.name || "Professional";
+  const currentEmployer = professionalData.experience || "Independent Professional";
   const skills = professionalData.skills || [];
   const certifications = professionalData.certifications || [];
+
+  const relevantOpportunities = opportunities.filter(opp => 
+    opp.status === "open" && opp.approvalStatus === "approved"
+  ).slice(0, 5);
+
+  const profileCompleteness = () => {
+    let score = 0;
+    if (userData?.name) score += 20;
+    if (userData?.headline) score += 15;
+    if (userData?.bio) score += 15;
+    if (skills.length > 0) score += 20;
+    if (certifications.length > 0) score += 15;
+    if (userData?.links?.linkedin) score += 15;
+    return score;
+  };
+
+  const completeness = profileCompleteness();
 
   return (
     <div className="min-h-screen">
@@ -66,57 +87,90 @@ export default function ProfessionalDashboard() {
       <main className="py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <div className="mb-8">
           <div className="flex flex-wrap items-center justify-between gap-4 mb-2">
-            <h1 className="text-3xl font-bold">Professional Dashboard</h1>
+            <div>
+              <h1 className="text-3xl font-bold">Professional Dashboard</h1>
+              <p className="text-muted-foreground">Network, showcase your skills, and boost your career visibility</p>
+            </div>
             <Button onClick={() => setLocation("/edit-profile")} data-testid="button-edit-profile">
               <Edit className="w-4 h-4 mr-2" />
               Edit Profile
             </Button>
           </div>
-          <p className="text-muted-foreground">Manage your professional profile and network</p>
         </div>
+
+        {completeness < 100 && (
+          <Card className="mb-6 border-orange-200 dark:border-orange-800">
+            <CardContent className="pt-6">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="flex-1">
+                  <h3 className="font-semibold mb-1">Complete Your Profile</h3>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    {completeness}% complete - Add more details to increase your visibility
+                  </p>
+                  <div className="w-full bg-muted rounded-full h-2">
+                    <div 
+                      className="bg-primary h-2 rounded-full transition-all" 
+                      style={{ width: `${completeness}%` }}
+                    />
+                  </div>
+                </div>
+                <Button 
+                  onClick={() => setLocation("/edit-profile")} 
+                  data-testid="button-complete-profile"
+                >
+                  Complete Profile
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Profile Views</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">Profile Visibility</CardTitle>
+              <Eye className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">1,234</div>
-              <p className="text-xs text-muted-foreground">+20% from last month</p>
+              <div className="text-2xl font-bold" data-testid="text-profile-completeness">{completeness}%</div>
+              <p className="text-xs text-muted-foreground">
+                {completeness === 100 ? "Fully optimized!" : "Keep improving"}
+              </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Connections</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">Network Reach</CardTitle>
+              <Network className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">342</div>
-              <p className="text-xs text-muted-foreground">+12 new this week</p>
+              <div className="text-2xl font-bold" data-testid="text-network-reach">Active</div>
+              <p className="text-xs text-muted-foreground">Visible to employers</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Opportunities</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              <Target className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">8</div>
-              <p className="text-xs text-muted-foreground">Relevant matches</p>
+              <div className="text-2xl font-bold" data-testid="text-opportunities-count">{relevantOpportunities.length}</div>
+              <p className="text-xs text-muted-foreground">Available now</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Skills Verified</CardTitle>
+              <CardTitle className="text-sm font-medium">Skills Listed</CardTitle>
               <Award className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{skills.length}</div>
-              <p className="text-xs text-muted-foreground">Total skills</p>
+              <div className="text-2xl font-bold" data-testid="text-skills-count">{skills.length}</div>
+              <p className="text-xs text-muted-foreground">
+                {skills.length === 0 ? "Add skills" : "Showcasing expertise"}
+              </p>
             </CardContent>
           </Card>
         </div>
@@ -145,7 +199,7 @@ export default function ProfessionalDashboard() {
                     <h3 className="font-semibold mb-2">Skills & Expertise</h3>
                     <div className="flex flex-wrap gap-2">
                       {skills.map((skill, idx) => (
-                        <Badge key={idx} variant="secondary">{skill}</Badge>
+                        <Badge key={idx} variant="secondary" data-testid={`badge-skill-${idx}`}>{skill}</Badge>
                       ))}
                     </div>
                   </div>
@@ -156,7 +210,7 @@ export default function ProfessionalDashboard() {
                     <h3 className="font-semibold mb-2">Certifications</h3>
                     <div className="space-y-2">
                       {certifications.map((cert, idx) => (
-                        <div key={idx} className="flex items-center gap-2">
+                        <div key={idx} className="flex items-center gap-2" data-testid={`cert-${idx}`}>
                           <Award className="w-4 h-4 text-primary" />
                           <span className="text-sm">{cert}</span>
                         </div>
@@ -171,31 +225,67 @@ export default function ProfessionalDashboard() {
               <CardHeader>
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <CardTitle>Opportunities For You</CardTitle>
-                  <Button variant="outline" size="sm" data-testid="button-view-all-opportunities">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setLocation("/opportunities")}
+                    data-testid="button-view-all-opportunities"
+                  >
                     View All
                   </Button>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                {[
-                  { title: "Senior Developer Position", company: "GlobalTech", type: "Job", match: "95%" },
-                  { title: "Tech Leadership Workshop", company: "PEF Events", type: "Event", match: "88%" },
-                  { title: "Partnership Opportunity", company: "StartupX", type: "Partnership", match: "75%" },
-                ].map((opp, idx) => (
-                  <div key={idx} className="flex flex-wrap items-center justify-between gap-4 p-3 rounded-md hover-elevate">
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium">{opp.title}</p>
-                      <p className="text-sm text-muted-foreground">{opp.company}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="secondary">{opp.type}</Badge>
-                      <Badge className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100">
-                        {opp.match} Match
-                      </Badge>
-                      <Button size="sm" data-testid={`button-view-opportunity-${idx}`}>View</Button>
-                    </div>
+                {opportunitiesLoading ? (
+                  <div className="text-center py-8">
+                    <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground">Loading opportunities...</p>
                   </div>
-                ))}
+                ) : relevantOpportunities.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Target className="w-12 h-12 text-muted-foreground mx-auto mb-2" />
+                    <p className="text-muted-foreground">No opportunities available at the moment</p>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="mt-4"
+                      onClick={() => setLocation("/opportunities")}
+                      data-testid="button-browse-opportunities"
+                    >
+                      Browse All Opportunities
+                    </Button>
+                  </div>
+                ) : (
+                  relevantOpportunities.map((opp) => (
+                    <div 
+                      key={opp.id} 
+                      className="flex flex-wrap items-center justify-between gap-4 p-3 rounded-md border hover-elevate"
+                      data-testid={`card-opportunity-${opp.id}`}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium">{opp.title}</p>
+                        <p className="text-sm text-muted-foreground">{opp.sector || "Various Sectors"}</p>
+                        {(opp.city || opp.country) && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {[opp.city, opp.country].filter(Boolean).join(", ")}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Badge variant="secondary" data-testid={`badge-type-${opp.id}`}>
+                          {opp.type.charAt(0).toUpperCase() + opp.type.slice(1)}
+                        </Badge>
+                        <Button 
+                          size="sm" 
+                          onClick={() => setLocation("/opportunities")}
+                          data-testid={`button-view-opportunity-${opp.id}`}
+                        >
+                          View All
+                        </Button>
+                      </div>
+                    </div>
+                  ))
+                )}
               </CardContent>
             </Card>
           </div>
@@ -204,43 +294,97 @@ export default function ProfessionalDashboard() {
             <Card>
               <CardHeader>
                 <CardTitle>Quick Actions</CardTitle>
+                <CardDescription>Boost your professional presence</CardDescription>
               </CardHeader>
               <CardContent className="space-y-2">
-                <Button className="w-full" variant="outline" onClick={() => setLocation("/edit-profile")} data-testid="button-update-skills">
-                  <Briefcase className="w-4 h-4 mr-2" />
-                  Update Skills
+                <Button 
+                  className="w-full" 
+                  variant="outline" 
+                  onClick={() => setLocation("/edit-profile")} 
+                  data-testid="button-update-profile"
+                >
+                  <Edit className="w-4 h-4 mr-2" />
+                  Update Profile
                 </Button>
-                <Button className="w-full" variant="outline" onClick={() => setLocation("/edit-profile")} data-testid="button-add-certification">
+                <Button 
+                  className="w-full" 
+                  variant="outline" 
+                  onClick={() => setLocation("/opportunities")} 
+                  data-testid="button-browse-opportunities-action"
+                >
+                  <TrendingUp className="w-4 h-4 mr-2" />
+                  Browse Opportunities
+                </Button>
+                <Button 
+                  className="w-full" 
+                  variant="outline" 
+                  onClick={() => setLocation("/edit-profile")}
+                  data-testid="button-showcase-skills"
+                >
                   <Award className="w-4 h-4 mr-2" />
-                  Add Certification
+                  Showcase Skills
                 </Button>
-                <Button className="w-full" variant="outline" data-testid="button-network">
-                  <Users className="w-4 h-4 mr-2" />
-                  Explore Network
-                </Button>
-                <Button className="w-full" variant="outline" data-testid="button-post-update">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Post Update
+                <Button 
+                  className="w-full" 
+                  variant="outline"
+                  onClick={() => setLocation("/opportunities")}
+                  data-testid="button-network"
+                >
+                  <Network className="w-4 h-4 mr-2" />
+                  Network & Connect
                 </Button>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
-                <CardTitle>Recent Activity</CardTitle>
+                <CardTitle>Profile Tips</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {[
-                  { action: "Profile viewed by TechCorp", time: "2 hours ago" },
-                  { action: "New connection request", time: "5 hours ago" },
-                  { action: "Skill endorsed: React", time: "1 day ago" },
-                  { action: "Posted professional update", time: "2 days ago" },
-                ].map((activity, idx) => (
-                  <div key={idx} className="text-sm">
-                    <p className="font-medium">{activity.action}</p>
-                    <p className="text-xs text-muted-foreground">{activity.time}</p>
-                  </div>
-                ))}
+                <div className="text-sm space-y-3">
+                  {skills.length === 0 && (
+                    <div className="p-3 bg-muted rounded-md">
+                      <p className="font-medium mb-1">Add Your Skills</p>
+                      <p className="text-xs text-muted-foreground">
+                        Showcase your expertise to attract opportunities
+                      </p>
+                    </div>
+                  )}
+                  {!userData?.headline && (
+                    <div className="p-3 bg-muted rounded-md">
+                      <p className="font-medium mb-1">Write a Headline</p>
+                      <p className="text-xs text-muted-foreground">
+                        Capture attention with a strong professional headline
+                      </p>
+                    </div>
+                  )}
+                  {!userData?.bio && (
+                    <div className="p-3 bg-muted rounded-md">
+                      <p className="font-medium mb-1">Add Your Bio</p>
+                      <p className="text-xs text-muted-foreground">
+                        Tell your professional story to stand out
+                      </p>
+                    </div>
+                  )}
+                  {!userData?.links?.linkedin && (
+                    <div className="p-3 bg-muted rounded-md">
+                      <p className="font-medium mb-1">Connect LinkedIn</p>
+                      <p className="text-xs text-muted-foreground">
+                        Link your LinkedIn profile for better visibility
+                      </p>
+                    </div>
+                  )}
+                  {completeness === 100 && (
+                    <div className="p-3 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-md">
+                      <p className="font-medium text-green-800 dark:text-green-100 mb-1">
+                        Profile Complete!
+                      </p>
+                      <p className="text-xs text-green-700 dark:text-green-200">
+                        Your profile is optimized for maximum visibility
+                      </p>
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
           </div>
