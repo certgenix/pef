@@ -100,7 +100,7 @@ export default function EmployerDashboard() {
     return (
       <div className="min-h-screen">
         <Header />
-        <main className="py-16 px-4">
+        <main className="pt-24 md:pt-28 pb-16 px-4">
           <Card className="max-w-md mx-auto">
             <CardHeader>
               <CardTitle>Access Denied</CardTitle>
@@ -129,7 +129,7 @@ export default function EmployerDashboard() {
   return (
     <div className="min-h-screen">
       <Header />
-      <main className="py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+      <main className="pt-24 md:pt-28 pb-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <div className="mb-8">
           <div className="flex flex-wrap items-center justify-between gap-4 mb-2">
             <h1 className="text-3xl font-bold">Employer Dashboard</h1>
