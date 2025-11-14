@@ -61,6 +61,12 @@ function DashboardContent() {
 
   useEffect(() => {
     if (isLoading) return;
+    
+    if (safeRoles.length === 0) {
+      setLocation("/select-roles");
+      return;
+    }
+    
     if (safeRoles.length === 1) {
       const dashboard = roleDashboards.find(d => d.role === safeRoles[0]);
       if (dashboard) {
@@ -78,15 +84,6 @@ function DashboardContent() {
         </div>
       </div>
     );
-  }
-
-  if (!isLoading && safeRoles.length === 0) {
-    setLocation("/select-roles");
-    return null;
-  }
-
-  if (!isLoading && safeRoles.length === 1) {
-    return null;
   }
 
   return (
