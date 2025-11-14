@@ -68,11 +68,32 @@ Preferred communication style: Simple, everyday language.
 
 ### Authentication & Authorization
 
-**Current State**: Basic user schema prepared with username/password fields. No authentication implementation yet.
+**Current State**: Hybrid authentication system using Firebase Authentication for user identity and PostgreSQL for backend data persistence.
 
-**Planned Approach**: Session-based authentication (infrastructure present with connect-pg-simple). Admin approval workflow required for member verification, indicating need for role-based permissions system.
+**Architecture**: 
+- **Firebase Authentication**: Handles user registration, login, password reset, and email verification
+- **Firestore**: Stores user profile data and role information (professionals, job seekers, employers, business owners, investors)
+- **PostgreSQL**: Backend database that mirrors user data from Firebase for server-side operations and future matching logic
+- **Synchronization**: AuthContext automatically syncs Firebase users to PostgreSQL on registration and login with retry logic (3 attempts, exponential backoff)
 
-**Security Considerations**: Production deployment will require password hashing, CSRF protection, rate limiting on registration endpoints, and secure session configuration.
+**Implementation Details**:
+- Users register through Firebase Auth and complete their profile in Firestore
+- On first authentication, user data is synced to PostgreSQL backend via `/api/auth/complete-registration`
+- Sync is blocking: users cannot access protected routes until backend sync succeeds
+- If sync fails after retries, user is signed out to prevent broken state
+- Admin approval workflow ready for implementation (approval status tracked in Firestore)
+
+**CRITICAL Security Issues - MUST FIX BEFORE PRODUCTION**:
+1. ⚠️ **Firebase ID Token Verification**: Backend currently decodes ID tokens WITHOUT signature verification. This is a severe security vulnerability. Must implement Firebase Admin SDK verification before production deployment.
+2. **Race Condition**: Registration may create Firestore document after `onAuthStateChanged` fires, potentially caching null user data. Consider moving `setDoc` before other async operations.
+3. **One-Way Sync**: Current sync only flows Firebase → PostgreSQL during auth. Profile updates in Firestore don't automatically propagate to PostgreSQL.
+
+**Next Steps for Production**:
+- Implement Firebase Admin SDK for server-side token verification
+- Add CSRF protection for API endpoints
+- Implement rate limiting on registration endpoints
+- Document and implement profile update sync strategy
+- Secure session configuration with proper expiry and rotation
 
 ## External Dependencies
 
