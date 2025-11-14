@@ -76,11 +76,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const mergedUserData: User = {
         ...existingUserData,
         roles: {
-          professional: backendRoles.isProfessional || false,
-          jobSeeker: backendRoles.isJobSeeker || false,
-          employer: backendRoles.isEmployer || false,
-          businessOwner: backendRoles.isBusinessOwner || false,
-          investor: backendRoles.isInvestor || false,
+          professional: backendRoles?.isProfessional || false,
+          jobSeeker: backendRoles?.isJobSeeker || false,
+          employer: backendRoles?.isEmployer || false,
+          businessOwner: backendRoles?.isBusinessOwner || false,
+          investor: backendRoles?.isInvestor || false,
         },
       };
 
@@ -177,9 +177,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const userDoc = await getDoc(doc(db, "users", uid));
       if (userDoc.exists()) {
         const data = userDoc.data();
+        
+        const normalizedRoles = data.roles ? {
+          professional: data.roles.isProfessional || data.roles.professional || false,
+          jobSeeker: data.roles.isJobSeeker || data.roles.jobSeeker || false,
+          employer: data.roles.isEmployer || data.roles.employer || false,
+          businessOwner: data.roles.isBusinessOwner || data.roles.businessOwner || false,
+          investor: data.roles.isInvestor || data.roles.investor || false,
+        } : {
+          professional: false,
+          jobSeeker: false,
+          employer: false,
+          businessOwner: false,
+          investor: false,
+        };
+        
         const userData = {
           ...data,
           uid,
+          roles: normalizedRoles,
           createdAt: data.createdAt?.toDate(),
           lastUpdated: data.lastUpdated?.toDate(),
         } as User;
