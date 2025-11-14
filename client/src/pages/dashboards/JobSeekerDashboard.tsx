@@ -43,12 +43,9 @@ export default function JobSeekerDashboard() {
 
   const applyMutation = useMutation({
     mutationFn: async (opportunityId: string) => {
-      return apiRequest("/api/applications", {
-        method: "POST",
-        body: JSON.stringify({ 
-          opportunityId,
-          status: "applied",
-        }),
+      return apiRequest("POST", "/api/applications", { 
+        opportunityId,
+        status: "applied",
       });
     },
     onSuccess: () => {
