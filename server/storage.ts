@@ -1,15 +1,18 @@
-import { eq, and, or } from "drizzle-orm";
-import { db } from "./db";
 import { 
-  users, 
-  userProfiles,
-  userRoles,
-  professionalProfiles,
-  jobSeekerProfiles,
-  employerProfiles,
-  businessOwnerProfiles,
-  investorProfiles,
-  opportunities,
+  collection, 
+  doc, 
+  getDoc, 
+  getDocs, 
+  setDoc, 
+  updateDoc, 
+  deleteDoc, 
+  query, 
+  where,
+  Timestamp,
+  addDoc
+} from "firebase/firestore";
+import { db } from "../client/src/lib/firebase";
+import { 
   type User,
   type UserProfile,
   type UserRoles,
@@ -69,15 +72,30 @@ export interface IStorage {
   getTalentByRole(role: "professional" | "jobSeeker"): Promise<TalentProfile[]>;
 }
 
-export class DatabaseStorage implements IStorage {
+export class FirestoreStorage implements IStorage {
+  private generateId(): string {
+    return doc(collection(db, "temp")).id;
+  }
+
   async getUserById(id: string): Promise<User | undefined> {
-    const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
-    return result[0];
+    const docRef = doc(db, "users", id);
+    const docSnap = await getDoc(docRef);
+    
+    if (docSnap.exists()) {
+      return { id: docSnap.id, ...docSnap.data() } as User;
+    }
+    return undefined;
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
-    return result[0];
+    const q = query(collection(db, "users"), where("email", "==", email));
+    const querySnapshot = await getDocs(q);
+    
+    if (!querySnapshot.empty) {
+      const doc = querySnapshot.docs[0];
+      return { id: doc.id, ...doc.data() } as User;
+    }
+    return undefined;
   }
 
   async getUserWithRoles(id: string): Promise<{ user: User; roles: UserRoles | null } | undefined> {
@@ -86,168 +104,270 @@ export class DatabaseStorage implements IStorage {
       return undefined;
     }
 
-    const rolesResult = await db
-      .select()
-      .from(userRoles)
-      .where(eq(userRoles.userId, id))
-      .limit(1);
-
+    const rolesDocRef = doc(db, "userRoles", id);
+    const rolesSnap = await getDoc(rolesDocRef);
+    
     return {
       user,
-      roles: rolesResult[0] || null,
+      roles: rolesSnap.exists() ? ({ id: rolesSnap.id, ...rolesSnap.data() } as UserRoles) : null,
     };
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const result = await db.insert(users).values(insertUser).returning();
-    return result[0];
+    const userData: User = {
+      ...insertUser,
+      createdAt: new Date(),
+      lastLogin: null,
+      approvalStatus: insertUser.approvalStatus || "pending",
+    };
+    
+    await setDoc(doc(db, "users", insertUser.id), userData);
+    return userData;
   }
 
   async updateUserLastLogin(id: string): Promise<void> {
-    await db.update(users)
-      .set({ lastLogin: new Date() })
-      .where(eq(users.id, id));
+    const userRef = doc(db, "users", id);
+    await updateDoc(userRef, {
+      lastLogin: new Date(),
+    });
   }
 
   async completeRegistration(data: RegistrationData): Promise<{ user: User; profile: UserProfile }> {
     try {
-      const [user] = await db.insert(users).values({
+      const user: User = {
         id: data.userId,
         email: data.email,
         displayName: data.displayName,
+        createdAt: new Date(),
+        lastLogin: null,
         approvalStatus: "approved",
-      }).returning();
+      };
+      
+      await setDoc(doc(db, "users", data.userId), user);
 
-      const [profile] = await db.insert(userProfiles).values({
-        userId: user.id,
+      const profileId = this.generateId();
+      const profile: UserProfile = {
+        id: profileId,
+        userId: data.userId,
         ...data.profile,
-      }).returning();
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      
+      await setDoc(doc(db, "userProfiles", profileId), profile);
 
-      await db.insert(userRoles).values({
-        userId: user.id,
+      const roles: UserRoles = {
+        id: data.userId,
+        userId: data.userId,
         ...data.roles,
-      });
+        createdAt: new Date(),
+      };
+      
+      await setDoc(doc(db, "userRoles", data.userId), roles);
 
       return { user, profile };
     } catch (error) {
       console.error("Registration error:", error);
-      try {
-        await db.delete(userRoles).where(eq(userRoles.userId, data.userId));
-        await db.delete(userProfiles).where(eq(userProfiles.userId, data.userId));
-        await db.delete(users).where(eq(users.id, data.userId));
-      } catch (cleanupError) {
-        console.error("Cleanup error during registration rollback:", cleanupError);
-      }
       throw error;
     }
   }
 
   async createUserProfile(insertProfile: InsertUserProfile): Promise<UserProfile> {
-    const result = await db.insert(userProfiles).values(insertProfile).returning();
-    return result[0];
+    const profileId = this.generateId();
+    const profile: UserProfile = {
+      id: profileId,
+      ...insertProfile,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    
+    await setDoc(doc(db, "userProfiles", profileId), profile);
+    return profile;
   }
 
   async createUserRoles(insertRoles: InsertUserRoles): Promise<UserRoles> {
-    const result = await db.insert(userRoles).values(insertRoles).returning();
-    return result[0];
+    const roles: UserRoles = {
+      id: insertRoles.userId,
+      ...insertRoles,
+      createdAt: new Date(),
+    };
+    
+    await setDoc(doc(db, "userRoles", insertRoles.userId), roles);
+    return roles;
   }
 
   async createProfessionalProfile(profile: InsertProfessionalProfile): Promise<void> {
-    await db.insert(professionalProfiles).values(profile);
+    const profileId = this.generateId();
+    await setDoc(doc(db, "professionalProfiles", profileId), {
+      id: profileId,
+      ...profile,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
   }
 
   async createJobSeekerProfile(profile: InsertJobSeekerProfile): Promise<void> {
-    await db.insert(jobSeekerProfiles).values(profile);
+    const profileId = this.generateId();
+    await setDoc(doc(db, "jobSeekerProfiles", profileId), {
+      id: profileId,
+      ...profile,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
   }
 
   async createEmployerProfile(profile: InsertEmployerProfile): Promise<void> {
-    await db.insert(employerProfiles).values(profile);
+    const profileId = this.generateId();
+    await setDoc(doc(db, "employerProfiles", profileId), {
+      id: profileId,
+      ...profile,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
   }
 
   async createBusinessOwnerProfile(profile: InsertBusinessOwnerProfile): Promise<void> {
-    await db.insert(businessOwnerProfiles).values(profile);
+    const profileId = this.generateId();
+    await setDoc(doc(db, "businessOwnerProfiles", profileId), {
+      id: profileId,
+      ...profile,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
   }
 
   async createInvestorProfile(profile: InsertInvestorProfile): Promise<void> {
-    await db.insert(investorProfiles).values(profile);
+    const profileId = this.generateId();
+    await setDoc(doc(db, "investorProfiles", profileId), {
+      id: profileId,
+      ...profile,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
   }
 
   async createOpportunity(opportunity: InsertOpportunity): Promise<Opportunity> {
-    const result = await db.insert(opportunities).values(opportunity).returning();
-    return result[0];
+    const opportunityId = this.generateId();
+    const newOpportunity: Opportunity = {
+      id: opportunityId,
+      ...opportunity,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    
+    await setDoc(doc(db, "opportunities", opportunityId), newOpportunity);
+    return newOpportunity;
   }
 
   async getOpportunityById(id: string): Promise<Opportunity | undefined> {
-    const result = await db.select().from(opportunities).where(eq(opportunities.id, id)).limit(1);
-    return result[0];
+    const docRef = doc(db, "opportunities", id);
+    const docSnap = await getDoc(docRef);
+    
+    if (docSnap.exists()) {
+      return { id: docSnap.id, ...docSnap.data() } as Opportunity;
+    }
+    return undefined;
   }
 
   async getOpportunitiesByUserId(userId: string): Promise<Opportunity[]> {
-    return await db.select().from(opportunities).where(eq(opportunities.userId, userId));
+    const q = query(collection(db, "opportunities"), where("userId", "==", userId));
+    const querySnapshot = await getDocs(q);
+    
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Opportunity));
   }
 
   async getPublicOpportunities(type?: string): Promise<Opportunity[]> {
-    const conditions = [
-      eq(opportunities.approvalStatus, "approved"),
-      eq(opportunities.status, "open")
-    ];
-    
+    let q;
     if (type) {
-      conditions.push(eq(opportunities.type, type as any));
+      q = query(
+        collection(db, "opportunities"),
+        where("approvalStatus", "==", "approved"),
+        where("status", "==", "open"),
+        where("type", "==", type)
+      );
+    } else {
+      q = query(
+        collection(db, "opportunities"),
+        where("approvalStatus", "==", "approved"),
+        where("status", "==", "open")
+      );
     }
     
-    return await db.select().from(opportunities).where(and(...conditions));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Opportunity));
   }
 
   async updateOpportunity(id: string, data: Partial<InsertOpportunity>): Promise<Opportunity | undefined> {
-    const result = await db.update(opportunities)
-      .set({ ...data, updatedAt: new Date() })
-      .where(eq(opportunities.id, id))
-      .returning();
-    return result[0];
+    const docRef = doc(db, "opportunities", id);
+    await updateDoc(docRef, {
+      ...data,
+      updatedAt: new Date(),
+    });
+    
+    return this.getOpportunityById(id);
   }
 
   async deleteOpportunity(id: string): Promise<void> {
-    await db.delete(opportunities).where(eq(opportunities.id, id));
+    const docRef = doc(db, "opportunities", id);
+    await deleteDoc(docRef);
   }
 
   async getTalentByRole(role: "professional" | "jobSeeker"): Promise<TalentProfile[]> {
     const roleField = role === "professional" ? "isProfessional" : "isJobSeeker";
     
-    const usersWithRoles = await db
-      .select()
-      .from(users)
-      .innerJoin(userRoles, eq(users.id, userRoles.userId))
-      .innerJoin(userProfiles, eq(users.id, userProfiles.userId))
-      .where(and(
-        eq(users.approvalStatus, "approved"),
-        eq(userRoles[roleField], true)
-      ));
-
+    const rolesQuery = query(
+      collection(db, "userRoles"),
+      where(roleField, "==", true)
+    );
+    
+    const rolesSnapshot = await getDocs(rolesQuery);
     const results: TalentProfile[] = [];
     
-    for (const row of usersWithRoles) {
+    for (const roleDoc of rolesSnapshot.docs) {
+      const userId = roleDoc.data().userId;
+      
+      const user = await this.getUserById(userId);
+      if (!user || user.approvalStatus !== "approved") {
+        continue;
+      }
+      
+      const profileQuery = query(
+        collection(db, "userProfiles"),
+        where("userId", "==", userId)
+      );
+      const profileSnapshot = await getDocs(profileQuery);
+      
+      if (profileSnapshot.empty) {
+        continue;
+      }
+      
+      const profile = { id: profileSnapshot.docs[0].id, ...profileSnapshot.docs[0].data() } as UserProfile;
+      
       let roleSpecificProfile = null;
       
       if (role === "professional") {
-        const profProfile = await db
-          .select()
-          .from(professionalProfiles)
-          .where(eq(professionalProfiles.userId, row.users.id))
-          .limit(1);
-        roleSpecificProfile = profProfile[0] || null;
+        const profQuery = query(
+          collection(db, "professionalProfiles"),
+          where("userId", "==", userId)
+        );
+        const profSnapshot = await getDocs(profQuery);
+        if (!profSnapshot.empty) {
+          roleSpecificProfile = { id: profSnapshot.docs[0].id, ...profSnapshot.docs[0].data() } as ProfessionalProfile;
+        }
       } else {
-        const jobSeekerProfile = await db
-          .select()
-          .from(jobSeekerProfiles)
-          .where(eq(jobSeekerProfiles.userId, row.users.id))
-          .limit(1);
-        roleSpecificProfile = jobSeekerProfile[0] || null;
+        const jobSeekerQuery = query(
+          collection(db, "jobSeekerProfiles"),
+          where("userId", "==", userId)
+        );
+        const jobSeekerSnapshot = await getDocs(jobSeekerQuery);
+        if (!jobSeekerSnapshot.empty) {
+          roleSpecificProfile = { id: jobSeekerSnapshot.docs[0].id, ...jobSeekerSnapshot.docs[0].data() } as JobSeekerProfile;
+        }
       }
       
       results.push({
-        user: row.users,
-        profile: row.user_profiles,
+        user,
+        profile,
         roleSpecificProfile
       });
     }
@@ -256,4 +376,4 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
-export const storage = new DatabaseStorage();
+export const storage = new FirestoreStorage();
