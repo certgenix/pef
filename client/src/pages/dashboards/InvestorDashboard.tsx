@@ -68,7 +68,7 @@ export default function InvestorDashboard() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button onClick={() => setLocation("/complete-profile")} data-testid="button-complete-profile">
+              <Button onClick={() => setLocation("/edit-profile")} data-testid="button-complete-profile">
                 Complete Profile
               </Button>
             </CardContent>
@@ -289,7 +289,7 @@ export default function InvestorDashboard() {
                   <p className="text-sm font-medium mb-1">Investment Stage</p>
                   <p className="text-sm text-muted-foreground">{preferredStage}</p>
                 </div>
-                <Button className="w-full" variant="outline" size="sm" onClick={() => setLocation("/complete-profile")} data-testid="button-edit-investor-profile">
+                <Button className="w-full" variant="outline" size="sm" onClick={() => setLocation("/edit-profile")} data-testid="button-edit-investor-profile">
                   Edit Profile
                 </Button>
               </CardContent>

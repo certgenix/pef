@@ -19,7 +19,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (status === "unregistered") {
-      setLocation("/complete-profile");
+      setLocation("/edit-profile");
     }
   }, [status, setLocation]);
 

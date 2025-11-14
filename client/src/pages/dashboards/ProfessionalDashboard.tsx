@@ -68,7 +68,7 @@ export default function ProfessionalDashboard() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button onClick={() => setLocation("/complete-profile")} data-testid="button-complete-profile">
+              <Button onClick={() => setLocation("/edit-profile")} data-testid="button-complete-profile">
                 Complete Profile
               </Button>
             </CardContent>
@@ -92,7 +92,7 @@ export default function ProfessionalDashboard() {
         <div className="mb-8">
           <div className="flex flex-wrap items-center justify-between gap-4 mb-2">
             <h1 className="text-3xl font-bold">Professional Dashboard</h1>
-            <Button onClick={() => setLocation("/complete-profile")} data-testid="button-edit-profile">
+            <Button onClick={() => setLocation("/edit-profile")} data-testid="button-edit-profile">
               <Edit className="w-4 h-4 mr-2" />
               Edit Profile
             </Button>
@@ -231,11 +231,11 @@ export default function ProfessionalDashboard() {
                 <CardTitle>Quick Actions</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
-                <Button className="w-full" variant="outline" onClick={() => setLocation("/complete-profile")} data-testid="button-update-skills">
+                <Button className="w-full" variant="outline" onClick={() => setLocation("/edit-profile")} data-testid="button-update-skills">
                   <Briefcase className="w-4 h-4 mr-2" />
                   Update Skills
                 </Button>
-                <Button className="w-full" variant="outline" onClick={() => setLocation("/complete-profile")} data-testid="button-add-certification">
+                <Button className="w-full" variant="outline" onClick={() => setLocation("/edit-profile")} data-testid="button-add-certification">
                   <Award className="w-4 h-4 mr-2" />
                   Add Certification
                 </Button>

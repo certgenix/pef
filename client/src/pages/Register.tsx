@@ -133,38 +133,35 @@ export default function Register() {
 
     setLoading(true);
     try {
-      await register(basicInfo.email, basicInfo.password, basicInfo.fullName, selectedRoles);
+      const profileData: any = {};
       
-      const userId = auth.currentUser?.uid;
-      if (!userId) {
-        throw new Error("User not created");
+      if (basicInfo.phone) profileData.phone = basicInfo.phone;
+      if (basicInfo.country) profileData.country = basicInfo.country;
+      if (basicInfo.city) profileData.city = basicInfo.city;
+      if (basicInfo.languages) {
+        const languagesArray = basicInfo.languages.split(",").map(l => l.trim()).filter(Boolean);
+        if (languagesArray.length > 0) profileData.languages = languagesArray;
       }
-
-      const { updateDoc, doc } = await import("firebase/firestore");
-      const { db } = await import("@/lib/firebase");
+      if (basicInfo.headline) profileData.headline = basicInfo.headline;
+      if (basicInfo.bio) profileData.bio = basicInfo.bio;
+      if (basicInfo.linkedinUrl) profileData.linkedinUrl = basicInfo.linkedinUrl;
+      if (basicInfo.websiteUrl) profileData.websiteUrl = basicInfo.websiteUrl;
+      if (basicInfo.portfolioUrl) profileData.portfolioUrl = basicInfo.portfolioUrl;
       
-      await updateDoc(doc(db, "users", userId), {
-        phone: basicInfo.phone || null,
-        country: basicInfo.country || null,
-        city: basicInfo.city || null,
-        languages: basicInfo.languages ? basicInfo.languages.split(",").map(l => l.trim()).filter(Boolean) : [],
-        headline: basicInfo.headline || null,
-        bio: basicInfo.bio || null,
-        links: {
-          linkedin: basicInfo.linkedinUrl || null,
-          website: basicInfo.websiteUrl || null,
-          portfolio: basicInfo.portfolioUrl || null,
-        },
-      });
-
-      await refreshUserData();
+      await register(
+        basicInfo.email, 
+        basicInfo.password, 
+        basicInfo.fullName, 
+        selectedRoles,
+        profileData
+      );
 
       toast({
-        title: "Success!",
-        description: "Your registration is pending admin approval. You'll receive an email once approved.",
+        title: "Registration Successful!",
+        description: "Please log in to access your dashboard.",
       });
 
-      setLocation("/dashboard");
+      setLocation("/login");
     } catch (error: any) {
       toast({
         title: "Registration Failed",

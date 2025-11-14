@@ -68,7 +68,7 @@ export default function BusinessOwnerDashboard() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button onClick={() => setLocation("/complete-profile")} data-testid="button-complete-profile">
+              <Button onClick={() => setLocation("/edit-profile")} data-testid="button-complete-profile">
                 Complete Profile
               </Button>
             </CardContent>
@@ -177,7 +177,7 @@ export default function BusinessOwnerDashboard() {
                     <p className="text-sm text-muted-foreground">{employees}</p>
                   </div>
                 </div>
-                <Button className="w-full md:w-auto" variant="outline" onClick={() => setLocation("/complete-profile")} data-testid="button-edit-business-profile">
+                <Button className="w-full md:w-auto" variant="outline" onClick={() => setLocation("/edit-profile")} data-testid="button-edit-business-profile">
                   Edit Business Profile
                 </Button>
               </CardContent>
@@ -287,7 +287,7 @@ export default function BusinessOwnerDashboard() {
                   <Globe className="w-4 h-4 mr-2" />
                   Plan Expansion
                 </Button>
-                <Button className="w-full" variant="outline" onClick={() => setLocation("/complete-profile")} data-testid="button-update-business">
+                <Button className="w-full" variant="outline" onClick={() => setLocation("/edit-profile")} data-testid="button-update-business">
                   <Building2 className="w-4 h-4 mr-2" />
                   Update Business Info
                 </Button>

@@ -68,7 +68,7 @@ export default function JobSeekerDashboard() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button onClick={() => setLocation("/complete-profile")} data-testid="button-complete-profile">
+              <Button onClick={() => setLocation("/edit-profile")} data-testid="button-complete-profile">
                 Complete Profile
               </Button>
             </CardContent>
@@ -278,7 +278,7 @@ export default function JobSeekerDashboard() {
                     </div>
                   </div>
                 )}
-                <Button className="w-full" variant="outline" size="sm" onClick={() => setLocation("/complete-profile")} data-testid="button-edit-preferences">
+                <Button className="w-full" variant="outline" size="sm" onClick={() => setLocation("/edit-profile")} data-testid="button-edit-preferences">
                   Edit Preferences
                 </Button>
               </CardContent>

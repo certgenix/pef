@@ -30,7 +30,7 @@ export default function Login() {
         title: "Welcome back!",
         description: "You have successfully logged in.",
       });
-      setLocation("/");
+      setLocation("/dashboard");
     } catch (error: any) {
       let errorMessage = "Invalid email or password";
       if (error.code === "auth/user-not-found") {

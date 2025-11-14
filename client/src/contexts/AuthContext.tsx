@@ -17,12 +17,24 @@ import {
 import { auth, db } from "@/lib/firebase";
 import { User, UserRoles } from "../../../shared/types";
 
+interface ProfileData {
+  phone?: string | null;
+  country?: string | null;
+  city?: string | null;
+  languages?: string[] | null;
+  headline?: string | null;
+  bio?: string | null;
+  linkedinUrl?: string | null;
+  websiteUrl?: string | null;
+  portfolioUrl?: string | null;
+}
+
 interface AuthContextType {
   currentUser: FirebaseUser | null;
   userData: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, name: string, roles: UserRoles) => Promise<void>;
+  register: (email: string, password: string, name: string, roles: UserRoles, profileData?: ProfileData) => Promise<void>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   refreshUserData: () => Promise<void>;
@@ -148,7 +160,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     email: string,
     password: string,
     name: string,
-    roles: UserRoles
+    roles: UserRoles,
+    profileData?: ProfileData
   ) {
     const userCredential = await createUserWithEmailAndPassword(
       auth,
@@ -165,14 +178,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       status: "pending",
       createdAt: new Date(),
       lastUpdated: new Date(),
-      links: {},
+      ...(profileData?.phone && { phone: profileData.phone }),
+      ...(profileData?.country && { country: profileData.country }),
+      ...(profileData?.city && { city: profileData.city }),
+      ...(profileData?.languages && { languages: profileData.languages }),
+      ...(profileData?.headline && { headline: profileData.headline }),
+      ...(profileData?.bio && { bio: profileData.bio }),
+      links: {
+        ...(profileData?.linkedinUrl && { linkedin: profileData.linkedinUrl }),
+        ...(profileData?.websiteUrl && { website: profileData.websiteUrl }),
+        ...(profileData?.portfolioUrl && { portfolio: profileData.portfolioUrl }),
+      },
     };
 
-    await setDoc(doc(db, "users", userCredential.user.uid), {
-      ...newUser,
+    const links: any = {};
+    if (profileData?.linkedinUrl) links.linkedin = profileData.linkedinUrl;
+    if (profileData?.websiteUrl) links.website = profileData.websiteUrl;
+    if (profileData?.portfolioUrl) links.portfolio = profileData.portfolioUrl;
+
+    const firestoreData: any = {
+      name,
+      email,
+      roles,
+      status: "pending",
       createdAt: serverTimestamp(),
       lastUpdated: serverTimestamp(),
-    });
+      links,
+    };
+
+    if (profileData?.phone) firestoreData.phone = profileData.phone;
+    if (profileData?.country) firestoreData.country = profileData.country;
+    if (profileData?.city) firestoreData.city = profileData.city;
+    if (profileData?.languages) firestoreData.languages = profileData.languages;
+    if (profileData?.headline) firestoreData.headline = profileData.headline;
+    if (profileData?.bio) firestoreData.bio = profileData.bio;
+
+    await setDoc(doc(db, "users", userCredential.user.uid), firestoreData);
 
     const userData: User = {
       ...newUser,
@@ -181,8 +222,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const synced = await syncUserToBackend(userData, userCredential.user);
     if (!synced) {
+      await firebaseSignOut(auth);
       throw new Error("Failed to complete registration. Please try again or contact support.");
     }
+
+    await firebaseSignOut(auth);
   }
 
   async function login(email: string, password: string) {

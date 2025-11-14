@@ -68,7 +68,7 @@ export default function EmployerDashboard() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button onClick={() => setLocation("/complete-profile")} data-testid="button-complete-profile">
+              <Button onClick={() => setLocation("/edit-profile")} data-testid="button-complete-profile">
                 Complete Profile
               </Button>
             </CardContent>
@@ -283,7 +283,7 @@ export default function EmployerDashboard() {
                   <p className="text-sm font-medium mb-1">Company Size</p>
                   <p className="text-sm text-muted-foreground">{companySize}</p>
                 </div>
-                <Button className="w-full" variant="outline" size="sm" onClick={() => setLocation("/complete-profile")} data-testid="button-edit-company">
+                <Button className="w-full" variant="outline" size="sm" onClick={() => setLocation("/edit-profile")} data-testid="button-edit-company">
                   Edit Profile
                 </Button>
               </CardContent>

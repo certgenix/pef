@@ -45,7 +45,7 @@ const roles = [
   },
 ];
 
-export default function CompleteProfile() {
+export default function EditProfile() {
   const [, setLocation] = useLocation();
   const { currentUser } = useAuth();
   const { toast } = useToast();
