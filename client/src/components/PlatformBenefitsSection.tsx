@@ -72,9 +72,8 @@ export default function PlatformBenefitsSection() {
     <section className="py-16 md:py-24 bg-gradient-to-br from-background via-secondary/5 to-accent/5 relative overflow-hidden" ref={ref}>
       <div className="absolute inset-0 opacity-5">
         <div className="absolute top-0 left-0 w-96 h-96 bg-secondary rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-accent rounded-full blur-3xl" />
+        <div className="absolute bottom-0 right-0 w-96 h-96 rounded-full blur-3xl bg-[#f5f1eb]" />
       </div>
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="text-center mb-16">
           <div className="inline-block px-4 py-2 bg-primary/10 rounded-full mb-4">
@@ -110,7 +109,6 @@ export default function PlatformBenefitsSection() {
                 data-testid={`benefit-${benefit.title.toLowerCase().replace(/\s+/g, "-")}`}
               >
                 <div className={`absolute inset-0 bg-gradient-to-br ${benefit.color} opacity-0 group-hover:opacity-5 transition-opacity duration-300`} />
-                
                 <CardContent className="p-8 relative">
                   <div className={`w-16 h-16 ${benefit.iconBg} rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
                     <Icon className={`w-8 h-8 ${benefit.iconColor}`} />
