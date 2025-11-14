@@ -4,6 +4,8 @@ import { storage } from "./storage";
 import { z } from "zod";
 import { insertUserProfileSchema, insertUserRolesSchema, insertOpportunitySchema, jobDetailsSchema } from "@shared/schema";
 
+const AUTO_APPROVE_JOBS = true;
+
 const completeRegistrationSchema = z.object({
   profile: insertUserProfileSchema.omit({ userId: true }),
   roles: z.object({
@@ -154,16 +156,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      const approvalStatus = AUTO_APPROVE_JOBS ? "approved" : "pending";
+
       const opportunityData = {
         ...req.body,
         userId: uid,
-        approvalStatus: "pending",
       };
-      delete opportunityData.approvalStatus;
 
       const validationResult = insertOpportunitySchema.safeParse({
         ...opportunityData,
-        approvalStatus: "pending",
+        approvalStatus,
       });
 
       if (!validationResult.success) {

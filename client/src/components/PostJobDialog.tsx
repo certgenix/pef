@@ -34,7 +34,14 @@ export default function PostJobDialog({ open, onOpenChange }: PostJobDialogProps
 
   const createJobMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      const token = await auth.currentUser?.getIdToken();
+      if (!auth.currentUser) {
+        throw new Error("You must be logged in to post a job");
+      }
+
+      const token = await auth.currentUser.getIdToken();
+      if (!token) {
+        throw new Error("Failed to get authentication token. Please try logging in again.");
+      }
       
       const skillsArray = data.skills.split(",").map(s => s.trim()).filter(Boolean);
       const benefitsArray = data.benefits.split(",").map(b => b.trim()).filter(Boolean);
@@ -74,7 +81,7 @@ export default function PostJobDialog({ open, onOpenChange }: PostJobDialogProps
     onSuccess: () => {
       toast({
         title: "Success!",
-        description: "Your job posting has been created and is pending approval.",
+        description: "Your job posting has been created and is now live on the opportunities page!",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/opportunities"] });
       onOpenChange(false);
@@ -113,7 +120,7 @@ export default function PostJobDialog({ open, onOpenChange }: PostJobDialogProps
         <DialogHeader>
           <DialogTitle>Post a New Job</DialogTitle>
           <DialogDescription>
-            Fill out the form below to create a new job posting. It will be reviewed before going live.
+            Fill out the form below to create a new job posting. It will go live immediately on the opportunities page.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
