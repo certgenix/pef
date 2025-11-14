@@ -343,6 +343,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/users/assign-roles", async (req, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const token = authHeader.substring(7);
+      let uid: string;
+
+      if (!process.env.FIREBASE_ADMIN_SERVICE_ACCOUNT) {
+        const decodedToken = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+        uid = decodedToken.user_id;
+      } else {
+        return res.status(500).json({ error: "Firebase Admin SDK not configured yet" });
+      }
+
+      const { roles } = req.body;
+      if (!roles || typeof roles !== "object") {
+        return res.status(400).json({ error: "Roles object is required" });
+      }
+
+      await storage.updateUserRoles(uid, {
+        isProfessional: roles.professional || false,
+        isJobSeeker: roles.jobSeeker || false,
+        isEmployer: roles.employer || false,
+        isBusinessOwner: roles.businessOwner || false,
+        isInvestor: roles.investor || false,
+      });
+
+      return res.json({ success: true, message: "Roles updated successfully" });
+    } catch (error) {
+      console.error("Role assignment error:", error);
+      return res.status(500).json({ error: "Failed to assign roles" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

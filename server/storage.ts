@@ -71,6 +71,7 @@ export interface IStorage {
   
   createUserProfile(profile: InsertUserProfile): Promise<UserProfile>;
   createUserRoles(roles: InsertUserRoles): Promise<UserRoles>;
+  updateUserRoles(userId: string, roles: Omit<InsertUserRoles, "userId">): Promise<void>;
   
   createProfessionalProfile(profile: InsertProfessionalProfile): Promise<void>;
   createJobSeekerProfile(profile: InsertJobSeekerProfile): Promise<void>;
@@ -267,6 +268,17 @@ export class FirestoreStorage implements IStorage {
     
     await setDoc(doc(db, "userRoles", insertRoles.userId), roles);
     return roles;
+  }
+
+  async updateUserRoles(userId: string, roles: Omit<InsertUserRoles, "userId">): Promise<void> {
+    const rolesRef = doc(db, "userRoles", userId);
+    await updateDoc(rolesRef, {
+      isProfessional: roles.isProfessional || false,
+      isJobSeeker: roles.isJobSeeker || false,
+      isEmployer: roles.isEmployer || false,
+      isBusinessOwner: roles.isBusinessOwner || false,
+      isInvestor: roles.isInvestor || false,
+    });
   }
 
   async createProfessionalProfile(profile: InsertProfessionalProfile): Promise<void> {
