@@ -9,10 +9,17 @@ import Footer from "@/components/Footer";
 import { useLocation } from "wouter";
 
 export default function JobSeekerDashboard() {
-  const { currentUser } = useAuth();
-  const { hasRole, isLoading } = useUserRoles(currentUser?.uid);
+  const { currentUser, userData, loading: authLoading } = useAuth();
+  const { hasRole, isLoading: rolesLoading } = useUserRoles(currentUser?.uid);
   const [, setLocation] = useLocation();
 
+  // ✅ FIX: Safe fallback for jobSeekerData - never undefined
+  const jobSeekerData = userData?.jobSeekerData || {};
+  
+  // ✅ FIX: Combined loading state - wait for both auth and roles
+  const isLoading = authLoading || rolesLoading;
+
+  // ✅ FIX: Show loading spinner while Firestore is fetching data
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -24,6 +31,7 @@ export default function JobSeekerDashboard() {
     );
   }
 
+  // ✅ FIX: Check role access only after loading is complete
   if (!hasRole("jobSeeker")) {
     return (
       <div className="min-h-screen">
@@ -45,6 +53,37 @@ export default function JobSeekerDashboard() {
       </div>
     );
   }
+
+  // ✅ FIX: Show fallback UI if job seeker profile is incomplete
+  if (Object.keys(jobSeekerData).length === 0) {
+    return (
+      <div className="min-h-screen">
+        <Header />
+        <main className="py-16 px-4">
+          <Card className="max-w-md mx-auto">
+            <CardHeader>
+              <CardTitle>Profile Incomplete</CardTitle>
+              <CardDescription>
+                You have not filled out your job seeker information yet.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button onClick={() => setLocation("/complete-profile")} data-testid="button-complete-profile">
+                Complete Profile
+              </Button>
+            </CardContent>
+          </Card>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  // ✅ FIX: Safe access to jobSeekerData fields with fallbacks
+  const targetRole = jobSeekerData.targetRole || "Not specified";
+  const expectedSalary = jobSeekerData.expectedSalary || "Not specified";
+  const availability = jobSeekerData.availability || "Not specified";
+  const skills = jobSeekerData.skills || [];
 
   return (
     <div className="min-h-screen">
@@ -219,25 +258,27 @@ export default function JobSeekerDashboard() {
               <CardContent className="space-y-3">
                 <div>
                   <p className="text-sm font-medium mb-1">Target Role</p>
-                  <p className="text-sm text-muted-foreground">Senior Developer</p>
+                  <p className="text-sm text-muted-foreground">{targetRole}</p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium mb-1">Employment Type</p>
-                  <Badge variant="secondary">Full-time</Badge>
-                </div>
-                <div>
-                  <p className="text-sm font-medium mb-1">Salary Range</p>
-                  <p className="text-sm text-muted-foreground">$80k - $120k</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium mb-1">Location</p>
-                  <p className="text-sm text-muted-foreground">Remote / Riyadh</p>
+                  <p className="text-sm font-medium mb-1">Expected Salary</p>
+                  <p className="text-sm text-muted-foreground">{expectedSalary}</p>
                 </div>
                 <div>
                   <p className="text-sm font-medium mb-1">Availability</p>
-                  <p className="text-sm text-muted-foreground">Immediately</p>
+                  <p className="text-sm text-muted-foreground">{availability}</p>
                 </div>
-                <Button className="w-full" variant="outline" size="sm" data-testid="button-edit-preferences">
+                {skills.length > 0 && (
+                  <div>
+                    <p className="text-sm font-medium mb-2">Skills</p>
+                    <div className="flex flex-wrap gap-1">
+                      {skills.slice(0, 5).map((skill, idx) => (
+                        <Badge key={idx} variant="secondary">{skill}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <Button className="w-full" variant="outline" size="sm" onClick={() => setLocation("/complete-profile")} data-testid="button-edit-preferences">
                   Edit Preferences
                 </Button>
               </CardContent>

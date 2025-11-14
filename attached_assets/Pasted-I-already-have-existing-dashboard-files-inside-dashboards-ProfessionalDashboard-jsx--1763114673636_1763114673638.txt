@@ -1,0 +1,101 @@
+I already have existing dashboard files inside:
+
+/dashboards/
+  - ProfessionalDashboard.jsx
+  - JobSeekerDashboard.jsx
+  - EmployerDashboard.jsx
+  - BusinessOwnerDashboard.jsx
+  - InvestorDashboard.jsx
+
+I DO NOT want new dashboards created.
+I want you to UPDATE the existing ones safely.
+
+────────────────────────────────────────
+🔥 UPDATE REQUIREMENTS (Apply to ALL dashboards)
+────────────────────────────────────────
+
+1. Add FULL null-safety:
+   roleData may be undefined or missing.
+   So inside each dashboard file, add:
+
+   const roleData = user?.professionalData || {};
+   const roleData = user?.jobSeekerData || {};
+   const roleData = user?.employerData || {};
+   const roleData = user?.businessOwnerData || {};
+   const roleData = user?.investorData || {};
+
+   depending on the file.
+
+   These must NEVER be undefined.
+
+2. Add loading handling:
+   If Firestore data is still loading:
+
+   return (
+     <div className="flex items-center justify-center h-screen">
+       <p>Loading...</p>
+     </div>
+   );
+
+3. Add a fallback if roleData is empty:
+
+   if (Object.keys(roleData).length === 0) {
+     return (
+       <DashboardLayout>
+         <Card>
+           <CardHeader>
+             <CardTitle>Profile Incomplete</CardTitle>
+             <CardDescription>
+               You have not filled out your role-specific information yet.
+             </CardDescription>
+           </CardHeader>
+           <CardContent>
+             <Button onClick={() => navigateToEditPage()}>
+               Complete Profile
+             </Button>
+           </CardContent>
+         </Card>
+       </DashboardLayout>
+     );
+   }
+
+4. Make sure editing forms update Firestore correctly:
+   Use:
+     updateDoc(doc(db, "users", uid), {
+       professionalData: { ...roleData }
+     });
+
+   Or:
+     jobSeekerData, employerData, businessOwnerData, investorData
+
+5. DO NOT REMOVE EXISTING UI DESIGN.
+   ONLY FIX:
+   • undefined errors
+   • missing data crashes
+   • Firestore update logic
+   • loading states
+   • fallback UI
+
+6. Update each dashboard so it uses:
+   const { currentUser } = useAuth();
+   fetch users/{uid} from Firestore safely.
+
+7. Add clear comments explaining each fix.
+
+────────────────────────────────────────
+🔥 WHAT YOU MUST OUTPUT
+────────────────────────────────────────
+
+For ALL 5 dashboards:
+  ✓ Updated code (full files)
+  ✓ Safe roleData fallback
+  ✓ Safe conditional rendering
+  ✓ Working loading states
+  ✓ Working Firestore update logic
+  ✓ No crashing if fields are missing
+  ✓ No undefined errors
+  ✓ No broken redirect behavior
+
+Do not create new dashboard files.
+Just update the existing ones.
+

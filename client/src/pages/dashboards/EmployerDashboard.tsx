@@ -9,10 +9,17 @@ import Footer from "@/components/Footer";
 import { useLocation } from "wouter";
 
 export default function EmployerDashboard() {
-  const { currentUser } = useAuth();
-  const { hasRole, isLoading } = useUserRoles(currentUser?.uid);
+  const { currentUser, userData, loading: authLoading } = useAuth();
+  const { hasRole, isLoading: rolesLoading } = useUserRoles(currentUser?.uid);
   const [, setLocation] = useLocation();
 
+  // ✅ FIX: Safe fallback for employerData - never undefined
+  const employerData = userData?.employerData || {};
+  
+  // ✅ FIX: Combined loading state - wait for both auth and roles
+  const isLoading = authLoading || rolesLoading;
+
+  // ✅ FIX: Show loading spinner while Firestore is fetching data
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -24,6 +31,7 @@ export default function EmployerDashboard() {
     );
   }
 
+  // ✅ FIX: Check role access only after loading is complete
   if (!hasRole("employer")) {
     return (
       <div className="min-h-screen">
@@ -45,6 +53,36 @@ export default function EmployerDashboard() {
       </div>
     );
   }
+
+  // ✅ FIX: Show fallback UI if employer profile is incomplete
+  if (Object.keys(employerData).length === 0) {
+    return (
+      <div className="min-h-screen">
+        <Header />
+        <main className="py-16 px-4">
+          <Card className="max-w-md mx-auto">
+            <CardHeader>
+              <CardTitle>Profile Incomplete</CardTitle>
+              <CardDescription>
+                You have not filled out your employer information yet.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button onClick={() => setLocation("/complete-profile")} data-testid="button-complete-profile">
+                Complete Profile
+              </Button>
+            </CardContent>
+          </Card>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  // ✅ FIX: Safe access to employerData fields with fallbacks
+  const companyName = employerData.companyName || "Not specified";
+  const industry = employerData.industry || "Not specified";
+  const companySize = employerData.companySize || "Not specified";
 
   return (
     <div className="min-h-screen">
@@ -235,21 +273,17 @@ export default function EmployerDashboard() {
               <CardContent className="space-y-3">
                 <div>
                   <p className="text-sm font-medium mb-1">Company Name</p>
-                  <p className="text-sm text-muted-foreground">TechCorp International</p>
+                  <p className="text-sm text-muted-foreground">{companyName}</p>
                 </div>
                 <div>
                   <p className="text-sm font-medium mb-1">Industry</p>
-                  <p className="text-sm text-muted-foreground">Technology / Software</p>
+                  <p className="text-sm text-muted-foreground">{industry}</p>
                 </div>
                 <div>
                   <p className="text-sm font-medium mb-1">Company Size</p>
-                  <p className="text-sm text-muted-foreground">500-1000 employees</p>
+                  <p className="text-sm text-muted-foreground">{companySize}</p>
                 </div>
-                <div>
-                  <p className="text-sm font-medium mb-1">Location</p>
-                  <p className="text-sm text-muted-foreground">Riyadh, Saudi Arabia</p>
-                </div>
-                <Button className="w-full" variant="outline" size="sm" data-testid="button-edit-company">
+                <Button className="w-full" variant="outline" size="sm" onClick={() => setLocation("/complete-profile")} data-testid="button-edit-company">
                   Edit Profile
                 </Button>
               </CardContent>

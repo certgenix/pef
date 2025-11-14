@@ -9,10 +9,17 @@ import Footer from "@/components/Footer";
 import { useLocation } from "wouter";
 
 export default function BusinessOwnerDashboard() {
-  const { currentUser } = useAuth();
-  const { hasRole, isLoading } = useUserRoles(currentUser?.uid);
+  const { currentUser, userData, loading: authLoading } = useAuth();
+  const { hasRole, isLoading: rolesLoading } = useUserRoles(currentUser?.uid);
   const [, setLocation] = useLocation();
 
+  // ✅ FIX: Safe fallback for businessOwnerData - never undefined
+  const businessOwnerData = userData?.businessOwnerData || {};
+  
+  // ✅ FIX: Combined loading state - wait for both auth and roles
+  const isLoading = authLoading || rolesLoading;
+
+  // ✅ FIX: Show loading spinner while Firestore is fetching data
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -24,6 +31,7 @@ export default function BusinessOwnerDashboard() {
     );
   }
 
+  // ✅ FIX: Check role access only after loading is complete
   if (!hasRole("businessOwner")) {
     return (
       <div className="min-h-screen">
@@ -45,6 +53,38 @@ export default function BusinessOwnerDashboard() {
       </div>
     );
   }
+
+  // ✅ FIX: Show fallback UI if business owner profile is incomplete
+  if (Object.keys(businessOwnerData).length === 0) {
+    return (
+      <div className="min-h-screen">
+        <Header />
+        <main className="py-16 px-4">
+          <Card className="max-w-md mx-auto">
+            <CardHeader>
+              <CardTitle>Profile Incomplete</CardTitle>
+              <CardDescription>
+                You have not filled out your business information yet.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button onClick={() => setLocation("/complete-profile")} data-testid="button-complete-profile">
+                Complete Profile
+              </Button>
+            </CardContent>
+          </Card>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  // ✅ FIX: Safe access to businessOwnerData fields with fallbacks
+  const businessName = businessOwnerData.businessName || "Not specified";
+  const businessType = businessOwnerData.businessType || "Not specified";
+  const industry = businessOwnerData.industry || "Not specified";
+  const revenue = businessOwnerData.revenue || "Not disclosed";
+  const employees = businessOwnerData.employees || "Not specified";
 
   return (
     <div className="min-h-screen">
@@ -118,43 +158,26 @@ export default function BusinessOwnerDashboard() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm font-medium mb-1">Business Name</p>
-                    <p className="text-sm text-muted-foreground">GreenTech Solutions</p>
+                    <p className="text-sm text-muted-foreground">{businessName}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium mb-1">Business Type</p>
+                    <p className="text-sm text-muted-foreground">{businessType}</p>
                   </div>
                   <div>
                     <p className="text-sm font-medium mb-1">Industry</p>
-                    <p className="text-sm text-muted-foreground">Renewable Energy</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium mb-1">Company Size</p>
-                    <p className="text-sm text-muted-foreground">50-100 employees</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium mb-1">Years in Operation</p>
-                    <p className="text-sm text-muted-foreground">5 years</p>
+                    <p className="text-sm text-muted-foreground">{industry}</p>
                   </div>
                   <div>
                     <p className="text-sm font-medium mb-1">Revenue Range</p>
-                    <p className="text-sm text-muted-foreground">$5M - $10M</p>
+                    <p className="text-sm text-muted-foreground">{revenue}</p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium mb-1">Location</p>
-                    <p className="text-sm text-muted-foreground">Riyadh, Saudi Arabia</p>
+                    <p className="text-sm font-medium mb-1">Employees</p>
+                    <p className="text-sm text-muted-foreground">{employees}</p>
                   </div>
                 </div>
-                <div>
-                  <p className="text-sm font-medium mb-2">Looking For</p>
-                  <div className="flex flex-wrap gap-2">
-                    <Badge variant="secondary">Strategic Partnerships</Badge>
-                    <Badge variant="secondary">Investment</Badge>
-                    <Badge variant="secondary">Market Expansion</Badge>
-                    <Badge variant="secondary">Technology Partners</Badge>
-                  </div>
-                </div>
-                <div>
-                  <p className="text-sm font-medium mb-1">Capital Required</p>
-                  <p className="text-sm text-muted-foreground">$2M - $5M</p>
-                </div>
-                <Button className="w-full md:w-auto" variant="outline" data-testid="button-edit-business-profile">
+                <Button className="w-full md:w-auto" variant="outline" onClick={() => setLocation("/complete-profile")} data-testid="button-edit-business-profile">
                   Edit Business Profile
                 </Button>
               </CardContent>
@@ -264,7 +287,7 @@ export default function BusinessOwnerDashboard() {
                   <Globe className="w-4 h-4 mr-2" />
                   Plan Expansion
                 </Button>
-                <Button className="w-full" variant="outline" data-testid="button-update-business">
+                <Button className="w-full" variant="outline" onClick={() => setLocation("/complete-profile")} data-testid="button-update-business">
                   <Building2 className="w-4 h-4 mr-2" />
                   Update Business Info
                 </Button>

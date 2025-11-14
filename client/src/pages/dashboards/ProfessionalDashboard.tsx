@@ -9,10 +9,17 @@ import Footer from "@/components/Footer";
 import { useLocation } from "wouter";
 
 export default function ProfessionalDashboard() {
-  const { currentUser } = useAuth();
-  const { hasRole, isLoading } = useUserRoles(currentUser?.uid);
+  const { currentUser, userData, loading: authLoading } = useAuth();
+  const { hasRole, isLoading: rolesLoading } = useUserRoles(currentUser?.uid);
   const [, setLocation] = useLocation();
 
+  // ✅ FIX: Safe fallback for professionalData - never undefined
+  const professionalData = userData?.professionalData || {};
+  
+  // ✅ FIX: Combined loading state - wait for both auth and roles
+  const isLoading = authLoading || rolesLoading;
+
+  // ✅ FIX: Show loading spinner while Firestore is fetching data
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -24,6 +31,7 @@ export default function ProfessionalDashboard() {
     );
   }
 
+  // ✅ FIX: Check role access only after loading is complete
   if (!hasRole("professional")) {
     return (
       <div className="min-h-screen">
@@ -46,6 +54,37 @@ export default function ProfessionalDashboard() {
     );
   }
 
+  // ✅ FIX: Show fallback UI if professional profile is incomplete
+  if (Object.keys(professionalData).length === 0) {
+    return (
+      <div className="min-h-screen">
+        <Header />
+        <main className="py-16 px-4">
+          <Card className="max-w-md mx-auto">
+            <CardHeader>
+              <CardTitle>Profile Incomplete</CardTitle>
+              <CardDescription>
+                You have not filled out your professional information yet.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button onClick={() => setLocation("/complete-profile")} data-testid="button-complete-profile">
+                Complete Profile
+              </Button>
+            </CardContent>
+          </Card>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  // ✅ FIX: Safe access to professionalData fields with fallbacks
+  const currentJobTitle = professionalData.title || "Not specified";
+  const currentEmployer = professionalData.experience || "Not specified";
+  const skills = professionalData.skills || [];
+  const certifications = professionalData.certifications || [];
+
   return (
     <div className="min-h-screen">
       <Header />
@@ -53,7 +92,7 @@ export default function ProfessionalDashboard() {
         <div className="mb-8">
           <div className="flex flex-wrap items-center justify-between gap-4 mb-2">
             <h1 className="text-3xl font-bold">Professional Dashboard</h1>
-            <Button data-testid="button-edit-profile">
+            <Button onClick={() => setLocation("/complete-profile")} data-testid="button-edit-profile">
               <Edit className="w-4 h-4 mr-2" />
               Edit Profile
             </Button>
@@ -101,8 +140,8 @@ export default function ProfessionalDashboard() {
               <Award className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">15</div>
-              <p className="text-xs text-muted-foreground">Out of 20 skills</p>
+              <div className="text-2xl font-bold">{skills.length}</div>
+              <p className="text-xs text-muted-foreground">Total skills</p>
             </CardContent>
           </Card>
         </div>
@@ -120,40 +159,36 @@ export default function ProfessionalDashboard() {
                   <div className="flex items-start gap-3">
                     <Building2 className="w-5 h-5 text-muted-foreground mt-1" />
                     <div>
-                      <p className="font-medium">Senior Software Engineer</p>
-                      <p className="text-sm text-muted-foreground">Tech Innovations Inc.</p>
-                      <p className="text-xs text-muted-foreground">2020 - Present</p>
+                      <p className="font-medium">{currentJobTitle}</p>
+                      <p className="text-sm text-muted-foreground">{currentEmployer}</p>
                     </div>
                   </div>
                 </div>
 
-                <div>
-                  <h3 className="font-semibold mb-2">Skills & Expertise</h3>
-                  <div className="flex flex-wrap gap-2">
-                    <Badge variant="secondary">JavaScript</Badge>
-                    <Badge variant="secondary">TypeScript</Badge>
-                    <Badge variant="secondary">React</Badge>
-                    <Badge variant="secondary">Node.js</Badge>
-                    <Badge variant="secondary">PostgreSQL</Badge>
-                    <Badge variant="secondary">AWS</Badge>
-                    <Badge variant="secondary">Leadership</Badge>
-                    <Badge variant="secondary">Agile</Badge>
+                {skills.length > 0 && (
+                  <div>
+                    <h3 className="font-semibold mb-2">Skills & Expertise</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {skills.map((skill, idx) => (
+                        <Badge key={idx} variant="secondary">{skill}</Badge>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
 
-                <div>
-                  <h3 className="font-semibold mb-2">Certifications</h3>
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Award className="w-4 h-4 text-primary" />
-                      <span className="text-sm">AWS Certified Solutions Architect</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Award className="w-4 h-4 text-primary" />
-                      <span className="text-sm">Certified Scrum Master</span>
+                {certifications.length > 0 && (
+                  <div>
+                    <h3 className="font-semibold mb-2">Certifications</h3>
+                    <div className="space-y-2">
+                      {certifications.map((cert, idx) => (
+                        <div key={idx} className="flex items-center gap-2">
+                          <Award className="w-4 h-4 text-primary" />
+                          <span className="text-sm">{cert}</span>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                </div>
+                )}
               </CardContent>
             </Card>
 
@@ -196,11 +231,11 @@ export default function ProfessionalDashboard() {
                 <CardTitle>Quick Actions</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
-                <Button className="w-full" variant="outline" data-testid="button-update-skills">
+                <Button className="w-full" variant="outline" onClick={() => setLocation("/complete-profile")} data-testid="button-update-skills">
                   <Briefcase className="w-4 h-4 mr-2" />
                   Update Skills
                 </Button>
-                <Button className="w-full" variant="outline" data-testid="button-add-certification">
+                <Button className="w-full" variant="outline" onClick={() => setLocation("/complete-profile")} data-testid="button-add-certification">
                   <Award className="w-4 h-4 mr-2" />
                   Add Certification
                 </Button>

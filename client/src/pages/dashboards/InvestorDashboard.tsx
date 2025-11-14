@@ -9,10 +9,17 @@ import Footer from "@/components/Footer";
 import { useLocation } from "wouter";
 
 export default function InvestorDashboard() {
-  const { currentUser } = useAuth();
-  const { hasRole, isLoading } = useUserRoles(currentUser?.uid);
+  const { currentUser, userData, loading: authLoading } = useAuth();
+  const { hasRole, isLoading: rolesLoading } = useUserRoles(currentUser?.uid);
   const [, setLocation] = useLocation();
 
+  // ✅ FIX: Safe fallback for investorData - never undefined
+  const investorData = userData?.investorData || {};
+  
+  // ✅ FIX: Combined loading state - wait for both auth and roles
+  const isLoading = authLoading || rolesLoading;
+
+  // ✅ FIX: Show loading spinner while Firestore is fetching data
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -24,6 +31,7 @@ export default function InvestorDashboard() {
     );
   }
 
+  // ✅ FIX: Check role access only after loading is complete
   if (!hasRole("investor")) {
     return (
       <div className="min-h-screen">
@@ -45,6 +53,37 @@ export default function InvestorDashboard() {
       </div>
     );
   }
+
+  // ✅ FIX: Show fallback UI if investor profile is incomplete
+  if (Object.keys(investorData).length === 0) {
+    return (
+      <div className="min-h-screen">
+        <Header />
+        <main className="py-16 px-4">
+          <Card className="max-w-md mx-auto">
+            <CardHeader>
+              <CardTitle>Profile Incomplete</CardTitle>
+              <CardDescription>
+                You have not filled out your investor information yet.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button onClick={() => setLocation("/complete-profile")} data-testid="button-complete-profile">
+                Complete Profile
+              </Button>
+            </CardContent>
+          </Card>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  // ✅ FIX: Safe access to investorData fields with fallbacks
+  const investmentRange = investorData.investmentRange || "Not specified";
+  const preferredStage = investorData.preferredStage || "Not specified";
+  const investmentFocus = investorData.investmentFocus || [];
+  const industries = investorData.industries || [];
 
   return (
     <div className="min-h-screen">
@@ -224,33 +263,33 @@ export default function InvestorDashboard() {
               <CardContent className="space-y-3">
                 <div>
                   <p className="text-sm font-medium mb-1">Investment Range</p>
-                  <p className="text-sm text-muted-foreground">$500K - $5M</p>
+                  <p className="text-sm text-muted-foreground">{investmentRange}</p>
                 </div>
-                <div>
-                  <p className="text-sm font-medium mb-2">Preferred Sectors</p>
-                  <div className="flex flex-wrap gap-1">
-                    <Badge variant="secondary">Technology</Badge>
-                    <Badge variant="secondary">CleanTech</Badge>
-                    <Badge variant="secondary">Healthcare</Badge>
-                    <Badge variant="secondary">Fintech</Badge>
+                {investmentFocus.length > 0 && (
+                  <div>
+                    <p className="text-sm font-medium mb-2">Investment Focus</p>
+                    <div className="flex flex-wrap gap-1">
+                      {investmentFocus.map((focus, idx) => (
+                        <Badge key={idx} variant="secondary">{focus}</Badge>
+                      ))}
+                    </div>
                   </div>
-                </div>
-                <div>
-                  <p className="text-sm font-medium mb-2">Focus Regions</p>
-                  <div className="flex flex-wrap gap-1">
-                    <Badge variant="secondary">GCC</Badge>
-                    <Badge variant="secondary">MENA</Badge>
+                )}
+                {industries.length > 0 && (
+                  <div>
+                    <p className="text-sm font-medium mb-2">Preferred Industries</p>
+                    <div className="flex flex-wrap gap-1">
+                      {industries.map((industry, idx) => (
+                        <Badge key={idx} variant="secondary">{industry}</Badge>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
                 <div>
                   <p className="text-sm font-medium mb-1">Investment Stage</p>
-                  <p className="text-sm text-muted-foreground">Growth to Mature</p>
+                  <p className="text-sm text-muted-foreground">{preferredStage}</p>
                 </div>
-                <div>
-                  <p className="text-sm font-medium mb-1">Investment Type</p>
-                  <p className="text-sm text-muted-foreground">Equity</p>
-                </div>
-                <Button className="w-full" variant="outline" size="sm" data-testid="button-edit-investor-profile">
+                <Button className="w-full" variant="outline" size="sm" onClick={() => setLocation("/complete-profile")} data-testid="button-edit-investor-profile">
                   Edit Profile
                 </Button>
               </CardContent>
