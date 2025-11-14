@@ -115,7 +115,9 @@ export class FirestoreStorage implements IStorage {
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const userData: User = {
-      ...insertUser,
+      id: insertUser.id,
+      email: insertUser.email,
+      displayName: insertUser.displayName || null,
       createdAt: new Date(),
       lastLogin: null,
       approvalStatus: insertUser.approvalStatus || "pending",
@@ -149,7 +151,16 @@ export class FirestoreStorage implements IStorage {
       const profile: UserProfile = {
         id: profileId,
         userId: data.userId,
-        ...data.profile,
+        fullName: data.profile.fullName,
+        phone: data.profile.phone || null,
+        country: data.profile.country,
+        city: data.profile.city || null,
+        languages: data.profile.languages || null,
+        headline: data.profile.headline || null,
+        bio: data.profile.bio || null,
+        linkedinUrl: data.profile.linkedinUrl || null,
+        websiteUrl: data.profile.websiteUrl || null,
+        portfolioUrl: data.profile.portfolioUrl || null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -159,7 +170,11 @@ export class FirestoreStorage implements IStorage {
       const roles: UserRoles = {
         id: data.userId,
         userId: data.userId,
-        ...data.roles,
+        isProfessional: data.roles.isProfessional || false,
+        isJobSeeker: data.roles.isJobSeeker || false,
+        isEmployer: data.roles.isEmployer || false,
+        isBusinessOwner: data.roles.isBusinessOwner || false,
+        isInvestor: data.roles.isInvestor || false,
         createdAt: new Date(),
       };
       
@@ -176,7 +191,17 @@ export class FirestoreStorage implements IStorage {
     const profileId = this.generateId();
     const profile: UserProfile = {
       id: profileId,
-      ...insertProfile,
+      userId: insertProfile.userId,
+      fullName: insertProfile.fullName,
+      phone: insertProfile.phone || null,
+      country: insertProfile.country,
+      city: insertProfile.city || null,
+      languages: insertProfile.languages || null,
+      headline: insertProfile.headline || null,
+      bio: insertProfile.bio || null,
+      linkedinUrl: insertProfile.linkedinUrl || null,
+      websiteUrl: insertProfile.websiteUrl || null,
+      portfolioUrl: insertProfile.portfolioUrl || null,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -188,7 +213,12 @@ export class FirestoreStorage implements IStorage {
   async createUserRoles(insertRoles: InsertUserRoles): Promise<UserRoles> {
     const roles: UserRoles = {
       id: insertRoles.userId,
-      ...insertRoles,
+      userId: insertRoles.userId,
+      isProfessional: insertRoles.isProfessional || false,
+      isJobSeeker: insertRoles.isJobSeeker || false,
+      isEmployer: insertRoles.isEmployer || false,
+      isBusinessOwner: insertRoles.isBusinessOwner || false,
+      isInvestor: insertRoles.isInvestor || false,
       createdAt: new Date(),
     };
     
@@ -250,7 +280,18 @@ export class FirestoreStorage implements IStorage {
     const opportunityId = this.generateId();
     const newOpportunity: Opportunity = {
       id: opportunityId,
-      ...opportunity,
+      userId: opportunity.userId,
+      type: opportunity.type,
+      title: opportunity.title,
+      description: opportunity.description,
+      sector: opportunity.sector || null,
+      country: opportunity.country || null,
+      city: opportunity.city || null,
+      budgetOrSalary: opportunity.budgetOrSalary || null,
+      contactPreference: opportunity.contactPreference || null,
+      details: opportunity.details || null,
+      status: opportunity.status || "open",
+      approvalStatus: opportunity.approvalStatus || "pending",
       createdAt: new Date(),
       updatedAt: new Date(),
     };
