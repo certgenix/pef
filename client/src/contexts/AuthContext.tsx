@@ -55,6 +55,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [userData, setUserData] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  async function hydrateBackendRoles(firebaseUser: FirebaseUser, existingUserData: User): Promise<User | null> {
+    try {
+      const token = await firebaseUser.getIdToken();
+      const response = await fetch("/api/auth/me", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        console.error("Failed to fetch backend roles:", response.status);
+        return null;
+      }
+
+      const data = await response.json();
+      const backendRoles = data.roles;
+
+      const mergedUserData: User = {
+        ...existingUserData,
+        roles: {
+          professional: backendRoles.isProfessional || false,
+          jobSeeker: backendRoles.isJobSeeker || false,
+          employer: backendRoles.isEmployer || false,
+          businessOwner: backendRoles.isBusinessOwner || false,
+          investor: backendRoles.isInvestor || false,
+        },
+      };
+
+      setUserData(mergedUserData);
+      return mergedUserData;
+    } catch (error) {
+      console.error("Error hydrating backend roles:", error);
+      return null;
+    }
+  }
+
   async function syncUserToBackend(user: User, firebaseUser: FirebaseUser, retries = 3): Promise<boolean> {
     let lastError: Error | null = null;
     
@@ -92,11 +129,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
 
         if (response.ok) {
+          const hydratedUser = await hydrateBackendRoles(firebaseUser, user);
+          if (!hydratedUser) {
+            lastError = new Error("Failed to fetch roles from backend");
+            if (attempt < retries - 1) {
+              await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+              continue;
+            }
+            return false;
+          }
           return true;
         }
 
         const error = await response.json();
         if (error.error === "User already registered") {
+          const hydratedUser = await hydrateBackendRoles(firebaseUser, user);
+          if (!hydratedUser) {
+            lastError = new Error("User registered but failed to fetch roles from backend");
+            if (attempt < retries - 1) {
+              await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+              continue;
+            }
+            return false;
+          }
           return true;
         }
 
@@ -137,9 +192,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setUserData(null);
             throw new Error("Failed to sync user data to backend. Please try logging in again.");
           }
+        } else {
+          setUserData(userData);
         }
-        
-        setUserData(userData);
       } else {
         setUserData(null);
       }
