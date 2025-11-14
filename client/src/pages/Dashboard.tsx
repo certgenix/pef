@@ -81,26 +81,8 @@ function DashboardContent() {
   }
 
   if (!isLoading && safeRoles.length === 0) {
-    return (
-      <DashboardLayout>
-        <div className="py-8">
-          <Card className="max-w-md mx-auto">
-            <CardHeader>
-              <CardTitle>No Roles Assigned</CardTitle>
-              <CardDescription>You don't have any roles assigned yet.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground mb-4">
-                Please complete your profile setup or contact support to get roles assigned.
-              </p>
-              <Button onClick={() => setLocation("/")} data-testid="button-go-home">
-                Go Home
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      </DashboardLayout>
-    );
+    setLocation("/select-roles");
+    return null;
   }
 
   if (!isLoading && safeRoles.length === 1) {

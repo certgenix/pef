@@ -21,6 +21,7 @@ import EmployerDashboard from "@/pages/dashboards/EmployerDashboard";
 import BusinessOwnerDashboard from "@/pages/dashboards/BusinessOwnerDashboard";
 import InvestorDashboard from "@/pages/dashboards/InvestorDashboard";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
+import RoleSelection from "@/pages/RoleSelection";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -36,6 +37,7 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/edit-profile" component={EditProfile} />
+      <Route path="/select-roles" component={RoleSelection} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/dashboard/professional" component={ProfessionalDashboard} />
       <Route path="/dashboard/job-seeker" component={JobSeekerDashboard} />
