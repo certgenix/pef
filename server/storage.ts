@@ -90,26 +90,36 @@ export class DatabaseStorage implements IStorage {
   }
 
   async completeRegistration(data: RegistrationData): Promise<{ user: User; profile: UserProfile }> {
-    return await db.transaction(async (tx) => {
-      const [user] = await tx.insert(users).values({
+    try {
+      const [user] = await db.insert(users).values({
         id: data.userId,
         email: data.email,
         displayName: data.displayName,
-        approvalStatus: "pending",
+        approvalStatus: "approved",
       }).returning();
 
-      const [profile] = await tx.insert(userProfiles).values({
+      const [profile] = await db.insert(userProfiles).values({
         userId: user.id,
         ...data.profile,
       }).returning();
 
-      await tx.insert(userRoles).values({
+      await db.insert(userRoles).values({
         userId: user.id,
         ...data.roles,
       });
 
       return { user, profile };
-    });
+    } catch (error) {
+      console.error("Registration error:", error);
+      try {
+        await db.delete(userRoles).where(eq(userRoles.userId, data.userId));
+        await db.delete(userProfiles).where(eq(userProfiles.userId, data.userId));
+        await db.delete(users).where(eq(users.id, data.userId));
+      } catch (cleanupError) {
+        console.error("Cleanup error during registration rollback:", cleanupError);
+      }
+      throw error;
+    }
   }
 
   async createUserProfile(insertProfile: InsertUserProfile): Promise<UserProfile> {

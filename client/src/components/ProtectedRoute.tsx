@@ -17,12 +17,6 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     }
   }, [currentUser, authLoading, setLocation]);
 
-  useEffect(() => {
-    if (status === "unregistered") {
-      setLocation("/edit-profile");
-    }
-  }, [status, setLocation]);
-
   if (authLoading || status === "loading") {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -35,10 +29,6 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   }
 
   if (!currentUser) {
-    return null;
-  }
-
-  if (status === "unregistered") {
     return null;
   }
 

@@ -31,7 +31,7 @@ export default function ProfessionalDashboard() {
     );
   }
 
-  // ✅ FIX: Check role access only after loading is complete
+  // Check role access only after loading is complete
   if (!hasRole("professional")) {
     return (
       <div className="min-h-screen">
@@ -54,32 +54,7 @@ export default function ProfessionalDashboard() {
     );
   }
 
-  // ✅ FIX: Show fallback UI if professional profile is incomplete
-  if (Object.keys(professionalData).length === 0) {
-    return (
-      <div className="min-h-screen">
-        <Header />
-        <main className="py-16 px-4">
-          <Card className="max-w-md mx-auto">
-            <CardHeader>
-              <CardTitle>Profile Incomplete</CardTitle>
-              <CardDescription>
-                You have not filled out your professional information yet.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button onClick={() => setLocation("/edit-profile")} data-testid="button-complete-profile">
-                Complete Profile
-              </Button>
-            </CardContent>
-          </Card>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
-
-  // ✅ FIX: Safe access to professionalData fields with fallbacks
+  // Safe access to professionalData fields with fallbacks
   const currentJobTitle = professionalData.title || "Not specified";
   const currentEmployer = professionalData.experience || "Not specified";
   const skills = professionalData.skills || [];

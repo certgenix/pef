@@ -31,7 +31,7 @@ export default function BusinessOwnerDashboard() {
     );
   }
 
-  // ✅ FIX: Check role access only after loading is complete
+  // Check role access only after loading is complete
   if (!hasRole("businessOwner")) {
     return (
       <div className="min-h-screen">
@@ -54,32 +54,7 @@ export default function BusinessOwnerDashboard() {
     );
   }
 
-  // ✅ FIX: Show fallback UI if business owner profile is incomplete
-  if (Object.keys(businessOwnerData).length === 0) {
-    return (
-      <div className="min-h-screen">
-        <Header />
-        <main className="py-16 px-4">
-          <Card className="max-w-md mx-auto">
-            <CardHeader>
-              <CardTitle>Profile Incomplete</CardTitle>
-              <CardDescription>
-                You have not filled out your business information yet.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button onClick={() => setLocation("/edit-profile")} data-testid="button-complete-profile">
-                Complete Profile
-              </Button>
-            </CardContent>
-          </Card>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
-
-  // ✅ FIX: Safe access to businessOwnerData fields with fallbacks
+  // Safe access to businessOwnerData fields with fallbacks
   const businessName = businessOwnerData.businessName || "Not specified";
   const businessType = businessOwnerData.businessType || "Not specified";
   const industry = businessOwnerData.industry || "Not specified";

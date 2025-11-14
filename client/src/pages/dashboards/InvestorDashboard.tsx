@@ -31,7 +31,7 @@ export default function InvestorDashboard() {
     );
   }
 
-  // ✅ FIX: Check role access only after loading is complete
+  // Check role access only after loading is complete
   if (!hasRole("investor")) {
     return (
       <div className="min-h-screen">
@@ -54,32 +54,7 @@ export default function InvestorDashboard() {
     );
   }
 
-  // ✅ FIX: Show fallback UI if investor profile is incomplete
-  if (Object.keys(investorData).length === 0) {
-    return (
-      <div className="min-h-screen">
-        <Header />
-        <main className="py-16 px-4">
-          <Card className="max-w-md mx-auto">
-            <CardHeader>
-              <CardTitle>Profile Incomplete</CardTitle>
-              <CardDescription>
-                You have not filled out your investor information yet.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button onClick={() => setLocation("/edit-profile")} data-testid="button-complete-profile">
-                Complete Profile
-              </Button>
-            </CardContent>
-          </Card>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
-
-  // ✅ FIX: Safe access to investorData fields with fallbacks
+  // Safe access to investorData fields with fallbacks
   const investmentRange = investorData.investmentRange || "Not specified";
   const preferredStage = investorData.preferredStage || "Not specified";
   const investmentFocus = investorData.investmentFocus || [];

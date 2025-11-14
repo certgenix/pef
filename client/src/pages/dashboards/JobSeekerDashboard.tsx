@@ -31,7 +31,7 @@ export default function JobSeekerDashboard() {
     );
   }
 
-  // ✅ FIX: Check role access only after loading is complete
+  // Check role access only after loading is complete
   if (!hasRole("jobSeeker")) {
     return (
       <div className="min-h-screen">
@@ -54,32 +54,7 @@ export default function JobSeekerDashboard() {
     );
   }
 
-  // ✅ FIX: Show fallback UI if job seeker profile is incomplete
-  if (Object.keys(jobSeekerData).length === 0) {
-    return (
-      <div className="min-h-screen">
-        <Header />
-        <main className="py-16 px-4">
-          <Card className="max-w-md mx-auto">
-            <CardHeader>
-              <CardTitle>Profile Incomplete</CardTitle>
-              <CardDescription>
-                You have not filled out your job seeker information yet.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button onClick={() => setLocation("/edit-profile")} data-testid="button-complete-profile">
-                Complete Profile
-              </Button>
-            </CardContent>
-          </Card>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
-
-  // ✅ FIX: Safe access to jobSeekerData fields with fallbacks
+  // Safe access to jobSeekerData fields with fallbacks
   const targetRole = jobSeekerData.targetRole || "Not specified";
   const expectedSalary = jobSeekerData.expectedSalary || "Not specified";
   const availability = jobSeekerData.availability || "Not specified";

@@ -31,7 +31,7 @@ export default function EmployerDashboard() {
     );
   }
 
-  // ✅ FIX: Check role access only after loading is complete
+  // Check role access only after loading is complete
   if (!hasRole("employer")) {
     return (
       <div className="min-h-screen">
@@ -54,32 +54,7 @@ export default function EmployerDashboard() {
     );
   }
 
-  // ✅ FIX: Show fallback UI if employer profile is incomplete
-  if (Object.keys(employerData).length === 0) {
-    return (
-      <div className="min-h-screen">
-        <Header />
-        <main className="py-16 px-4">
-          <Card className="max-w-md mx-auto">
-            <CardHeader>
-              <CardTitle>Profile Incomplete</CardTitle>
-              <CardDescription>
-                You have not filled out your employer information yet.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button onClick={() => setLocation("/edit-profile")} data-testid="button-complete-profile">
-                Complete Profile
-              </Button>
-            </CardContent>
-          </Card>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
-
-  // ✅ FIX: Safe access to employerData fields with fallbacks
+  // Safe access to employerData fields with fallbacks
   const companyName = employerData.companyName || "Not specified";
   const industry = employerData.industry || "Not specified";
   const companySize = employerData.companySize || "Not specified";
