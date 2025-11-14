@@ -138,15 +138,15 @@ export class FirestoreStorage implements IStorage {
       roles = normalizeDocData<UserRoles>({ id: rolesSnap.id, ...rolesData });
     } else if (userData.roles) {
       // Fallback: Roles embedded in user document (legacy schema)
-      // Legacy schema uses isProfessional, isJobSeeker, etc. directly
+      // Support both naming conventions: isProfessional (backend) and professional (Firestore)
       roles = {
         id,
         userId: id,
-        isProfessional: userData.roles.isProfessional || false,
-        isJobSeeker: userData.roles.isJobSeeker || false,
-        isEmployer: userData.roles.isEmployer || false,
-        isBusinessOwner: userData.roles.isBusinessOwner || false,
-        isInvestor: userData.roles.isInvestor || false,
+        isProfessional: userData.roles.isProfessional || userData.roles.professional || false,
+        isJobSeeker: userData.roles.isJobSeeker || userData.roles.jobSeeker || false,
+        isEmployer: userData.roles.isEmployer || userData.roles.employer || false,
+        isBusinessOwner: userData.roles.isBusinessOwner || userData.roles.businessOwner || false,
+        isInvestor: userData.roles.isInvestor || userData.roles.investor || false,
         createdAt: normalizeDate(userData.createdAt),
       };
     }
