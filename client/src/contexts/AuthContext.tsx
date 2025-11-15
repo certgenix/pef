@@ -81,6 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           employer: backendRoles?.isEmployer || false,
           businessOwner: backendRoles?.isBusinessOwner || false,
           investor: backendRoles?.isInvestor || false,
+          admin: backendRoles?.isAdmin ?? backendRoles?.admin ?? existingUserData.roles?.admin ?? false,
         },
       };
 
