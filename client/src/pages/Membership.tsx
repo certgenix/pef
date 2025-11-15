@@ -3,6 +3,7 @@ import Footer from "@/components/Footer";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Check, ArrowRight, Users, Shield, Globe2, Briefcase, Search, Building2, Handshake, TrendingUp, Network } from "lucide-react";
+import { useLocation } from "wouter";
 
 const benefits = [
   {
@@ -38,6 +39,16 @@ const benefits = [
 ];
 
 export default function Membership() {
+  const [, setLocation] = useLocation();
+
+  const handleJoinClick = () => {
+    setLocation("/register");
+  };
+
+  const handleLearnMoreClick = () => {
+    setLocation("/about");
+  };
+
   return (
     <div className="min-h-screen">
       <Header />
@@ -65,6 +76,7 @@ export default function Membership() {
               size="lg"
               className="bg-accent hover:bg-accent text-accent-foreground font-semibold text-lg px-10 py-7 min-h-14"
               data-testid="button-join-now-hero"
+              onClick={handleJoinClick}
             >
               Join Now
               <ArrowRight className="ml-2 w-5 h-5" />
@@ -150,6 +162,7 @@ export default function Membership() {
                     size="lg"
                     className="min-h-14 px-10 font-semibold"
                     data-testid="button-create-account"
+                    onClick={handleJoinClick}
                   >
                     Create Your Account
                     <ArrowRight className="ml-2 w-5 h-5" />
@@ -173,6 +186,7 @@ export default function Membership() {
               variant="outline"
               className="min-h-14 px-10 font-semibold"
               data-testid="button-learn-more"
+              onClick={handleLearnMoreClick}
             >
               Learn More About How It Works
             </Button>
