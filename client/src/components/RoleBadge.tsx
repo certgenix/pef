@@ -28,12 +28,17 @@ export function RoleBadge({ role, showIcon = true, variant = "default" }: RoleBa
   const Icon = roleIcons[role];
   const roleInfo = ROLE_DEFINITIONS[role];
 
+  if (!roleInfo) {
+    console.warn(`Invalid role: ${role}`);
+    return null;
+  }
+
   return (
     <Badge 
       className={`${roleColors[role]} ${variant === "sm" ? "text-xs" : ""}`}
       data-testid={`badge-role-${role}`}
     >
-      {showIcon && <Icon className="w-3 h-3 mr-1" />}
+      {showIcon && Icon && <Icon className="w-3 h-3 mr-1" />}
       {roleInfo.label}
     </Badge>
   );
