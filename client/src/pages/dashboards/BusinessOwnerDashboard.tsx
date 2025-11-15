@@ -3,7 +3,8 @@ import { useUserRoles } from "@/hooks/useUserRoles";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Handshake, TrendingUp, DollarSign, Globe, Building2, Target } from "lucide-react";
+import { Plus, Handshake, TrendingUp, DollarSign, Globe, Building2, Target, MapPin, Calendar, CheckCircle, Clock, XCircle } from "lucide-react";
+import { format } from "date-fns";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useLocation } from "wouter";
@@ -16,10 +17,15 @@ interface Opportunity {
   type: string;
   title: string;
   description: string;
-  sector?: string;
+  sector?: string | null;
+  country?: string | null;
+  city?: string | null;
+  budgetOrSalary?: string | null;
+  contactPreference?: string | null;
   status: string;
   approvalStatus: string;
-  createdAt: Date;
+  createdAt: Date | string;
+  updatedAt: Date | string;
 }
 
 export default function BusinessOwnerDashboard() {
@@ -188,6 +194,104 @@ export default function BusinessOwnerDashboard() {
                 <Button className="w-full md:w-auto" variant="outline" onClick={() => setLocation("/edit-profile")} data-testid="button-edit-business-profile">
                   Edit Business Profile
                 </Button>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>My Posted Opportunities</CardTitle>
+                <CardDescription>Opportunities you've posted for investment, partnerships, and collaboration</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {myOpportunities.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Target className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                    <p className="text-sm text-muted-foreground mb-4">
+                      You haven't posted any opportunities yet.
+                    </p>
+                    <PostOpportunityDialog />
+                  </div>
+                ) : (
+                  myOpportunities.map((opp) => {
+                    const typeColors = {
+                      investment: "bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100",
+                      partnership: "bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-100",
+                      collaboration: "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100",
+                    };
+                    
+                    const statusIcons = {
+                      pending: <Clock className="w-3 h-3" />,
+                      approved: <CheckCircle className="w-3 h-3" />,
+                      rejected: <XCircle className="w-3 h-3" />,
+                    };
+                    
+                    const approvalColors = {
+                      pending: "bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-100",
+                      approved: "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100",
+                      rejected: "bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-100",
+                    };
+
+                    return (
+                      <div key={opp.id} className="p-4 rounded-md border hover-elevate" data-testid={`opportunity-${opp.id}`}>
+                        <div className="flex flex-wrap items-start justify-between gap-2 mb-3">
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-lg mb-2" data-testid={`text-opportunity-title-${opp.id}`}>
+                              {opp.title}
+                            </h3>
+                            <div className="flex flex-wrap gap-2 mb-2">
+                              <Badge className={typeColors[opp.type as keyof typeof typeColors] || "bg-gray-100 dark:bg-gray-800"} data-testid={`badge-type-${opp.id}`}>
+                                {opp.type}
+                              </Badge>
+                              <Badge className={approvalColors[opp.approvalStatus as keyof typeof approvalColors]} data-testid={`badge-approval-${opp.id}`}>
+                                <span className="mr-1">{statusIcons[opp.approvalStatus as keyof typeof statusIcons]}</span>
+                                {opp.approvalStatus}
+                              </Badge>
+                              <Badge variant={opp.status === "open" ? "default" : "secondary"} data-testid={`badge-status-${opp.id}`}>
+                                {opp.status}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
+                              {opp.description}
+                            </p>
+                            <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
+                              {(opp.country || opp.city) && (
+                                <div className="flex items-center gap-1">
+                                  <MapPin className="w-3 h-3" />
+                                  <span>{[opp.city, opp.country].filter(Boolean).join(", ")}</span>
+                                </div>
+                              )}
+                              {opp.budgetOrSalary && (
+                                <div className="flex items-center gap-1">
+                                  <DollarSign className="w-3 h-3" />
+                                  <span>{opp.budgetOrSalary}</span>
+                                </div>
+                              )}
+                              {opp.sector && (
+                                <Badge variant="outline" className="text-xs">
+                                  {opp.sector}
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t">
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <Calendar className="w-3 h-3" />
+                            <span>Posted {format(new Date(opp.createdAt), "MMM d, yyyy")}</span>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            <Button size="sm" variant="outline" data-testid={`button-edit-opportunity-${opp.id}`} disabled>
+                              Edit
+                            </Button>
+                            <Button size="sm" variant="outline" data-testid={`button-close-opportunity-${opp.id}`} disabled>
+                              {opp.status === "open" ? "Close" : "Reopen"}
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
               </CardContent>
             </Card>
 
