@@ -59,17 +59,6 @@ function DashboardContent() {
 
   const safeRoles = Array.isArray(activeRoles) ? activeRoles : [];
 
-  useEffect(() => {
-    if (isLoading) return;
-    
-    if (safeRoles.length === 1) {
-      const dashboard = roleDashboards.find(d => d.role === safeRoles[0]);
-      if (dashboard) {
-        setLocation(dashboard.path);
-      }
-    }
-  }, [safeRoles, isLoading, setLocation]);
-
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
