@@ -1,0 +1,115 @@
+I want to update my app behavior:
+
+Right now, when a logged-in user tries to update their profile,
+the app redirects them to the SAME registration page.
+
+THIS IS WRONG.
+
+I want a NEW, dedicated page for editing profiles:
+
+   /profile/edit
+   or
+   /dashboard/edit-profile
+
+NOT the registration page.
+
+────────────────────────────────────────
+🔥 WHAT I WANT YOU TO DO
+────────────────────────────────────────
+
+1. Create a new file:
+   EditProfile.jsx (or .tsx)
+   Path: /profile/EditProfile.jsx
+   This page must allow the user to update:
+
+   - name
+   - country
+   - city
+   - languages
+   - headline
+   - bio
+   - links (linkedin, website, etc.)
+   - roles (checkboxes)
+   - ALL roleData fields (professionalData, jobSeekerData, employerData, businessOwnerData, investorData)
+
+2. DO NOT reuse registration code.
+
+3. Load user data from:
+   users/{uid}
+
+   Example:
+   const userRef = doc(db, "users", currentUser.uid);
+   const snap = await getDoc(userRef);
+
+4. Use safe defaults for any missing field:
+
+   const safeUser = {
+     name: "",
+     email: currentUser.email,
+     country: "",
+     city: "",
+     languages: [],
+     headline: "",
+     bio: "",
+     links: {},
+     roles: {
+       professional: false,
+       jobSeeker: false,
+       employer: false,
+       businessOwner: false,
+       investor: false
+     },
+     professionalData: {},
+     jobSeekerData: {},
+     employerData: {},
+     businessOwnerData: {},
+     investorData: {}
+   };
+
+5. Provide a SAVE button that updates Firestore:
+
+   await updateDoc(userRef, {
+     name,
+     country,
+     roles,
+     professionalData,
+     jobSeekerData,
+     employerData,
+     businessOwnerData,
+     investorData
+   });
+
+6. After saving, redirect the user to:
+   /dashboard
+
+7. Add navigation:
+   In user menu, add: "Edit Profile"
+
+8. Ensure this page is protected with ProtectedRoute.
+
+9. Remove ANY logic that sends logged-in users to the registration page.
+
+────────────────────────────────────────
+🔥 OUTPUT REQUIRED
+────────────────────────────────────────
+
+Please generate:
+
+1. FULL EditProfile.jsx page  
+2. Update Firestore logic  
+3. Updated navigation link (e.g., dropdown → Edit Profile)  
+4. Updated ProtectedRoute logic if needed  
+5. Updated AuthContext logic if needed  
+6. Remove/redesign the old behavior where registration page is reused
+
+The new EditProfile page must be the ONLY page used for editing profiles.
+
+────────────────────────────────────────
+🔥 GOAL
+────────────────────────────────────────
+
+After login:
+• User goes to dashboard  
+• If they click "Edit Profile" → they go to the new page  
+• Registration page should ONLY be for new users  
+• Editing must never use the signup page again  
