@@ -96,7 +96,7 @@ export default function Header() {
                   <Link href="/edit-profile">
                     <DropdownMenuItem data-testid="menu-item-profile">
                       <User className="w-4 h-4 mr-2" />
-                      Profile
+                      Edit Profile
                     </DropdownMenuItem>
                   </Link>
                   <DropdownMenuItem onClick={logout} data-testid="menu-item-logout">
@@ -169,7 +169,7 @@ export default function Header() {
                     data-testid="button-mobile-profile"
                   >
                     <User className="w-4 h-4 mr-2" />
-                    Profile
+                    Edit Profile
                   </Button>
                 </Link>
                 <Button
