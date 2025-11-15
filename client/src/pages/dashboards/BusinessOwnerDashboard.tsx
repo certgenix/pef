@@ -41,6 +41,22 @@ interface Opportunity {
   updatedAt: Date | string;
 }
 
+interface InvestorProfile {
+  user: {
+    id: string;
+    email: string;
+    displayName: string | null;
+    approvalStatus: string;
+    createdAt: Date | string;
+  };
+  investorData: {
+    investmentRange?: string;
+    preferredStage?: string;
+    investmentFocus?: string[];
+    industries?: string[];
+  };
+}
+
 export default function BusinessOwnerDashboard() {
   const { currentUser, userData, loading: authLoading } = useAuth();
   const { hasRole, isLoading: rolesLoading } = useUserRoles(currentUser?.uid);
@@ -73,7 +89,7 @@ export default function BusinessOwnerDashboard() {
   });
 
   // Fetch registered investors
-  const { data: investors = [], isLoading: investorsLoading } = useQuery({
+  const { data: investors = [], isLoading: investorsLoading } = useQuery<InvestorProfile[]>({
     queryKey: ["/api/investors"],
     enabled: !!currentUser && hasRole("businessOwner"),
   });
@@ -413,7 +429,7 @@ export default function BusinessOwnerDashboard() {
                     <p className="text-sm text-muted-foreground">Check back soon for new investors</p>
                   </div>
                 ) : (
-                  investors.slice(0, 5).map((investor: any, idx: number) => (
+                  investors.slice(0, 5).map((investor, idx) => (
                     <div key={investor.user.id} className="p-4 rounded-md border hover-elevate">
                       <div className="flex flex-wrap items-start justify-between gap-2 mb-3">
                         <div className="flex-1 min-w-0">

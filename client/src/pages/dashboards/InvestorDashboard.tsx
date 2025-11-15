@@ -9,6 +9,42 @@ import Footer from "@/components/Footer";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 
+interface BusinessOwnerProfile {
+  user: {
+    id: string;
+    email: string;
+    displayName: string | null;
+    approvalStatus: string;
+    createdAt: Date | string;
+  };
+  businessOwnerData: {
+    businessName?: string;
+    businessType?: string;
+    industry?: string;
+    revenue?: string;
+    employees?: string;
+  };
+}
+
+interface Opportunity {
+  id: string;
+  userId: string;
+  type: string;
+  title: string;
+  description?: string;
+  industry?: string;
+  location?: string;
+  status: string;
+  approvalStatus: string;
+  metadata?: {
+    investmentAmount?: string;
+    equity?: number;
+    [key: string]: any;
+  };
+  createdAt: Date | string;
+  updatedAt: Date | string;
+}
+
 export default function InvestorDashboard() {
   const { currentUser, userData, loading: authLoading } = useAuth();
   const { hasRole, isLoading: rolesLoading } = useUserRoles(currentUser?.uid);
@@ -62,18 +98,18 @@ export default function InvestorDashboard() {
   const industries = investorData.industries || [];
 
   // Fetch investment opportunities
-  const { data: opportunities = [], isLoading: opportunitiesLoading } = useQuery({
+  const { data: opportunities = [], isLoading: opportunitiesLoading } = useQuery<Opportunity[]>({
     queryKey: ["/api/opportunities"],
     enabled: !!currentUser && hasRole("investor"),
   });
 
   // Filter for investment opportunities that are approved and open
   const investmentOpportunities = opportunities.filter(
-    (opp: any) => opp.type === "investment" && opp.approvalStatus === "approved" && opp.status === "open"
+    (opp) => opp.type === "investment" && opp.approvalStatus === "approved" && opp.status === "open"
   );
 
   // Fetch business owners
-  const { data: businessOwners = [], isLoading: businessOwnersLoading } = useQuery({
+  const { data: businessOwners = [], isLoading: businessOwnersLoading } = useQuery<BusinessOwnerProfile[]>({
     queryKey: ["/api/business-owners"],
     enabled: !!currentUser && hasRole("investor"),
   });
@@ -158,7 +194,7 @@ export default function InvestorDashboard() {
                     <p className="text-sm text-muted-foreground">Check back soon for new opportunities from business owners</p>
                   </div>
                 ) : (
-                  investmentOpportunities.map((opp: any) => (
+                  investmentOpportunities.map((opp) => (
                     <div key={opp.id} className="p-4 rounded-md border hover-elevate">
                       <div className="flex flex-wrap items-start justify-between gap-2 mb-3">
                         <div className="flex-1 min-w-0">
@@ -226,7 +262,7 @@ export default function InvestorDashboard() {
                     <p className="text-sm text-muted-foreground">Check back soon for new businesses</p>
                   </div>
                 ) : (
-                  businessOwners.slice(0, 5).map((owner: any, idx: number) => (
+                  businessOwners.slice(0, 5).map((owner, idx) => (
                     <div key={owner.user.id} className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-md border">
                       <div className="flex-1 min-w-0">
                         <p className="font-medium">{owner.user.displayName || owner.user.email}</p>
