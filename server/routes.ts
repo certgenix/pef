@@ -142,11 +142,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const userWithRoles = await storage.getUserWithRoles(uid);
-      if (!userWithRoles || !userWithRoles.roles?.isEmployer) {
-        return res.status(403).json({ error: "Only employers can post job opportunities" });
+      if (!userWithRoles || (!userWithRoles.roles?.isEmployer && !userWithRoles.roles?.isBusinessOwner)) {
+        return res.status(403).json({ error: "Only employers and business owners can post opportunities" });
       }
 
-      if (req.body.details) {
+      const opportunityType = req.body.type as string;
+      
+      if (userWithRoles.roles?.isEmployer && !userWithRoles.roles?.isBusinessOwner && opportunityType !== "job") {
+        return res.status(403).json({ error: "Employers can only post job opportunities" });
+      }
+
+      if (userWithRoles.roles?.isBusinessOwner && !userWithRoles.roles?.isEmployer && opportunityType === "job") {
+        return res.status(403).json({ error: "Business owners cannot post job opportunities (select employer role to post jobs)" });
+      }
+
+      if (req.body.details && opportunityType === "job") {
         const detailsValidation = jobDetailsSchema.safeParse(req.body.details);
         if (!detailsValidation.success) {
           return res.status(400).json({
@@ -205,8 +215,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         const userWithRoles = await storage.getUserWithRoles(uid);
-        if (!userWithRoles || !userWithRoles.roles?.isEmployer) {
-          return res.status(403).json({ error: "Only employers can view their posted opportunities" });
+        if (!userWithRoles || (!userWithRoles.roles?.isEmployer && !userWithRoles.roles?.isBusinessOwner)) {
+          return res.status(403).json({ error: "Only employers and business owners can view their posted opportunities" });
         }
 
         const opportunities = await storage.getOpportunitiesByUserId(uid);

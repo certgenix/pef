@@ -7,6 +7,20 @@ import { Plus, Handshake, TrendingUp, DollarSign, Globe, Building2, Target } fro
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useLocation } from "wouter";
+import PostOpportunityDialog from "@/components/PostOpportunityDialog";
+import { useQuery } from "@tanstack/react-query";
+
+interface Opportunity {
+  id: string;
+  userId: string;
+  type: string;
+  title: string;
+  description: string;
+  sector?: string;
+  status: string;
+  approvalStatus: string;
+  createdAt: Date;
+}
 
 export default function BusinessOwnerDashboard() {
   const { currentUser, userData, loading: authLoading } = useAuth();
@@ -18,6 +32,23 @@ export default function BusinessOwnerDashboard() {
   
   // ✅ FIX: Combined loading state - wait for both auth and roles
   const isLoading = authLoading || rolesLoading;
+
+  // Fetch user's posted opportunities
+  const { data: myOpportunities = [] } = useQuery<Opportunity[]>({
+    queryKey: ["/api/opportunities", "mine"],
+    enabled: !!currentUser && hasRole("businessOwner"),
+    queryFn: async () => {
+      if (!currentUser) return [];
+      const token = await currentUser.getIdToken();
+      const response = await fetch("/api/opportunities?myOpportunities=true", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!response.ok) throw new Error("Failed to fetch opportunities");
+      return response.json();
+    },
+  });
 
   // ✅ FIX: Show loading spinner while Firestore is fetching data
   if (isLoading) {
@@ -61,6 +92,11 @@ export default function BusinessOwnerDashboard() {
   const revenue = businessOwnerData.revenue || "Not disclosed";
   const employees = businessOwnerData.employees || "Not specified";
 
+  // Calculate stats from real data
+  const activeOpportunities = myOpportunities.filter(opp => opp.status === "open").length;
+  const investmentCount = myOpportunities.filter(opp => opp.type === "investment").length;
+  const partnershipCount = myOpportunities.filter(opp => opp.type === "partnership").length;
+
   return (
     <div className="min-h-screen">
       <Header />
@@ -68,10 +104,7 @@ export default function BusinessOwnerDashboard() {
         <div className="mb-8">
           <div className="flex flex-wrap items-center justify-between gap-4 mb-2">
             <h1 className="text-3xl font-bold">Business Owner Dashboard</h1>
-            <Button data-testid="button-post-opportunity">
-              <Plus className="w-4 h-4 mr-2" />
-              Post Opportunity
-            </Button>
+            <PostOpportunityDialog />
           </div>
           <p className="text-muted-foreground">Manage your business and find growth opportunities</p>
         </div>
@@ -83,8 +116,8 @@ export default function BusinessOwnerDashboard() {
               <Target className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">6</div>
-              <p className="text-xs text-muted-foreground">3 partnerships, 3 investments</p>
+              <div className="text-2xl font-bold">{activeOpportunities}</div>
+              <p className="text-xs text-muted-foreground">{partnershipCount} partnerships, {investmentCount} investments</p>
             </CardContent>
           </Card>
 
