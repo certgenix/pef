@@ -149,6 +149,7 @@ export class FirestoreStorage implements IStorage {
         isEmployer: userData.roles.isEmployer || userData.roles.employer || false,
         isBusinessOwner: userData.roles.isBusinessOwner || userData.roles.businessOwner || false,
         isInvestor: userData.roles.isInvestor || userData.roles.investor || false,
+        isAdmin: userData.roles.isAdmin || userData.roles.admin || false,
         createdAt: normalizeDate(userData.createdAt),
       };
     }
@@ -217,6 +218,7 @@ export class FirestoreStorage implements IStorage {
           isEmployer: data.roles.isEmployer || false,
           isBusinessOwner: data.roles.isBusinessOwner || false,
           isInvestor: data.roles.isInvestor || false,
+          isAdmin: data.roles.isAdmin || false,
         },
         professionalData: existingUserData.professionalData || {},
         jobSeekerData: existingUserData.jobSeekerData || {},

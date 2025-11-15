@@ -7,24 +7,63 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import {
-  getAllPendingUsers,
-  approveUserRegistration,
-  rejectUserRegistration,
-  getJobListings,
-  approveJobListing,
-  rejectJobListing,
-} from "@/lib/firestoreHelpers";
-import { Users, Briefcase, LogOut } from "lucide-react";
+  Users,
+  Briefcase,
+  Search,
+  Building2,
+  Handshake,
+  TrendingUp,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  BarChart3,
+  Shield,
+} from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { auth } from "@/lib/firebase";
 
-const ADMIN_EMAILS = ["admin@pef.com", "administrator@pef.com"];
+interface UserData {
+  uid: string;
+  name: string;
+  email: string;
+  status: "pending" | "approved" | "rejected";
+  createdAt: Date;
+  roles?: {
+    isProfessional?: boolean;
+    isJobSeeker?: boolean;
+    isEmployer?: boolean;
+    isBusinessOwner?: boolean;
+    isInvestor?: boolean;
+    isAdmin?: boolean;
+  };
+  profile?: {
+    country?: string;
+    city?: string;
+    headline?: string;
+  };
+}
+
+interface Stats {
+  totalUsers: number;
+  professionals: number;
+  jobSeekers: number;
+  employers: number;
+  businessOwners: number;
+  investors: number;
+  admins: number;
+  pendingApprovals: number;
+  approved: number;
+  rejected: number;
+}
 
 export default function AdminDashboard() {
   const { currentUser, userData, logout } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const [pendingUsers, setPendingUsers] = useState<any[]>([]);
-  const [pendingJobs, setPendingJobs] = useState<any[]>([]);
+  const [users, setUsers] = useState<UserData[]>([]);
+  const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
 
   useEffect(() => {
     if (!currentUser) {
@@ -32,7 +71,8 @@ export default function AdminDashboard() {
       return;
     }
 
-    if (!ADMIN_EMAILS.includes(currentUser.email || "")) {
+    // Check if user has admin role
+    if (!userData?.roles?.admin) {
       toast({
         title: "Access Denied",
         description: "You don't have permission to access this page",
@@ -43,17 +83,33 @@ export default function AdminDashboard() {
     }
 
     loadData();
-  }, [currentUser]);
+  }, [currentUser, userData]);
 
   async function loadData() {
     try {
       setLoading(true);
-      const [users, jobs] = await Promise.all([
-        getAllPendingUsers(),
-        getJobListings("pending"),
+      const token = await auth.currentUser?.getIdToken();
+      if (!token) return;
+
+      const [usersResponse, statsResponse] = await Promise.all([
+        fetch("/api/admin/users", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }),
+        fetch("/api/admin/stats", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }),
       ]);
-      setPendingUsers(users);
-      setPendingJobs(jobs);
+
+      if (usersResponse.ok && statsResponse.ok) {
+        const usersData = await usersResponse.json();
+        const statsData = await statsResponse.json();
+        setUsers(usersData);
+        setStats(statsData);
+      }
     } catch (error) {
       console.error("Error loading data:", error);
       toast({
@@ -66,69 +122,62 @@ export default function AdminDashboard() {
     }
   }
 
-  async function handleApproveUser(userId: string) {
+  async function handleUpdateStatus(userId: string, status: "approved" | "rejected") {
     try {
-      await approveUserRegistration(userId);
-      toast({
-        title: "Success",
-        description: "User approved successfully",
+      const token = await auth.currentUser?.getIdToken();
+      if (!token) return;
+
+      const response = await fetch(`/api/admin/users/${userId}/status`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ status }),
       });
-      await loadData();
+
+      if (response.ok) {
+        toast({
+          title: "Success",
+          description: `User ${status} successfully`,
+        });
+        await loadData();
+      }
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to approve user",
+        description: `Failed to ${status} user`,
         variant: "destructive",
       });
     }
   }
 
-  async function handleRejectUser(userId: string) {
+  async function handleUpdateRoles(userId: string, roles: any) {
     try {
-      await rejectUserRegistration(userId);
-      toast({
-        title: "Success",
-        description: "User rejected",
-      });
-      await loadData();
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to reject user",
-        variant: "destructive",
-      });
-    }
-  }
+      const token = await auth.currentUser?.getIdToken();
+      if (!token) return;
 
-  async function handleApproveJob(jobId: string) {
-    try {
-      await approveJobListing(jobId);
-      toast({
-        title: "Success",
-        description: "Job listing approved",
+      const response = await fetch(`/api/admin/users/${userId}/roles`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ roles }),
       });
-      await loadData();
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to approve job listing",
-        variant: "destructive",
-      });
-    }
-  }
 
-  async function handleRejectJob(jobId: string) {
-    try {
-      await rejectJobListing(jobId);
-      toast({
-        title: "Success",
-        description: "Job listing rejected",
-      });
-      await loadData();
+      if (response.ok) {
+        toast({
+          title: "Success",
+          description: "User roles updated successfully",
+        });
+        await loadData();
+        setSelectedUser(null);
+      }
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to reject job listing",
+        description: "Failed to update user roles",
         variant: "destructive",
       });
     }
@@ -145,17 +194,23 @@ export default function AdminDashboard() {
     );
   }
 
+  const pendingUsers = users.filter((u) => u.status === "pending");
+  const approvedUsers = users.filter((u) => u.status === "approved");
+  const rejectedUsers = users.filter((u) => u.status === "rejected");
+
   return (
     <div className="min-h-screen bg-background">
-      <header className="bg-card border-b">
+      <header className="bg-card border-b sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+              <h1 className="text-2xl font-bold flex items-center gap-2">
+                <Shield className="w-6 h-6" />
+                Admin Dashboard
+              </h1>
               <p className="text-sm text-muted-foreground">Professional Executive Forum</p>
             </div>
             <Button onClick={logout} variant="outline" data-testid="button-logout">
-              <LogOut className="w-4 h-4 mr-2" />
               Logout
             </Button>
           </div>
@@ -163,19 +218,143 @@ export default function AdminDashboard() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Tabs defaultValue="users" className="space-y-6">
+        {/* Statistics Cards */}
+        {stats && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+                <Users className="w-4 h-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.totalUsers}</div>
+                <p className="text-xs text-muted-foreground">All registered users</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Pending Approvals</CardTitle>
+                <Clock className="w-4 h-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.pendingApprovals}</div>
+                <p className="text-xs text-muted-foreground">Awaiting review</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Approved</CardTitle>
+                <CheckCircle2 className="w-4 h-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.approved}</div>
+                <p className="text-xs text-muted-foreground">Active users</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Rejected</CardTitle>
+                <XCircle className="w-4 h-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.rejected}</div>
+                <p className="text-xs text-muted-foreground">Denied access</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Professionals</CardTitle>
+                <Briefcase className="w-4 h-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.professionals}</div>
+                <p className="text-xs text-muted-foreground">Professional users</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Job Seekers</CardTitle>
+                <Search className="w-4 h-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.jobSeekers}</div>
+                <p className="text-xs text-muted-foreground">Looking for jobs</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Employers</CardTitle>
+                <Building2 className="w-4 h-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.employers}</div>
+                <p className="text-xs text-muted-foreground">Hiring companies</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Business Owners</CardTitle>
+                <Handshake className="w-4 h-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.businessOwners}</div>
+                <p className="text-xs text-muted-foreground">Business owners</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Investors</CardTitle>
+                <TrendingUp className="w-4 h-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.investors}</div>
+                <p className="text-xs text-muted-foreground">Investor accounts</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Admins</CardTitle>
+                <Shield className="w-4 h-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.admins}</div>
+                <p className="text-xs text-muted-foreground">Administrator accounts</p>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* User Management Tabs */}
+        <Tabs defaultValue="pending" className="space-y-6">
           <TabsList>
-            <TabsTrigger value="users" data-testid="tab-users">
-              <Users className="w-4 h-4 mr-2" />
-              Pending Users ({pendingUsers.length})
+            <TabsTrigger value="pending" data-testid="tab-pending">
+              <Clock className="w-4 h-4 mr-2" />
+              Pending ({pendingUsers.length})
             </TabsTrigger>
-            <TabsTrigger value="jobs" data-testid="tab-jobs">
-              <Briefcase className="w-4 h-4 mr-2" />
-              Pending Jobs ({pendingJobs.length})
+            <TabsTrigger value="approved" data-testid="tab-approved">
+              <CheckCircle2 className="w-4 h-4 mr-2" />
+              Approved ({approvedUsers.length})
+            </TabsTrigger>
+            <TabsTrigger value="rejected" data-testid="tab-rejected">
+              <XCircle className="w-4 h-4 mr-2" />
+              Rejected ({rejectedUsers.length})
+            </TabsTrigger>
+            <TabsTrigger value="all" data-testid="tab-all">
+              <Users className="w-4 h-4 mr-2" />
+              All Users ({users.length})
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="users" className="space-y-4">
+          <TabsContent value="pending" className="space-y-4">
             {pendingUsers.length === 0 ? (
               <Card>
                 <CardContent className="py-12 text-center">
@@ -184,130 +363,281 @@ export default function AdminDashboard() {
               </Card>
             ) : (
               pendingUsers.map((user) => (
-                <Card key={user.uid} data-testid={`card-user-${user.uid}`}>
-                  <CardHeader>
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <CardTitle>{user.name}</CardTitle>
-                        <CardDescription>{user.email}</CardDescription>
-                      </div>
-                      <Badge variant="secondary">Pending</Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <p className="text-muted-foreground">Country</p>
-                        <p>{user.country || "Not provided"}</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground">City</p>
-                        <p>{user.city || "Not provided"}</p>
-                      </div>
-                      <div className="col-span-2">
-                        <p className="text-muted-foreground">Headline</p>
-                        <p>{user.headline || "Not provided"}</p>
-                      </div>
-                      <div className="col-span-2">
-                        <p className="text-muted-foreground">Selected Roles</p>
-                        <div className="flex flex-wrap gap-2 mt-1">
-                          {Object.entries(user.roles || {})
-                            .filter(([, isActive]) => isActive)
-                            .map(([role]) => (
-                              <Badge key={role} variant="outline">{role}</Badge>
-                            ))}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        onClick={() => handleApproveUser(user.uid)}
-                        variant="default"
-                        className="flex-1"
-                        data-testid={`button-approve-${user.uid}`}
-                      >
-                        Approve
-                      </Button>
-                      <Button
-                        onClick={() => handleRejectUser(user.uid)}
-                        variant="destructive"
-                        className="flex-1"
-                        data-testid={`button-reject-${user.uid}`}
-                      >
-                        Reject
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
+                <UserCard
+                  key={user.uid}
+                  user={user}
+                  onApprove={() => handleUpdateStatus(user.uid, "approved")}
+                  onReject={() => handleUpdateStatus(user.uid, "rejected")}
+                  onEditRoles={() => setSelectedUser(user)}
+                  showActions={true}
+                />
               ))
             )}
           </TabsContent>
 
-          <TabsContent value="jobs" className="space-y-4">
-            {pendingJobs.length === 0 ? (
+          <TabsContent value="approved" className="space-y-4">
+            {approvedUsers.length === 0 ? (
               <Card>
                 <CardContent className="py-12 text-center">
-                  <p className="text-muted-foreground">No pending job listings</p>
+                  <p className="text-muted-foreground">No approved users</p>
                 </CardContent>
               </Card>
             ) : (
-              pendingJobs.map((job) => (
-                <Card key={job.id} data-testid={`card-job-${job.id}`}>
-                  <CardHeader>
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <CardTitle>{job.title}</CardTitle>
-                        <CardDescription>{job.company}</CardDescription>
-                      </div>
-                      <Badge variant="secondary">Pending</Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <p className="text-muted-foreground">Location</p>
-                        <p>{job.location}</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground">Type</p>
-                        <p>{job.type}</p>
-                      </div>
-                      {job.salary && (
-                        <div>
-                          <p className="text-muted-foreground">Salary</p>
-                          <p>{job.salary}</p>
-                        </div>
-                      )}
-                      <div className="col-span-2">
-                        <p className="text-muted-foreground">Description</p>
-                        <p className="line-clamp-3">{job.description}</p>
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        onClick={() => handleApproveJob(job.id)}
-                        variant="default"
-                        className="flex-1"
-                        data-testid={`button-approve-job-${job.id}`}
-                      >
-                        Approve
-                      </Button>
-                      <Button
-                        onClick={() => handleRejectJob(job.id)}
-                        variant="destructive"
-                        className="flex-1"
-                        data-testid={`button-reject-job-${job.id}`}
-                      >
-                        Reject
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
+              approvedUsers.map((user) => (
+                <UserCard
+                  key={user.uid}
+                  user={user}
+                  onEditRoles={() => setSelectedUser(user)}
+                  onSuspend={() => handleUpdateStatus(user.uid, "rejected")}
+                />
               ))
             )}
           </TabsContent>
+
+          <TabsContent value="rejected" className="space-y-4">
+            {rejectedUsers.length === 0 ? (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <p className="text-muted-foreground">No rejected users</p>
+                </CardContent>
+              </Card>
+            ) : (
+              rejectedUsers.map((user) => (
+                <UserCard
+                  key={user.uid}
+                  user={user}
+                  onApprove={() => handleUpdateStatus(user.uid, "approved")}
+                />
+              ))
+            )}
+          </TabsContent>
+
+          <TabsContent value="all" className="space-y-4">
+            {users.map((user) => (
+              <UserCard
+                key={user.uid}
+                user={user}
+                onEditRoles={() => setSelectedUser(user)}
+                onApprove={
+                  user.status !== "approved"
+                    ? () => handleUpdateStatus(user.uid, "approved")
+                    : undefined
+                }
+                onReject={
+                  user.status !== "rejected"
+                    ? () => handleUpdateStatus(user.uid, "rejected")
+                    : undefined
+                }
+              />
+            ))}
+          </TabsContent>
         </Tabs>
       </main>
+
+      {/* Role Edit Dialog */}
+      {selectedUser && (
+        <RoleEditDialog
+          user={selectedUser}
+          onClose={() => setSelectedUser(null)}
+          onSave={(roles) => handleUpdateRoles(selectedUser.uid, roles)}
+        />
+      )}
+    </div>
+  );
+}
+
+function UserCard({
+  user,
+  onApprove,
+  onReject,
+  onSuspend,
+  onEditRoles,
+  showActions,
+}: {
+  user: UserData;
+  onApprove?: () => void;
+  onReject?: () => void;
+  onSuspend?: () => void;
+  onEditRoles?: () => void;
+  showActions?: boolean;
+}) {
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "approved":
+        return <Badge variant="default">Approved</Badge>;
+      case "rejected":
+        return <Badge variant="destructive">Rejected</Badge>;
+      case "pending":
+        return <Badge variant="secondary">Pending</Badge>;
+      default:
+        return <Badge>{status}</Badge>;
+    }
+  };
+
+  return (
+    <Card data-testid={`card-user-${user.uid}`}>
+      <CardHeader>
+        <div className="flex flex-wrap justify-between items-start gap-2">
+          <div>
+            <CardTitle>{user.name}</CardTitle>
+            <CardDescription>{user.email}</CardDescription>
+          </div>
+          {getStatusBadge(user.status)}
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-2 gap-4 text-sm">
+          <div>
+            <p className="text-muted-foreground">Country</p>
+            <p>{user.profile?.country || "Not provided"}</p>
+          </div>
+          <div>
+            <p className="text-muted-foreground">City</p>
+            <p>{user.profile?.city || "Not provided"}</p>
+          </div>
+          <div className="col-span-2">
+            <p className="text-muted-foreground">Headline</p>
+            <p>{user.profile?.headline || "Not provided"}</p>
+          </div>
+          <div className="col-span-2">
+            <p className="text-muted-foreground">Roles</p>
+            <div className="flex flex-wrap gap-2 mt-1">
+              {user.roles?.isProfessional && (
+                <Badge variant="outline">
+                  <Briefcase className="w-3 h-3 mr-1" />
+                  Professional
+                </Badge>
+              )}
+              {user.roles?.isJobSeeker && (
+                <Badge variant="outline">
+                  <Search className="w-3 h-3 mr-1" />
+                  Job Seeker
+                </Badge>
+              )}
+              {user.roles?.isEmployer && (
+                <Badge variant="outline">
+                  <Building2 className="w-3 h-3 mr-1" />
+                  Employer
+                </Badge>
+              )}
+              {user.roles?.isBusinessOwner && (
+                <Badge variant="outline">
+                  <Handshake className="w-3 h-3 mr-1" />
+                  Business Owner
+                </Badge>
+              )}
+              {user.roles?.isInvestor && (
+                <Badge variant="outline">
+                  <TrendingUp className="w-3 h-3 mr-1" />
+                  Investor
+                </Badge>
+              )}
+              {user.roles?.isAdmin && (
+                <Badge variant="default">
+                  <Shield className="w-3 h-3 mr-1" />
+                  Admin
+                </Badge>
+              )}
+            </div>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {showActions && onApprove && (
+            <Button
+              onClick={onApprove}
+              variant="default"
+              data-testid={`button-approve-${user.uid}`}
+            >
+              Approve
+            </Button>
+          )}
+          {showActions && onReject && (
+            <Button
+              onClick={onReject}
+              variant="destructive"
+              data-testid={`button-reject-${user.uid}`}
+            >
+              Reject
+            </Button>
+          )}
+          {onSuspend && (
+            <Button onClick={onSuspend} variant="destructive" data-testid={`button-suspend-${user.uid}`}>
+              Suspend
+            </Button>
+          )}
+          {onEditRoles && (
+            <Button onClick={onEditRoles} variant="outline" data-testid={`button-edit-roles-${user.uid}`}>
+              Edit Roles
+            </Button>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function RoleEditDialog({
+  user,
+  onClose,
+  onSave,
+}: {
+  user: UserData;
+  onClose: () => void;
+  onSave: (roles: any) => void;
+}) {
+  const [roles, setRoles] = useState({
+    professional: user.roles?.isProfessional || false,
+    jobSeeker: user.roles?.isJobSeeker || false,
+    employer: user.roles?.isEmployer || false,
+    businessOwner: user.roles?.isBusinessOwner || false,
+    investor: user.roles?.isInvestor || false,
+    admin: user.roles?.isAdmin || false,
+  });
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <Card className="max-w-md w-full">
+        <CardHeader>
+          <CardTitle>Edit User Roles</CardTitle>
+          <CardDescription>{user.name} ({user.email})</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {[
+            { key: "professional", label: "Professional", icon: Briefcase },
+            { key: "jobSeeker", label: "Job Seeker", icon: Search },
+            { key: "employer", label: "Employer", icon: Building2 },
+            { key: "businessOwner", label: "Business Owner", icon: Handshake },
+            { key: "investor", label: "Investor", icon: TrendingUp },
+            { key: "admin", label: "Admin", icon: Shield },
+          ].map(({ key, label, icon: Icon }) => (
+            <div key={key} className="flex items-center space-x-2">
+              <Checkbox
+                id={key}
+                checked={roles[key as keyof typeof roles]}
+                onCheckedChange={(checked) =>
+                  setRoles({ ...roles, [key]: checked })
+                }
+                data-testid={`checkbox-role-${key}`}
+              />
+              <label
+                htmlFor={key}
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-2"
+              >
+                <Icon className="w-4 h-4" />
+                {label}
+              </label>
+            </div>
+          ))}
+          <div className="flex gap-2 pt-4">
+            <Button onClick={onClose} variant="outline" className="flex-1" data-testid="button-cancel-roles">
+              Cancel
+            </Button>
+            <Button onClick={() => onSave(roles)} className="flex-1" data-testid="button-save-roles">
+              Save Changes
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

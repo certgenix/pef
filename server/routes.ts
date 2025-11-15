@@ -14,6 +14,7 @@ const completeRegistrationSchema = z.object({
     employer: z.boolean().optional(),
     businessOwner: z.boolean().optional(),
     investor: z.boolean().optional(),
+    admin: z.boolean().optional(),
   }),
 });
 
@@ -71,6 +72,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           isEmployer: roles.employer || false,
           isBusinessOwner: roles.businessOwner || false,
           isInvestor: roles.investor || false,
+          isAdmin: roles.admin || false,
         },
       });
 

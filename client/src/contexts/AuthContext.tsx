@@ -184,12 +184,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           employer: data.roles.isEmployer || data.roles.employer || false,
           businessOwner: data.roles.isBusinessOwner || data.roles.businessOwner || false,
           investor: data.roles.isInvestor || data.roles.investor || false,
+          admin: data.roles.isAdmin || data.roles.admin || false,
         } : {
           professional: false,
           jobSeeker: false,
           employer: false,
           businessOwner: false,
           investor: false,
+          admin: false,
         };
         
         const userData = {
