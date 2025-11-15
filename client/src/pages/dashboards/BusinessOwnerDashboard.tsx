@@ -72,6 +72,12 @@ export default function BusinessOwnerDashboard() {
     },
   });
 
+  // Fetch registered investors
+  const { data: investors = [], isLoading: investorsLoading } = useQuery({
+    queryKey: ["/api/investors"],
+    enabled: !!currentUser && hasRole("businessOwner"),
+  });
+
   // Mutation to toggle opportunity status (open/closed)
   const toggleStatusMutation = useMutation({
     mutationFn: async ({ id, newStatus }: { id: string; newStatus: string }) => {
@@ -211,34 +217,34 @@ export default function BusinessOwnerDashboard() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Investor Interest</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">Registered Investors</CardTitle>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">23</div>
-              <p className="text-xs text-muted-foreground">Investors viewing</p>
+              <div className="text-2xl font-bold">{investorsLoading ? "..." : investors.length}</div>
+              <p className="text-xs text-muted-foreground">Available on platform</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Partnership Requests</CardTitle>
+              <CardTitle className="text-sm font-medium">Total Opportunities</CardTitle>
               <Handshake className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">12</div>
-              <p className="text-xs text-muted-foreground">+4 this week</p>
+              <div className="text-2xl font-bold">{myOpportunities.length}</div>
+              <p className="text-xs text-muted-foreground">Posted by you</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Profile Views</CardTitle>
-              <Globe className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">Business Profile</CardTitle>
+              <Building2 className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">1,456</div>
-              <p className="text-xs text-muted-foreground">+18% this month</p>
+              <div className="text-2xl font-bold">{industry.split(" ")[0]}</div>
+              <p className="text-xs text-muted-foreground">{industry}</p>
             </CardContent>
           </Card>
         </div>
@@ -391,61 +397,64 @@ export default function BusinessOwnerDashboard() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Investor Matches</CardTitle>
-                <CardDescription>Investors interested in your sector</CardDescription>
+                <CardTitle>Registered Investors</CardTitle>
+                <CardDescription>Connect with investors seeking opportunities</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {[
-                  {
-                    name: "Global Ventures Capital",
-                    focus: "Renewable Energy, Clean Tech",
-                    range: "$1M - $10M",
-                    stage: "Growth",
-                    match: "94%"
-                  },
-                  {
-                    name: "Middle East Innovation Fund",
-                    focus: "Technology, Sustainability",
-                    range: "$500K - $5M",
-                    stage: "Early to Growth",
-                    match: "88%"
-                  },
-                  {
-                    name: "Green Future Investments",
-                    focus: "Environmental Solutions",
-                    range: "$2M - $15M",
-                    stage: "Growth to Mature",
-                    match: "85%"
-                  },
-                ].map((investor, idx) => (
-                  <div key={idx} className="p-4 rounded-md border hover-elevate">
-                    <div className="flex flex-wrap items-start justify-between gap-2 mb-3">
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-lg mb-1">{investor.name}</h3>
-                        <p className="text-sm text-muted-foreground mb-2">{investor.focus}</p>
-                      </div>
-                      <Badge className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100">
-                        {investor.match} Match
-                      </Badge>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2 mb-3 text-sm">
-                      <div>
-                        <p className="text-muted-foreground">Investment Range</p>
-                        <p className="font-medium">{investor.range}</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground">Stage</p>
-                        <p className="font-medium">{investor.stage}</p>
-                      </div>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      <Button size="sm" data-testid={`button-connect-investor-${idx}`}>Connect</Button>
-                      <Button size="sm" variant="outline" data-testid={`button-view-investor-${idx}`}>
-                        View Profile
-                      </Button>
-                    </div>
+                {investorsLoading ? (
+                  <div className="text-center py-8">
+                    <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground">Loading investors...</p>
                   </div>
-                ))}
+                ) : investors.length === 0 ? (
+                  <div className="text-center py-8">
+                    <DollarSign className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                    <p className="text-muted-foreground mb-2">No investors registered yet</p>
+                    <p className="text-sm text-muted-foreground">Check back soon for new investors</p>
+                  </div>
+                ) : (
+                  investors.slice(0, 5).map((investor: any, idx: number) => (
+                    <div key={investor.user.id} className="p-4 rounded-md border hover-elevate">
+                      <div className="flex flex-wrap items-start justify-between gap-2 mb-3">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-lg mb-1">{investor.user.displayName || investor.user.email}</h3>
+                          {investor.investorData?.investmentFocus && (
+                            <p className="text-sm text-muted-foreground mb-2">
+                              {Array.isArray(investor.investorData.investmentFocus) 
+                                ? investor.investorData.investmentFocus.join(", ") 
+                                : investor.investorData.investmentFocus}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 mb-3 text-sm">
+                        {investor.investorData?.investmentRange && (
+                          <div>
+                            <p className="text-muted-foreground">Investment Range</p>
+                            <p className="font-medium">{investor.investorData.investmentRange}</p>
+                          </div>
+                        )}
+                        {investor.investorData?.preferredStage && (
+                          <div>
+                            <p className="text-muted-foreground">Stage</p>
+                            <p className="font-medium">{investor.investorData.preferredStage}</p>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <Button size="sm" data-testid={`button-connect-investor-${idx}`}>Connect</Button>
+                        <Button size="sm" variant="outline" data-testid={`button-view-investor-${idx}`}>
+                          View Profile
+                        </Button>
+                      </div>
+                    </div>
+                  ))
+                )}
+                {!investorsLoading && investors.length > 5 && (
+                  <Button variant="outline" className="w-full" size="sm" data-testid="button-view-all-investors">
+                    View All {investors.length} Investors
+                  </Button>
+                )}
               </CardContent>
             </Card>
 
