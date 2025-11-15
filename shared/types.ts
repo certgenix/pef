@@ -4,6 +4,7 @@ export interface UserRoles {
   employer: boolean;
   businessOwner: boolean;
   investor: boolean;
+  admin?: boolean;
 }
 
 export interface UserLinks {
