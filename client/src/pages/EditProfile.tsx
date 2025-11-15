@@ -50,7 +50,7 @@ const roles = [
 
 function EditProfileContent() {
   const [, setLocation] = useLocation();
-  const { currentUser } = useAuth();
+  const { currentUser, refreshUserData } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -256,6 +256,15 @@ function EditProfileContent() {
         title: "Success!",
         description: "Your profile has been updated successfully.",
       });
+
+      // Refresh user data in AuthContext to update dashboards
+      // Don't block navigation if refresh fails - the data is already saved
+      try {
+        await refreshUserData();
+      } catch (refreshError) {
+        console.error("Failed to refresh user data after profile update:", refreshError);
+        // Continue anyway - the data is saved, dashboard will refresh on next load
+      }
 
       setLocation("/dashboard");
     } catch (error: any) {
