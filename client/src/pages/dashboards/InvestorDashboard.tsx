@@ -7,6 +7,7 @@ import { TrendingUp, Target, DollarSign, Briefcase, Building2, Eye, BookmarkPlus
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 
 export default function InvestorDashboard() {
   const { currentUser, userData, loading: authLoading } = useAuth();
@@ -60,6 +61,23 @@ export default function InvestorDashboard() {
   const investmentFocus = investorData.investmentFocus || [];
   const industries = investorData.industries || [];
 
+  // Fetch investment opportunities
+  const { data: opportunities = [], isLoading: opportunitiesLoading } = useQuery({
+    queryKey: ["/api/opportunities"],
+    enabled: !!currentUser && hasRole("investor"),
+  });
+
+  // Filter for investment opportunities that are approved and open
+  const investmentOpportunities = opportunities.filter(
+    (opp: any) => opp.type === "investment" && opp.approvalStatus === "approved" && opp.status === "open"
+  );
+
+  // Fetch business owners
+  const { data: businessOwners = [], isLoading: businessOwnersLoading } = useQuery({
+    queryKey: ["/api/business-owners"],
+    enabled: !!currentUser && hasRole("investor"),
+  });
+
   return (
     <div className="min-h-screen">
       <Header />
@@ -72,12 +90,12 @@ export default function InvestorDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Investments</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">Business Owners</CardTitle>
+              <Building2 className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">7</div>
-              <p className="text-xs text-muted-foreground">Portfolio companies</p>
+              <div className="text-2xl font-bold">{businessOwnersLoading ? "..." : businessOwners.length}</div>
+              <p className="text-xs text-muted-foreground">Registered on platform</p>
             </CardContent>
           </Card>
 
@@ -87,30 +105,30 @@ export default function InvestorDashboard() {
               <Target className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">34</div>
-              <p className="text-xs text-muted-foreground">New matches this week</p>
+              <div className="text-2xl font-bold">{opportunitiesLoading ? "..." : investmentOpportunities.length}</div>
+              <p className="text-xs text-muted-foreground">Investment opportunities</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Saved Deals</CardTitle>
-              <BookmarkPlus className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">15</div>
-              <p className="text-xs text-muted-foreground">Under review</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Invested</CardTitle>
+              <CardTitle className="text-sm font-medium">Investment Range</CardTitle>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">$12.5M</div>
-              <p className="text-xs text-muted-foreground">Across portfolio</p>
+              <div className="text-2xl font-bold">{investmentRange.split(" - ")[0] || "N/A"}</div>
+              <p className="text-xs text-muted-foreground">{investmentRange}</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Preferred Stage</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{preferredStage === "Not specified" ? "N/A" : preferredStage}</div>
+              <p className="text-xs text-muted-foreground">Investment stage</p>
             </CardContent>
           </Card>
         </div>
@@ -128,104 +146,107 @@ export default function InvestorDashboard() {
                 <CardDescription>Businesses seeking investment in your focus areas</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {[
-                  {
-                    company: "GreenTech Solutions",
-                    industry: "Renewable Energy",
-                    stage: "Growth",
-                    seeking: "$3M - $5M",
-                    revenue: "$5M - $10M",
-                    location: "Riyadh, KSA",
-                    match: "96%"
-                  },
-                  {
-                    company: "HealthTech Innovations",
-                    industry: "Healthcare Technology",
-                    stage: "Early",
-                    seeking: "$1M - $2M",
-                    revenue: "$1M - $3M",
-                    location: "Dubai, UAE",
-                    match: "92%"
-                  },
-                  {
-                    company: "FinanceFlow Platform",
-                    industry: "Fintech",
-                    stage: "Growth",
-                    seeking: "$4M - $7M",
-                    revenue: "$8M - $15M",
-                    location: "Jeddah, KSA",
-                    match: "88%"
-                  },
-                ].map((opp, idx) => (
-                  <div key={idx} className="p-4 rounded-md border hover-elevate">
-                    <div className="flex flex-wrap items-start justify-between gap-2 mb-3">
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-lg mb-1">{opp.company}</h3>
-                        <p className="text-sm text-muted-foreground mb-2">{opp.industry}</p>
-                      </div>
-                      <Badge className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100">
-                        {opp.match} Match
-                      </Badge>
-                    </div>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-3 text-sm">
-                      <div>
-                        <p className="text-muted-foreground">Stage</p>
-                        <p className="font-medium">{opp.stage}</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground">Seeking</p>
-                        <p className="font-medium">{opp.seeking}</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground">Revenue</p>
-                        <p className="font-medium">{opp.revenue}</p>
-                      </div>
-                      <div className="col-span-2 md:col-span-3">
-                        <p className="text-muted-foreground">Location</p>
-                        <p className="font-medium">{opp.location}</p>
-                      </div>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      <Button size="sm" data-testid={`button-view-deal-${idx}`}>View Deal</Button>
-                      <Button size="sm" variant="outline" data-testid={`button-save-deal-${idx}`}>
-                        <BookmarkPlus className="w-4 h-4 mr-2" />
-                        Save
-                      </Button>
-                      <Button size="sm" variant="ghost" data-testid={`button-contact-${idx}`}>
-                        Contact
-                      </Button>
-                    </div>
+                {opportunitiesLoading ? (
+                  <div className="text-center py-8">
+                    <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground">Loading opportunities...</p>
                   </div>
-                ))}
+                ) : investmentOpportunities.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Target className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                    <p className="text-muted-foreground mb-2">No investment opportunities available yet</p>
+                    <p className="text-sm text-muted-foreground">Check back soon for new opportunities from business owners</p>
+                  </div>
+                ) : (
+                  investmentOpportunities.map((opp: any) => (
+                    <div key={opp.id} className="p-4 rounded-md border hover-elevate">
+                      <div className="flex flex-wrap items-start justify-between gap-2 mb-3">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-lg mb-1">{opp.title}</h3>
+                          <p className="text-sm text-muted-foreground mb-2">{opp.industry || "Not specified"}</p>
+                        </div>
+                        <div className="flex gap-2">
+                          <Badge variant="secondary">{opp.status}</Badge>
+                        </div>
+                      </div>
+                      {opp.description && (
+                        <p className="text-sm mb-3 line-clamp-2">{opp.description}</p>
+                      )}
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-3 text-sm">
+                        {opp.metadata?.investmentAmount && (
+                          <div>
+                            <p className="text-muted-foreground">Amount Seeking</p>
+                            <p className="font-medium">{opp.metadata.investmentAmount}</p>
+                          </div>
+                        )}
+                        {opp.metadata?.equity && (
+                          <div>
+                            <p className="text-muted-foreground">Equity Offered</p>
+                            <p className="font-medium">{opp.metadata.equity}%</p>
+                          </div>
+                        )}
+                        {opp.location && (
+                          <div>
+                            <p className="text-muted-foreground">Location</p>
+                            <p className="font-medium">{opp.location}</p>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <Button size="sm" data-testid={`button-view-deal-${opp.id}`}>View Details</Button>
+                        <Button size="sm" variant="outline" data-testid={`button-save-deal-${opp.id}`}>
+                          <BookmarkPlus className="w-4 h-4 mr-2" />
+                          Save
+                        </Button>
+                        <Button size="sm" variant="ghost" data-testid={`button-contact-${opp.id}`}>
+                          Contact
+                        </Button>
+                      </div>
+                    </div>
+                  ))
+                )}
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
-                <CardTitle>Portfolio Overview</CardTitle>
+                <CardTitle>Registered Business Owners</CardTitle>
+                <CardDescription>Connect with businesses seeking investment</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                {[
-                  { company: "TechStartup Inc", invested: "$2M", stage: "Series A", performance: "+45%" },
-                  { company: "AI Solutions Ltd", invested: "$1.5M", stage: "Seed", performance: "+32%" },
-                  { company: "CloudServices Co", invested: "$3M", stage: "Series B", performance: "+58%" },
-                ].map((portfolio, idx) => (
-                  <div key={idx} className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-md border">
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium">{portfolio.company}</p>
-                      <p className="text-sm text-muted-foreground">{portfolio.stage}</p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="text-right">
-                        <p className="text-sm font-medium">{portfolio.invested}</p>
-                        <p className="text-xs text-green-600 dark:text-green-400">{portfolio.performance}</p>
-                      </div>
-                      <Button size="sm" variant="outline" data-testid={`button-portfolio-${idx}`}>
-                        Details
-                      </Button>
-                    </div>
+                {businessOwnersLoading ? (
+                  <div className="text-center py-8">
+                    <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground">Loading business owners...</p>
                   </div>
-                ))}
+                ) : businessOwners.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Building2 className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                    <p className="text-muted-foreground mb-2">No business owners registered yet</p>
+                    <p className="text-sm text-muted-foreground">Check back soon for new businesses</p>
+                  </div>
+                ) : (
+                  businessOwners.slice(0, 5).map((owner: any, idx: number) => (
+                    <div key={owner.user.id} className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-md border">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium">{owner.user.displayName || owner.user.email}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {owner.businessOwnerData?.businessName || "Business Owner"}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button size="sm" variant="outline" data-testid={`button-view-business-${idx}`}>
+                          View Profile
+                        </Button>
+                      </div>
+                    </div>
+                  ))
+                )}
+                {!businessOwnersLoading && businessOwners.length > 5 && (
+                  <Button variant="outline" className="w-full" size="sm" data-testid="button-view-all-businesses">
+                    View All {businessOwners.length} Business Owners
+                  </Button>
+                )}
               </CardContent>
             </Card>
           </div>
