@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRoles } from "@/hooks/useUserRoles";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -9,7 +10,19 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useLocation } from "wouter";
 import PostOpportunityDialog from "@/components/PostOpportunityDialog";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Opportunity {
   id: string;
@@ -32,6 +45,9 @@ export default function BusinessOwnerDashboard() {
   const { currentUser, userData, loading: authLoading } = useAuth();
   const { hasRole, isLoading: rolesLoading } = useUserRoles(currentUser?.uid);
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [opportunityToDelete, setOpportunityToDelete] = useState<string | null>(null);
 
   // ✅ FIX: Safe fallback for businessOwnerData - never undefined
   const businessOwnerData = userData?.businessOwnerData || {};
@@ -55,6 +71,72 @@ export default function BusinessOwnerDashboard() {
       return response.json();
     },
   });
+
+  // Mutation to toggle opportunity status (open/closed)
+  const toggleStatusMutation = useMutation({
+    mutationFn: async ({ id, newStatus }: { id: string; newStatus: string }) => {
+      if (!currentUser) throw new Error("Not authenticated");
+      
+      const response = await apiRequest("PATCH", `/api/opportunities/${id}`, { status: newStatus });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/opportunities"] });
+      toast({
+        title: "Success!",
+        description: "Opportunity status updated successfully.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update opportunity status",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Mutation to delete opportunity
+  const deleteOpportunityMutation = useMutation({
+    mutationFn: async (id: string) => {
+      if (!currentUser) throw new Error("Not authenticated");
+      
+      const response = await apiRequest("DELETE", `/api/opportunities/${id}`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/opportunities"] });
+      toast({
+        title: "Success!",
+        description: "Opportunity deleted successfully.",
+      });
+      setDeleteDialogOpen(false);
+      setOpportunityToDelete(null);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete opportunity",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleToggleStatus = (id: string, currentStatus: string) => {
+    const newStatus = currentStatus === "open" ? "closed" : "open";
+    toggleStatusMutation.mutate({ id, newStatus });
+  };
+
+  const handleDeleteClick = (id: string) => {
+    setOpportunityToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (opportunityToDelete) {
+      deleteOpportunityMutation.mutate(opportunityToDelete);
+    }
+  };
 
   // ✅ FIX: Show loading spinner while Firestore is fetching data
   if (isLoading) {
@@ -280,11 +362,23 @@ export default function BusinessOwnerDashboard() {
                             <span>Posted {format(new Date(opp.createdAt), "MMM d, yyyy")}</span>
                           </div>
                           <div className="flex flex-wrap gap-2">
-                            <Button size="sm" variant="outline" data-testid={`button-edit-opportunity-${opp.id}`} disabled>
-                              Edit
-                            </Button>
-                            <Button size="sm" variant="outline" data-testid={`button-close-opportunity-${opp.id}`} disabled>
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              data-testid={`button-close-opportunity-${opp.id}`}
+                              onClick={() => handleToggleStatus(opp.id, opp.status)}
+                              disabled={toggleStatusMutation.isPending}
+                            >
                               {opp.status === "open" ? "Close" : "Reopen"}
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="destructive" 
+                              data-testid={`button-delete-opportunity-${opp.id}`}
+                              onClick={() => handleDeleteClick(opp.id)}
+                              disabled={deleteOpportunityMutation.isPending}
+                            >
+                              Delete
                             </Button>
                           </div>
                         </div>
@@ -454,6 +548,27 @@ export default function BusinessOwnerDashboard() {
         </div>
       </main>
       <Footer />
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Opportunity?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete your opportunity and remove it from public view.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-delete">Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteConfirm}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              data-testid="button-confirm-delete"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
