@@ -62,11 +62,6 @@ function DashboardContent() {
   useEffect(() => {
     if (isLoading) return;
     
-    if (safeRoles.length === 0) {
-      setLocation("/select-roles");
-      return;
-    }
-    
     if (safeRoles.length === 1) {
       const dashboard = roleDashboards.find(d => d.role === safeRoles[0]);
       if (dashboard) {
@@ -93,15 +88,17 @@ function DashboardContent() {
         <p className="text-muted-foreground mb-4">
           Welcome back! Select a dashboard to get started.
         </p>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Your Roles:</span>
-          <RoleBadgeList roles={safeRoles} variant="sm" />
-        </div>
+        {safeRoles.length > 0 && (
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Your Roles:</span>
+            <RoleBadgeList roles={safeRoles} variant="sm" />
+          </div>
+        )}
       </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {roleDashboards
-            .filter(dashboard => safeRoles.includes(dashboard.role))
+            .filter(dashboard => safeRoles.length === 0 || safeRoles.includes(dashboard.role))
             .map((dashboard) => {
               const Icon = dashboard.icon;
               return (
