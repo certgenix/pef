@@ -53,11 +53,18 @@ const roleDashboards = [
 ];
 
 function DashboardContent() {
-  const { currentUser } = useAuth();
+  const { currentUser, userData } = useAuth();
   const { activeRoles, isLoading, userRoles } = useUserRoles(currentUser?.uid);
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
 
   const safeRoles = Array.isArray(activeRoles) ? activeRoles : [];
+
+  // Redirect admin users to admin dashboard
+  useEffect(() => {
+    if (!isLoading && userData && location !== "/admin" && userData.roles?.admin) {
+      setLocation("/admin");
+    }
+  }, [isLoading, userData, location, setLocation]);
 
   if (isLoading) {
     return (
