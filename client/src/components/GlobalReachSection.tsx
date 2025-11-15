@@ -44,15 +44,21 @@ export default function GlobalReachSection() {
               onMouseLeave={() => setHoveredCountry(null)}
               data-testid={`card-country-${country.code.toLowerCase()}`}
             >
-              <CardContent className="p-6 text-center relative overflow-hidden">
+              <CardContent className="p-6 text-center relative overflow-hidden min-h-[120px]">
                 <div 
-                  className={`absolute inset-0 flex items-center justify-center opacity-[0.12] pointer-events-none select-none ${
+                  className={`absolute left-1/2 top-1/2 pointer-events-none select-none ${
                     hoveredCountry === country.code ? "wave-flag-hover" : "wave-flag"
                   }`}
-                  style={{ zIndex: 0 }}
+                  style={{ 
+                    zIndex: 0,
+                    opacity: 0.12,
+                    width: '300%',
+                    height: '300%',
+                    transform: 'translate(-50%, -50%)'
+                  }}
                   aria-hidden="true"
                 >
-                  <country.Flag className="w-full h-full object-cover" style={{ maxWidth: '100%', maxHeight: '100%' }} />
+                  <country.Flag style={{ width: '100%', height: '100%' }} />
                 </div>
                 <h3 className="font-semibold text-lg mb-2 relative z-10">{country.name}</h3>
                 {country.isPrimary && (
