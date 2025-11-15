@@ -84,7 +84,7 @@ export default function Register() {
     password: "",
     confirmPassword: "",
     phone: "",
-    country: "",
+    country: "Saudi Arabia",
     city: "",
     languages: "",
     headline: "",
