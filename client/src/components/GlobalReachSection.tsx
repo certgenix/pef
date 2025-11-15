@@ -2,12 +2,12 @@ import { useState, useEffect, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 
 const countries = [
-  { name: "Saudi Arabia", code: "SA", isPrimary: true },
-  { name: "United States", code: "US", isPrimary: false },
-  { name: "Canada", code: "CA", isPrimary: false },
-  { name: "United Kingdom", code: "UK", isPrimary: false },
-  { name: "Germany", code: "DE", isPrimary: false },
-  { name: "Italy", code: "IT", isPrimary: false },
+  { name: "Saudi Arabia", code: "SA", isPrimary: true, flag: "🇸🇦" },
+  { name: "United States", code: "US", isPrimary: false, flag: "🇺🇸" },
+  { name: "Canada", code: "CA", isPrimary: false, flag: "🇨🇦" },
+  { name: "United Kingdom", code: "UK", isPrimary: false, flag: "🇬🇧" },
+  { name: "Germany", code: "DE", isPrimary: false, flag: "🇩🇪" },
+  { name: "Italy", code: "IT", isPrimary: false, flag: "🇮🇹" },
 ];
 
 
@@ -31,20 +31,29 @@ export default function GlobalReachSection() {
           {countries.map((country) => (
             <Card
               key={country.code}
-              className={`transition-all duration-300 hover-elevate cursor-pointer ${
+              className={`transition-all duration-300 hover-elevate cursor-pointer overflow-hidden ${
                 hoveredCountry === country.code ? "shadow-lg scale-105 border-primary" : ""
               } ${country.isPrimary ? "border-2 border-primary bg-primary/5" : ""}`}
               onMouseEnter={() => setHoveredCountry(country.code)}
               onMouseLeave={() => setHoveredCountry(null)}
               data-testid={`card-country-${country.code.toLowerCase()}`}
             >
-              <CardContent className="p-6 text-center">
-                <h3 className="font-semibold text-lg mb-2">{country.name}</h3>
+              <CardContent className="p-6 text-center relative">
+                <div 
+                  className={`absolute left-1/2 top-1/2 -translate-y-1/2 text-[180px] opacity-[0.08] pointer-events-none select-none ${
+                    hoveredCountry === country.code ? "wave-flag-hover" : "wave-flag"
+                  }`}
+                  style={{ zIndex: 0 }}
+                  aria-hidden="true"
+                >
+                  {country.flag}
+                </div>
+                <h3 className="font-semibold text-lg mb-2 relative z-10">{country.name}</h3>
                 {country.isPrimary && (
-                  <p className="text-sm text-primary font-semibold">Primary Launch Market</p>
+                  <p className="text-sm text-primary font-semibold relative z-10">Primary Launch Market</p>
                 )}
                 {!country.isPrimary && (
-                  <p className="text-sm text-muted-foreground">Supported Region</p>
+                  <p className="text-sm text-muted-foreground relative z-10">Supported Region</p>
                 )}
               </CardContent>
             </Card>
