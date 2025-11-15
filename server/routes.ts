@@ -449,6 +449,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/investors", async (req, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const token = authHeader.substring(7);
+      let uid: string;
+
+      if (!process.env.FIREBASE_ADMIN_SERVICE_ACCOUNT) {
+        const decodedToken = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+        uid = decodedToken.user_id;
+      } else {
+        return res.status(500).json({ error: "Firebase Admin SDK not configured yet" });
+      }
+
+      const userWithRoles = await storage.getUserWithRoles(uid);
+      if (!userWithRoles || !userWithRoles.roles?.isBusinessOwner) {
+        return res.status(403).json({ error: "Only business owners can view investors" });
+      }
+
+      const investors = await storage.getInvestors();
+      return res.json(investors);
+    } catch (error) {
+      console.error("Investors fetch error:", error);
+      return res.status(500).json({ error: "Failed to fetch investors" });
+    }
+  });
+
+  app.get("/api/business-owners", async (req, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const token = authHeader.substring(7);
+      let uid: string;
+
+      if (!process.env.FIREBASE_ADMIN_SERVICE_ACCOUNT) {
+        const decodedToken = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+        uid = decodedToken.user_id;
+      } else {
+        return res.status(500).json({ error: "Firebase Admin SDK not configured yet" });
+      }
+
+      const userWithRoles = await storage.getUserWithRoles(uid);
+      if (!userWithRoles || !userWithRoles.roles?.isInvestor) {
+        return res.status(403).json({ error: "Only investors can view business owners" });
+      }
+
+      const businessOwners = await storage.getBusinessOwners();
+      return res.json(businessOwners);
+    } catch (error) {
+      console.error("Business owners fetch error:", error);
+      return res.status(500).json({ error: "Failed to fetch business owners" });
+    }
+  });
+
   app.post("/api/users/assign-roles", async (req, res) => {
     try {
       const authHeader = req.headers.authorization;

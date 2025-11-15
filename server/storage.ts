@@ -631,6 +631,66 @@ export class FirestoreStorage implements IStorage {
     
     return results;
   }
+
+  async getInvestors(): Promise<Array<{user: User; investorData: any}>> {
+    const usersSnapshot = await getDocs(collection(db, "users"));
+    const results: Array<{user: User; investorData: any}> = [];
+    
+    for (const userDoc of usersSnapshot.docs) {
+      const userData = userDoc.data();
+      
+      // Check if user has investor role
+      if (userData.roles?.isInvestor || userData.roles?.investor) {
+        const user = normalizeDocData<User>({ id: userDoc.id, ...userData });
+        
+        // Only include approved users
+        if (user.approvalStatus === "approved") {
+          results.push({
+            user: {
+              id: user.id,
+              email: user.email,
+              displayName: user.displayName,
+              approvalStatus: user.approvalStatus,
+              createdAt: user.createdAt,
+            },
+            investorData: userData.investorData || {}
+          });
+        }
+      }
+    }
+    
+    return results;
+  }
+
+  async getBusinessOwners(): Promise<Array<{user: User; businessOwnerData: any}>> {
+    const usersSnapshot = await getDocs(collection(db, "users"));
+    const results: Array<{user: User; businessOwnerData: any}> = [];
+    
+    for (const userDoc of usersSnapshot.docs) {
+      const userData = userDoc.data();
+      
+      // Check if user has business owner role
+      if (userData.roles?.isBusinessOwner || userData.roles?.businessOwner) {
+        const user = normalizeDocData<User>({ id: userDoc.id, ...userData });
+        
+        // Only include approved users
+        if (user.approvalStatus === "approved") {
+          results.push({
+            user: {
+              id: user.id,
+              email: user.email,
+              displayName: user.displayName,
+              approvalStatus: user.approvalStatus,
+              createdAt: user.createdAt,
+            },
+            businessOwnerData: userData.businessOwnerData || {}
+          });
+        }
+      }
+    }
+    
+    return results;
+  }
 }
 
 export const storage = new FirestoreStorage();
