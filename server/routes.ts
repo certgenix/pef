@@ -546,6 +546,148 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/admin/users", async (req, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const token = authHeader.substring(7);
+      let uid: string;
+
+      if (!process.env.FIREBASE_ADMIN_SERVICE_ACCOUNT) {
+        const decodedToken = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+        uid = decodedToken.user_id;
+      } else {
+        return res.status(500).json({ error: "Firebase Admin SDK not configured yet" });
+      }
+
+      const userWithRoles = await storage.getUserWithRoles(uid);
+      if (!userWithRoles || !userWithRoles.roles?.isAdmin) {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      const users = await storage.getAllUsers();
+      return res.json(users);
+    } catch (error) {
+      console.error("Admin users fetch error:", error);
+      return res.status(500).json({ error: "Failed to fetch users" });
+    }
+  });
+
+  app.get("/api/admin/stats", async (req, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const token = authHeader.substring(7);
+      let uid: string;
+
+      if (!process.env.FIREBASE_ADMIN_SERVICE_ACCOUNT) {
+        const decodedToken = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+        uid = decodedToken.user_id;
+      } else {
+        return res.status(500).json({ error: "Firebase Admin SDK not configured yet" });
+      }
+
+      const userWithRoles = await storage.getUserWithRoles(uid);
+      if (!userWithRoles || !userWithRoles.roles?.isAdmin) {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      const stats = await storage.getAdminStats();
+      return res.json(stats);
+    } catch (error) {
+      console.error("Admin stats fetch error:", error);
+      return res.status(500).json({ error: "Failed to fetch stats" });
+    }
+  });
+
+  app.post("/api/admin/users/:userId/status", async (req, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const token = authHeader.substring(7);
+      let uid: string;
+
+      if (!process.env.FIREBASE_ADMIN_SERVICE_ACCOUNT) {
+        const decodedToken = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+        uid = decodedToken.user_id;
+      } else {
+        return res.status(500).json({ error: "Firebase Admin SDK not configured yet" });
+      }
+
+      const userWithRoles = await storage.getUserWithRoles(uid);
+      if (!userWithRoles || !userWithRoles.roles?.isAdmin) {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      const { userId } = req.params;
+      const { status } = req.body;
+
+      if (!["pending", "approved", "rejected"].includes(status)) {
+        return res.status(400).json({ error: "Invalid status" });
+      }
+
+      await storage.updateUserStatus(userId, status);
+      return res.json({ success: true, message: "User status updated successfully" });
+    } catch (error) {
+      console.error("Admin status update error:", error);
+      return res.status(500).json({ error: "Failed to update user status" });
+    }
+  });
+
+  app.post("/api/admin/users/:userId/roles", async (req, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const token = authHeader.substring(7);
+      let uid: string;
+
+      if (!process.env.FIREBASE_ADMIN_SERVICE_ACCOUNT) {
+        const decodedToken = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+        uid = decodedToken.user_id;
+      } else {
+        return res.status(500).json({ error: "Firebase Admin SDK not configured yet" });
+      }
+
+      const userWithRoles = await storage.getUserWithRoles(uid);
+      if (!userWithRoles || !userWithRoles.roles?.isAdmin) {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      const { userId } = req.params;
+      const { roles } = req.body;
+
+      if (!roles || typeof roles !== "object") {
+        return res.status(400).json({ error: "Roles object is required" });
+      }
+
+      await storage.updateUserRoles(userId, {
+        isProfessional: roles.professional || false,
+        isJobSeeker: roles.jobSeeker || false,
+        isEmployer: roles.employer || false,
+        isBusinessOwner: roles.businessOwner || false,
+        isInvestor: roles.investor || false,
+        isAdmin: roles.admin || false,
+      });
+
+      return res.json({ success: true, message: "User roles updated successfully" });
+    } catch (error) {
+      console.error("Admin role update error:", error);
+      return res.status(500).json({ error: "Failed to update user roles" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

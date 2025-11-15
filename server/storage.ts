@@ -691,6 +691,74 @@ export class FirestoreStorage implements IStorage {
     
     return results;
   }
+
+  async getAllUsers(): Promise<Array<any>> {
+    const usersSnapshot = await getDocs(collection(db, "users"));
+    const users: Array<any> = [];
+    
+    for (const userDoc of usersSnapshot.docs) {
+      const userData = userDoc.data();
+      users.push({
+        uid: userDoc.id,
+        ...userData,
+        createdAt: normalizeDate(userData.createdAt),
+        lastUpdated: normalizeDate(userData.lastUpdated),
+      });
+    }
+    
+    return users;
+  }
+
+  async getAdminStats(): Promise<any> {
+    const usersSnapshot = await getDocs(collection(db, "users"));
+    
+    const stats = {
+      totalUsers: 0,
+      professionals: 0,
+      jobSeekers: 0,
+      employers: 0,
+      businessOwners: 0,
+      investors: 0,
+      admins: 0,
+      pendingApprovals: 0,
+      approved: 0,
+      rejected: 0,
+    };
+    
+    for (const userDoc of usersSnapshot.docs) {
+      const userData = userDoc.data();
+      stats.totalUsers++;
+      
+      if (userData.roles?.isProfessional || userData.roles?.professional) stats.professionals++;
+      if (userData.roles?.isJobSeeker || userData.roles?.jobSeeker) stats.jobSeekers++;
+      if (userData.roles?.isEmployer || userData.roles?.employer) stats.employers++;
+      if (userData.roles?.isBusinessOwner || userData.roles?.businessOwner) stats.businessOwners++;
+      if (userData.roles?.isInvestor || userData.roles?.investor) stats.investors++;
+      if (userData.roles?.isAdmin || userData.roles?.admin) stats.admins++;
+      
+      if (userData.status === "pending") stats.pendingApprovals++;
+      if (userData.status === "approved") stats.approved++;
+      if (userData.status === "rejected") stats.rejected++;
+    }
+    
+    return stats;
+  }
+
+  async updateUserStatus(userId: string, status: string): Promise<void> {
+    const userRef = doc(db, "users", userId);
+    await updateDoc(userRef, {
+      status,
+      lastUpdated: new Date(),
+    });
+  }
+
+  async updateUserRoles(userId: string, roles: any): Promise<void> {
+    const userRef = doc(db, "users", userId);
+    await updateDoc(userRef, {
+      roles,
+      lastUpdated: new Date(),
+    });
+  }
 }
 
 export const storage = new FirestoreStorage();
