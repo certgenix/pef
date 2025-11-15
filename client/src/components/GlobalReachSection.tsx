@@ -1,13 +1,19 @@
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
+import SA from 'country-flag-icons/react/3x2/SA';
+import US from 'country-flag-icons/react/3x2/US';
+import CA from 'country-flag-icons/react/3x2/CA';
+import GB from 'country-flag-icons/react/3x2/GB';
+import DE from 'country-flag-icons/react/3x2/DE';
+import IT from 'country-flag-icons/react/3x2/IT';
 
 const countries = [
-  { name: "Saudi Arabia", code: "SA", isPrimary: true, flag: "🇸🇦" },
-  { name: "United States", code: "US", isPrimary: false, flag: "🇺🇸" },
-  { name: "Canada", code: "CA", isPrimary: false, flag: "🇨🇦" },
-  { name: "United Kingdom", code: "UK", isPrimary: false, flag: "🇬🇧" },
-  { name: "Germany", code: "DE", isPrimary: false, flag: "🇩🇪" },
-  { name: "Italy", code: "IT", isPrimary: false, flag: "🇮🇹" },
+  { name: "Saudi Arabia", code: "SA", isPrimary: true, Flag: SA },
+  { name: "United States", code: "US", isPrimary: false, Flag: US },
+  { name: "Canada", code: "CA", isPrimary: false, Flag: CA },
+  { name: "United Kingdom", code: "UK", isPrimary: false, Flag: GB },
+  { name: "Germany", code: "DE", isPrimary: false, Flag: DE },
+  { name: "Italy", code: "IT", isPrimary: false, Flag: IT },
 ];
 
 
@@ -38,15 +44,15 @@ export default function GlobalReachSection() {
               onMouseLeave={() => setHoveredCountry(null)}
               data-testid={`card-country-${country.code.toLowerCase()}`}
             >
-              <CardContent className="p-6 text-center relative">
+              <CardContent className="p-6 text-center relative overflow-visible">
                 <div 
-                  className={`absolute left-1/2 top-1/2 -translate-y-1/2 text-[180px] opacity-[0.08] pointer-events-none select-none ${
+                  className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[120px] opacity-[0.15] pointer-events-none select-none ${
                     hoveredCountry === country.code ? "wave-flag-hover" : "wave-flag"
                   }`}
                   style={{ zIndex: 0 }}
                   aria-hidden="true"
                 >
-                  {country.flag}
+                  <country.Flag className="w-full h-auto" />
                 </div>
                 <h3 className="font-semibold text-lg mb-2 relative z-10">{country.name}</h3>
                 {country.isPrimary && (
