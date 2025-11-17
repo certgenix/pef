@@ -8,7 +8,7 @@ import Home from "@/pages/Home";
 import About from "@/pages/About";
 import Membership from "@/pages/Membership";
 import Opportunities from "@/pages/Opportunities";
-import News from "@/pages/News";
+import Media from "@/pages/Media";
 import Contact from "@/pages/Contact";
 import Register from "@/pages/Register";
 import Login from "@/pages/Login";
@@ -30,7 +30,7 @@ function Router() {
       <Route path="/about" component={About} />
       <Route path="/membership" component={Membership} />
       <Route path="/opportunities" component={Opportunities} />
-      <Route path="/news" component={News} />
+      <Route path="/media" component={Media} />
       <Route path="/contact" component={Contact} />
       <Route path="/register" component={Register} />
       <Route path="/login" component={Login} />
