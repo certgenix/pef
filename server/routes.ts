@@ -7,7 +7,8 @@ import { Resend } from "resend";
 import { db } from "./firebase-admin";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
-const RESEND_API_KEY = process.env.RESEND_API_KEY || "";
+// You can get a FREE API key from https://resend.com/api-keys
+const RESEND_API_KEY = process.env.RESEND_API_KEY || "re_placeholder_get_your_key_from_resend_dot_com";
 
 const AUTO_APPROVE_JOBS = true;
 
@@ -802,8 +803,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Public opportunity submitted successfully:", { name, email, type, title });
 
       // Send email notification
-      try {
-        const resend = new Resend(RESEND_API_KEY);
+      if (RESEND_API_KEY && !RESEND_API_KEY.includes("placeholder")) {
+        try {
+          const resend = new Resend(RESEND_API_KEY);
         
         const opportunityTypeLabels: Record<string, string> = {
           job: "Job Opening",
@@ -900,9 +902,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           html: emailHtml,
         });
 
-        console.log("Opportunity notification email sent successfully");
-      } catch (emailError) {
-        console.error("Failed to send opportunity notification email:", emailError);
+          console.log("Opportunity notification email sent successfully");
+        } catch (emailError) {
+          console.error("Failed to send opportunity notification email:", emailError);
+        }
+      } else {
+        console.warn("Resend API key not configured, skipping opportunity email notification");
       }
 
       return res.json({
@@ -933,6 +938,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { name, email, country, message } = validationResult.data;
+
+      // Check if API key is configured
+      if (!RESEND_API_KEY || RESEND_API_KEY.includes("placeholder")) {
+        console.error("Resend API key not configured. Please add RESEND_API_KEY to your .env file");
+        return res.status(500).json({ 
+          error: "Email service not configured. Please contact us via WhatsApp at +966 558 396 046" 
+        });
+      }
 
       try {
         const resend = new Resend(RESEND_API_KEY);
