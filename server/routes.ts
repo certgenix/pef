@@ -744,7 +744,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         </div>
       `;
 
-      const recipients = ["info@pef.world", "abdulmoiz.cloud25@gmail.com"];
+      const recipients = ["abdulmoiz.cloud25@gmail.com"];
 
       const { data, error } = await resend.emails.send({
         from: "PEF Contact Form <onboarding@resend.dev>",
