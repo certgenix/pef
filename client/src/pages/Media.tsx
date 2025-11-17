@@ -3,7 +3,8 @@ import Footer from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Newspaper, Video, Mail, Calendar } from "lucide-react";
+import { Newspaper, Video, Mail, Calendar, ExternalLink, Play } from "lucide-react";
+import { SiLinkedin } from "react-icons/si";
 
 const mediaCategories = [
   {
@@ -87,33 +88,55 @@ export default function Media() {
                 Featured Video
               </h2>
               
-              <Card className="border-2 overflow-hidden" data-testid="card-featured-video">
-                <CardContent className="p-0">
-                  <div className="aspect-video bg-muted relative">
-                    <video 
-                      className="w-full h-full object-cover"
-                      controls
-                      poster="https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=1200&h=675&fit=crop"
-                      data-testid="video-featured"
-                    >
-                      <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4" />
-                      <source src="https://www.w3schools.com/html/mov_bbb.ogg" type="video/ogg" />
-                      Your browser does not support the video tag.
-                    </video>
-                  </div>
-                  <div className="p-6">
-                    <Badge variant="secondary" className="mb-3" data-testid="badge-video-category">
-                      Welcome to PEF
-                    </Badge>
-                    <h3 className="text-2xl font-bold mb-2" data-testid="text-video-title">
-                      Welcome to the Professional Executive Forum
-                    </h3>
-                    <p className="text-muted-foreground" data-testid="text-video-description">
-                      Discover how PEF connects professionals, business owners, employers, and investors through our global platform. Learn about our mission to create a high-quality database powering intelligent opportunity matching.
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
+              <a 
+                href="https://www.linkedin.com/feed/update/urn:li:activity:7393430270223458304?utm_source=share&utm_medium=member_desktop&rcm=ACoAADty3ZQBkH_2WlLwlpoggXcuS2hjtRsePaM"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block"
+                data-testid="link-featured-linkedin-video"
+              >
+                <Card className="border-2 hover:border-primary transition-all hover-elevate cursor-pointer" data-testid="card-featured-video">
+                  <CardContent className="p-0">
+                    <div className="aspect-video bg-gradient-to-br from-[#0077B5] to-[#00A0DC] relative flex items-center justify-center">
+                      <div className="absolute inset-0 bg-black/20"></div>
+                      <div className="relative z-10 text-center text-white">
+                        <div className="w-24 h-24 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center mb-4 mx-auto hover:bg-white/30 transition-all">
+                          <Play className="w-12 h-12 text-white ml-2" />
+                        </div>
+                        <div className="flex items-center justify-center gap-2 mb-2">
+                          <SiLinkedin className="w-8 h-8" />
+                          <span className="text-xl font-semibold">LinkedIn Video</span>
+                        </div>
+                        <p className="text-white/90 text-sm flex items-center justify-center gap-1">
+                          Click to watch on LinkedIn
+                          <ExternalLink className="w-4 h-4" />
+                        </p>
+                      </div>
+                    </div>
+                    <div className="p-6">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Badge variant="secondary" data-testid="badge-video-category">
+                          Featured Content
+                        </Badge>
+                        <Badge className="bg-[#0077B5] hover:bg-[#0077B5]" data-testid="badge-linkedin">
+                          <SiLinkedin className="w-3 h-3 mr-1" />
+                          LinkedIn
+                        </Badge>
+                      </div>
+                      <h3 className="text-2xl font-bold mb-2" data-testid="text-video-title">
+                        Professional Executive Forum on LinkedIn
+                      </h3>
+                      <p className="text-muted-foreground mb-4" data-testid="text-video-description">
+                        Watch our featured video post on LinkedIn. Connect with us to stay updated on the latest insights, events, and opportunities from the Professional Executive Forum community.
+                      </p>
+                      <div className="flex items-center gap-2 text-primary font-semibold" data-testid="text-watch-linkedin">
+                        Watch on LinkedIn
+                        <ExternalLink className="w-4 h-4" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </a>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Card, CardContent } from "@/components/ui/card";
@@ -6,8 +7,63 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Mail, Phone, MapPin } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function Contact() {
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    country: "",
+    message: "",
+  });
+  const { toast } = useToast();
+
+  const contactMutation = useMutation({
+    mutationFn: async (data: typeof formData) => {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        body: JSON.stringify(data),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      if (!response.ok) {
+        throw new Error("Failed to send message");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Message sent successfully!",
+        description: "We'll get back to you within 1-2 business days.",
+      });
+      setFormData({ name: "", email: "", country: "", message: "" });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to send message",
+        description: error.message || "Please try again later.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    contactMutation.mutate(formData);
+  };
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    setFormData((prev) => ({
+      ...prev,
+      [e.target.id]: e.target.value,
+    }));
+  };
+
   return (
     <div className="min-h-screen">
       <Header />
@@ -53,11 +109,11 @@ export default function Contact() {
                         <div>
                           <h3 className="font-semibold mb-1">Email</h3>
                           <a
-                            href="mailto:info@pef.org"
+                            href="mailto:info@pef.world"
                             className="text-primary hover:underline"
                             data-testid="link-contact-email"
                           >
-                            info@pef.org
+                            info@pef.world
                           </a>
                         </div>
                       </div>
@@ -71,8 +127,16 @@ export default function Contact() {
                           <Phone className="w-6 h-6 text-primary" />
                         </div>
                         <div>
-                          <h3 className="font-semibold mb-1">Phone</h3>
-                          <p className="text-muted-foreground">+966-XXX-XXXX</p>
+                          <h3 className="font-semibold mb-1">WhatsApp Only</h3>
+                          <a
+                            href="https://wa.me/966558396046"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary hover:underline"
+                            data-testid="link-contact-whatsapp"
+                          >
+                            +966 558 396 046
+                          </a>
                         </div>
                       </div>
                     </CardContent>
@@ -86,7 +150,7 @@ export default function Contact() {
                         </div>
                         <div>
                           <h3 className="font-semibold mb-1">Head Office</h3>
-                          <p className="text-muted-foreground">Riyadh, Saudi Arabia</p>
+                          <p className="text-muted-foreground">KSA</p>
                         </div>
                       </div>
                     </CardContent>
@@ -98,12 +162,15 @@ export default function Contact() {
                 <Card className="border-2">
                   <CardContent className="p-8">
                     <h2 className="text-2xl font-display font-bold mb-6">Contact Form</h2>
-                    <form className="space-y-6">
+                    <form className="space-y-6" onSubmit={handleSubmit}>
                       <div className="space-y-2">
                         <Label htmlFor="name">Name</Label>
                         <Input
                           id="name"
+                          value={formData.name}
+                          onChange={handleChange}
                           placeholder="Your full name"
+                          required
                           data-testid="input-name"
                         />
                       </div>
@@ -113,7 +180,10 @@ export default function Contact() {
                         <Input
                           id="email"
                           type="email"
+                          value={formData.email}
+                          onChange={handleChange}
                           placeholder="your.email@example.com"
+                          required
                           data-testid="input-email"
                         />
                       </div>
@@ -122,7 +192,10 @@ export default function Contact() {
                         <Label htmlFor="country">Country</Label>
                         <Input
                           id="country"
+                          value={formData.country}
+                          onChange={handleChange}
                           placeholder="Your country"
+                          required
                           data-testid="input-country"
                         />
                       </div>
@@ -131,8 +204,11 @@ export default function Contact() {
                         <Label htmlFor="message">Message</Label>
                         <Textarea
                           id="message"
+                          value={formData.message}
+                          onChange={handleChange}
                           placeholder="Tell us how we can help you..."
                           rows={6}
+                          required
                           data-testid="input-message"
                         />
                       </div>
@@ -141,9 +217,10 @@ export default function Contact() {
                         type="submit"
                         size="lg"
                         className="w-full min-h-12"
+                        disabled={contactMutation.isPending}
                         data-testid="button-submit"
                       >
-                        Send Message
+                        {contactMutation.isPending ? "Sending..." : "Send Message"}
                       </Button>
                     </form>
                   </CardContent>

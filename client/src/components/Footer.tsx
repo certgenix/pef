@@ -55,19 +55,21 @@ export default function Footer() {
               <li>
                 <strong className="text-white">Email:</strong>
                 <br />
-                <a href="mailto:info@pef.org" className="hover:text-white transition-colors" data-testid="link-email">
-                  info@pef.org
+                <a href="mailto:info@pef.world" className="hover:text-white transition-colors" data-testid="link-email">
+                  info@pef.world
                 </a>
               </li>
               <li>
-                <strong className="text-white">Phone:</strong>
+                <strong className="text-white">WhatsApp:</strong>
                 <br />
-                +966-XXX-XXXX
+                <a href="https://wa.me/966558396046" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors" data-testid="link-whatsapp">
+                  +966 558 396 046
+                </a>
               </li>
               <li>
                 <strong className="text-white">Head Office:</strong>
                 <br />
-                Riyadh, Saudi Arabia
+                KSA
               </li>
             </ul>
           </div>

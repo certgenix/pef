@@ -690,6 +690,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/contact", async (req, res) => {
+    try {
+      const contactSchema = z.object({
+        name: z.string().min(1, "Name is required"),
+        email: z.string().email("Valid email is required"),
+        country: z.string().min(1, "Country is required"),
+        message: z.string().min(10, "Message must be at least 10 characters"),
+      });
+
+      const validationResult = contactSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          error: "Invalid request data", 
+          details: validationResult.error.issues 
+        });
+      }
+
+      const { name, email, country, message } = validationResult.data;
+
+      console.log("Contact form submission:", {
+        name,
+        email,
+        country,
+        message,
+        timestamp: new Date().toISOString(),
+      });
+
+      return res.json({ 
+        success: true, 
+        message: "Contact form submitted successfully" 
+      });
+    } catch (error) {
+      console.error("Contact form error:", error);
+      return res.status(500).json({ error: "Failed to submit contact form" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
