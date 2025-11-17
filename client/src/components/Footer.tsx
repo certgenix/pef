@@ -1,6 +1,6 @@
-import { Globe } from "lucide-react";
 import { Link } from "wouter";
 import { SiLinkedin, SiYoutube, SiX } from "react-icons/si";
+import logoImage from "@assets/image_1763355890421.png";
 
 const quickLinks = [
   { label: "Home", path: "/" },
@@ -23,9 +23,11 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-accent">
-                <Globe className="w-6 h-6 text-accent-foreground" />
-              </div>
+              <img 
+                src={logoImage} 
+                alt="PEF Logo" 
+                className="w-12 h-12 rounded-full object-cover"
+              />
               <span className="text-2xl font-display font-bold text-white">PEF</span>
             </div>
             <p className="text-sm text-white/70 mb-4">
