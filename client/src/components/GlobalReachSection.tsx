@@ -4,16 +4,24 @@ import SA from 'country-flag-icons/react/3x2/SA';
 import US from 'country-flag-icons/react/3x2/US';
 import CA from 'country-flag-icons/react/3x2/CA';
 import GB from 'country-flag-icons/react/3x2/GB';
+import AE from 'country-flag-icons/react/3x2/AE';
+import PK from 'country-flag-icons/react/3x2/PK';
+import NG from 'country-flag-icons/react/3x2/NG';
 import DE from 'country-flag-icons/react/3x2/DE';
 import IT from 'country-flag-icons/react/3x2/IT';
+import FR from 'country-flag-icons/react/3x2/FR';
 
 const countries = [
-  { name: "Saudi Arabia", code: "SA", isPrimary: true, Flag: SA },
-  { name: "United States", code: "US", isPrimary: false, Flag: US },
-  { name: "Canada", code: "CA", isPrimary: false, Flag: CA },
-  { name: "United Kingdom", code: "UK", isPrimary: false, Flag: GB },
-  { name: "Germany", code: "DE", isPrimary: false, Flag: DE },
-  { name: "Italy", code: "IT", isPrimary: false, Flag: IT },
+  { name: "Saudi Arabia", code: "SA", isPrimary: true, comingSoon: false, Flag: SA },
+  { name: "United States", code: "US", isPrimary: false, comingSoon: false, Flag: US },
+  { name: "Canada", code: "CA", isPrimary: false, comingSoon: false, Flag: CA },
+  { name: "United Kingdom", code: "UK", isPrimary: false, comingSoon: false, Flag: GB },
+  { name: "Dubai (UAE)", code: "AE", isPrimary: false, comingSoon: false, Flag: AE },
+  { name: "Pakistan", code: "PK", isPrimary: false, comingSoon: false, Flag: PK },
+  { name: "Nigeria", code: "NG", isPrimary: false, comingSoon: false, Flag: NG },
+  { name: "Germany", code: "DE", isPrimary: false, comingSoon: true, Flag: DE },
+  { name: "Italy", code: "IT", isPrimary: false, comingSoon: true, Flag: IT },
+  { name: "France", code: "FR", isPrimary: false, comingSoon: true, Flag: FR },
 ];
 
 
@@ -30,7 +38,7 @@ export default function GlobalReachSection() {
           Global Reach
         </h2>
         <p className="text-center text-muted-foreground mb-12 max-w-3xl mx-auto text-lg">
-          Launching first in Saudi Arabia, open to USA, Canada, UK, Germany, Italy, and others from day one
+          Launching first in Saudi Arabia, now open to USA, Canada, UK, Dubai, Pakistan, Nigeria, and more coming soon
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
@@ -58,8 +66,11 @@ export default function GlobalReachSection() {
                 {country.isPrimary && (
                   <p className="text-sm text-primary font-semibold relative z-10">Primary Launch Market</p>
                 )}
-                {!country.isPrimary && (
+                {!country.isPrimary && !country.comingSoon && (
                   <p className="text-sm text-muted-foreground relative z-10">Supported Region</p>
+                )}
+                {country.comingSoon && (
+                  <p className="text-sm text-muted-foreground relative z-10">Coming Soon</p>
                 )}
               </CardContent>
             </Card>
