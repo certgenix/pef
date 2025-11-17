@@ -11,6 +11,7 @@ import Opportunities from "@/pages/Opportunities";
 import Media from "@/pages/Media";
 import Contact from "@/pages/Contact";
 import Register from "@/pages/Register";
+import Signup from "@/pages/Signup";
 import Login from "@/pages/Login";
 import ForgotPassword from "@/pages/ForgotPassword";
 import EditProfile from "@/pages/EditProfile";
@@ -33,6 +34,7 @@ function Router() {
       <Route path="/media" component={Media} />
       <Route path="/contact" component={Contact} />
       <Route path="/register" component={Register} />
+      <Route path="/signup" component={Signup} />
       <Route path="/login" component={Login} />
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/edit-profile" component={EditProfile} />

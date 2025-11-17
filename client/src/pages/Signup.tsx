@@ -1,0 +1,637 @@
+import { useState } from "react";
+import { useLocation } from "wouter";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { Briefcase, Search, Building2, Handshake, TrendingUp, ArrowRight, ArrowLeft, CheckCircle, Circle, Eye, EyeOff } from "lucide-react";
+
+const roles = [
+  {
+    id: "professional",
+    icon: Briefcase,
+    title: "Professional",
+    description: "Network, showcase skills, and gain career visibility",
+  },
+  {
+    id: "jobSeeker",
+    icon: Search,
+    title: "Job Seeker",
+    description: "Actively looking for jobs locally or internationally",
+  },
+  {
+    id: "employer",
+    icon: Building2,
+    title: "Employer",
+    description: "Post job openings and find qualified candidates",
+  },
+  {
+    id: "businessOwner",
+    icon: Handshake,
+    title: "Business Owner",
+    description: "Seek partnerships, expansion support, and investors",
+  },
+  {
+    id: "investor",
+    icon: TrendingUp,
+    title: "Investor",
+    description: "Invest in startups, SMEs, and market opportunities",
+  },
+];
+
+const countries = [
+  "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Antigua and Barbuda", "Argentina", "Armenia", 
+  "Australia", "Austria", "Azerbaijan", "Bahamas", "Bahrain", "Bangladesh", "Barbados", "Belarus", "Belgium", 
+  "Belize", "Benin", "Bhutan", "Bolivia", "Bosnia and Herzegovina", "Botswana", "Brazil", "Brunei", "Bulgaria", 
+  "Burkina Faso", "Burundi", "Cabo Verde", "Cambodia", "Cameroon", "Canada", "Central African Republic", "Chad", 
+  "Chile", "China", "Colombia", "Comoros", "Congo", "Costa Rica", "Croatia", "Cuba", "Cyprus", "Czech Republic", 
+  "Denmark", "Djibouti", "Dominica", "Dominican Republic", "Ecuador", "Egypt", "El Salvador", "Equatorial Guinea", 
+  "Eritrea", "Estonia", "Eswatini", "Ethiopia", "Fiji", "Finland", "France", "Gabon", "Gambia", "Georgia", "Germany", 
+  "Ghana", "Greece", "Grenada", "Guatemala", "Guinea", "Guinea-Bissau", "Guyana", "Haiti", "Honduras", "Hungary", 
+  "Iceland", "India", "Indonesia", "Iran", "Iraq", "Ireland", "Israel", "Italy", "Jamaica", "Japan", "Jordan", 
+  "Kazakhstan", "Kenya", "Kiribati", "Kosovo", "Kuwait", "Kyrgyzstan", "Laos", "Latvia", "Lebanon", "Lesotho", 
+  "Liberia", "Libya", "Liechtenstein", "Lithuania", "Luxembourg", "Madagascar", "Malawi", "Malaysia", "Maldives", 
+  "Mali", "Malta", "Marshall Islands", "Mauritania", "Mauritius", "Mexico", "Micronesia", "Moldova", "Monaco", 
+  "Mongolia", "Montenegro", "Morocco", "Mozambique", "Myanmar", "Namibia", "Nauru", "Nepal", "Netherlands", 
+  "New Zealand", "Nicaragua", "Niger", "Nigeria", "North Korea", "North Macedonia", "Norway", "Oman", "Pakistan", 
+  "Palau", "Palestine", "Panama", "Papua New Guinea", "Paraguay", "Peru", "Philippines", "Poland", "Portugal", 
+  "Qatar", "Romania", "Russia", "Rwanda", "Saint Kitts and Nevis", "Saint Lucia", "Saint Vincent and the Grenadines", 
+  "Samoa", "San Marino", "Sao Tome and Principe", "Saudi Arabia", "Senegal", "Serbia", "Seychelles", "Sierra Leone", 
+  "Singapore", "Slovakia", "Slovenia", "Solomon Islands", "Somalia", "South Africa", "South Korea", "South Sudan", 
+  "Spain", "Sri Lanka", "Sudan", "Suriname", "Sweden", "Switzerland", "Syria", "Taiwan", "Tajikistan", "Tanzania", 
+  "Thailand", "Timor-Leste", "Togo", "Tonga", "Trinidad and Tobago", "Tunisia", "Turkey", "Turkmenistan", "Tuvalu", 
+  "Uganda", "Ukraine", "United Arab Emirates", "United Kingdom", "United States", "Uruguay", "Uzbekistan", "Vanuatu", 
+  "Vatican City", "Venezuela", "Vietnam", "Yemen", "Zambia", "Zimbabwe"
+];
+
+const countryPhoneCodes: Record<string, string> = {
+  "Afghanistan": "+93", "Albania": "+355", "Algeria": "+213", "Saudi Arabia": "+966", "Pakistan": "+92",
+  "United Arab Emirates": "+971", "United Kingdom": "+44", "United States": "+1", "Canada": "+1",
+  "Germany": "+49", "Italy": "+39", "India": "+91", "China": "+86", "Japan": "+81", "Australia": "+61"
+};
+
+const uniquePhoneCodes = [
+  { code: "+1", label: "+1 (USA, Canada)" },
+  { code: "+20", label: "+20 (Egypt)" },
+  { code: "+27", label: "+27 (South Africa)" },
+  { code: "+30", label: "+30 (Greece)" },
+  { code: "+31", label: "+31 (Netherlands)" },
+  { code: "+33", label: "+33 (France)" },
+  { code: "+39", label: "+39 (Italy)" },
+  { code: "+44", label: "+44 (UK)" },
+  { code: "+49", label: "+49 (Germany)" },
+  { code: "+61", label: "+61 (Australia)" },
+  { code: "+81", label: "+81 (Japan)" },
+  { code: "+86", label: "+86 (China)" },
+  { code: "+91", label: "+91 (India)" },
+  { code: "+92", label: "+92 (Pakistan)" },
+  { code: "+966", label: "+966 (Saudi Arabia)" },
+  { code: "+971", label: "+971 (UAE)" },
+];
+
+export default function Signup() {
+  const [, setLocation] = useLocation();
+  const { toast } = useToast();
+  const { register } = useAuth();
+  const [step, setStep] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const [accountInfo, setAccountInfo] = useState({
+    email: "",
+    password: "",
+    confirmPassword: "",
+  });
+
+  const [basicInfo, setBasicInfo] = useState({
+    fullName: "",
+    phoneCode: "+966",
+    phone: "",
+    country: "Saudi Arabia",
+    city: "",
+    languages: "",
+    headline: "",
+    bio: "",
+    linkedinUrl: "",
+    websiteUrl: "",
+    portfolioUrl: "",
+  });
+
+  const [selectedRoles, setSelectedRoles] = useState({
+    professional: false,
+    jobSeeker: false,
+    employer: false,
+    businessOwner: false,
+    investor: false,
+  });
+
+  const handleRoleToggle = (roleId: keyof typeof selectedRoles) => {
+    setSelectedRoles((prev) => ({ ...prev, [roleId]: !prev[roleId] }));
+  };
+
+  const handleAccountInfoChange = (field: string, value: string) => {
+    setAccountInfo((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleBasicInfoChange = (field: string, value: string) => {
+    if (field === "country") {
+      const phoneCode = countryPhoneCodes[value] || "+1";
+      setBasicInfo((prev) => ({ ...prev, country: value, phoneCode }));
+    } else {
+      setBasicInfo((prev) => ({ ...prev, [field]: value }));
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!Object.values(selectedRoles).some((v) => v)) {
+      toast({
+        title: "Error",
+        description: "Please select at least one role",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Prepare profile data
+      const profileData = {
+        phone: basicInfo.phone?.trim() ? `${basicInfo.phoneCode} ${basicInfo.phone.trim()}` : null,
+        country: basicInfo.country || null,
+        city: basicInfo.city?.trim() || null,
+        languages: basicInfo.languages?.trim() ? basicInfo.languages.split(",").map(l => l.trim()).filter(Boolean) : null,
+        headline: basicInfo.headline?.trim() || null,
+        bio: basicInfo.bio?.trim() || null,
+        linkedinUrl: basicInfo.linkedinUrl?.trim() || null,
+        websiteUrl: basicInfo.websiteUrl?.trim() || null,
+        portfolioUrl: basicInfo.portfolioUrl?.trim() || null,
+      };
+
+      // Call register from AuthContext
+      await register(
+        accountInfo.email,
+        accountInfo.password,
+        basicInfo.fullName.trim(),
+        selectedRoles,
+        profileData
+      );
+
+      toast({
+        title: "Account Created!",
+        description: "Please check your email to verify your account before logging in.",
+      });
+
+      setLocation("/login");
+
+    } catch (error: any) {
+      console.error("Signup error:", error);
+      let errorMessage = "An error occurred. Please try again.";
+      
+      if (error.code === "auth/email-already-in-use") {
+        errorMessage = "This email is already registered. Please login instead.";
+      } else if (error.code === "auth/weak-password") {
+        errorMessage = "Password should be at least 6 characters.";
+      } else if (error.code === "auth/invalid-email") {
+        errorMessage = "Invalid email address.";
+      }
+
+      toast({
+        title: "Sign Up Failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const hasSelectedRoles = Object.values(selectedRoles).some((v) => v);
+
+  const validateAccountInfo = () => {
+    if (!accountInfo.email.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Please enter your email address",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    if (!accountInfo.password) {
+      toast({
+        title: "Validation Error",
+        description: "Please enter a password",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    if (accountInfo.password.length < 6) {
+      toast({
+        title: "Validation Error",
+        description: "Password must be at least 6 characters",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    if (accountInfo.password !== accountInfo.confirmPassword) {
+      toast({
+        title: "Validation Error",
+        description: "Passwords do not match",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    return true;
+  };
+
+  const validateBasicInfo = () => {
+    if (!basicInfo.fullName.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Please enter your full name",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    if (!basicInfo.country) {
+      toast({
+        title: "Validation Error",
+        description: "Please select your country",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleNextFromStep1 = () => {
+    if (validateAccountInfo()) {
+      setStep(2);
+    }
+  };
+
+  const handleNextFromStep2 = () => {
+    if (validateBasicInfo()) {
+      setStep(3);
+    }
+  };
+
+  return (
+    <div className="min-h-screen">
+      <Header />
+      <main className="py-16 md:py-24 bg-background">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <Card className="border-2">
+            <CardHeader>
+              <CardTitle className="text-3xl">Create Your PEF Account</CardTitle>
+              <p className="text-muted-foreground">
+                Step {step} of 3: {step === 1 ? "Account Details" : step === 2 ? "Personal Information" : "Select Your Roles"}
+              </p>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit}>
+                {step === 1 && (
+                  <div className="space-y-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Email Address *</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        required
+                        value={accountInfo.email}
+                        onChange={(e) => handleAccountInfoChange("email", e.target.value)}
+                        data-testid="input-signup-email"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="password">Password *</Label>
+                      <div className="relative">
+                        <Input
+                          id="password"
+                          type={showPassword ? "text" : "password"}
+                          required
+                          value={accountInfo.password}
+                          onChange={(e) => handleAccountInfoChange("password", e.target.value)}
+                          data-testid="input-signup-password"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="absolute right-2 top-1/2 -translate-y-1/2"
+                          onClick={() => setShowPassword(!showPassword)}
+                          data-testid="button-toggle-password"
+                        >
+                          {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Password must be at least 6 characters
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="confirmPassword">Confirm Password *</Label>
+                      <div className="relative">
+                        <Input
+                          id="confirmPassword"
+                          type={showConfirmPassword ? "text" : "password"}
+                          required
+                          value={accountInfo.confirmPassword}
+                          onChange={(e) => handleAccountInfoChange("confirmPassword", e.target.value)}
+                          data-testid="input-signup-confirm-password"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="absolute right-2 top-1/2 -translate-y-1/2"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          data-testid="button-toggle-confirm-password"
+                        >
+                          {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end">
+                      <Button
+                        type="button"
+                        onClick={handleNextFromStep1}
+                        size="lg"
+                        data-testid="button-next-step-1"
+                      >
+                        Next <ArrowRight className="ml-2 w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {step === 2 && (
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="fullName">Full Name *</Label>
+                        <Input
+                          id="fullName"
+                          required
+                          value={basicInfo.fullName}
+                          onChange={(e) => handleBasicInfoChange("fullName", e.target.value)}
+                          data-testid="input-full-name"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="country">Country *</Label>
+                        <Select
+                          required
+                          value={basicInfo.country}
+                          onValueChange={(value) => handleBasicInfoChange("country", value)}
+                        >
+                          <SelectTrigger id="country" data-testid="select-country">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {countries.map((country) => (
+                              <SelectItem key={country} value={country}>
+                                {country}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="phoneCode">Phone Code</Label>
+                        <Select
+                          value={basicInfo.phoneCode}
+                          onValueChange={(value) => handleBasicInfoChange("phoneCode", value)}
+                        >
+                          <SelectTrigger id="phoneCode" data-testid="select-phone-code">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {uniquePhoneCodes.map((item) => (
+                              <SelectItem key={item.code} value={item.code}>
+                                {item.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2 md:col-span-2">
+                        <Label htmlFor="phone">Phone Number</Label>
+                        <Input
+                          id="phone"
+                          type="tel"
+                          value={basicInfo.phone}
+                          onChange={(e) => handleBasicInfoChange("phone", e.target.value)}
+                          placeholder="1234567890"
+                          data-testid="input-phone"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="city">City</Label>
+                      <Input
+                        id="city"
+                        value={basicInfo.city}
+                        onChange={(e) => handleBasicInfoChange("city", e.target.value)}
+                        placeholder="e.g., Riyadh"
+                        data-testid="input-city"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="languages">Languages (comma separated)</Label>
+                      <Input
+                        id="languages"
+                        value={basicInfo.languages}
+                        onChange={(e) => handleBasicInfoChange("languages", e.target.value)}
+                        placeholder="e.g., English, Arabic, Urdu"
+                        data-testid="input-languages"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="headline">Professional Headline</Label>
+                      <Input
+                        id="headline"
+                        value={basicInfo.headline}
+                        onChange={(e) => handleBasicInfoChange("headline", e.target.value)}
+                        placeholder="e.g., Senior Software Engineer | AI Enthusiast"
+                        data-testid="input-headline"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="bio">Bio / About You</Label>
+                      <Textarea
+                        id="bio"
+                        value={basicInfo.bio}
+                        onChange={(e) => handleBasicInfoChange("bio", e.target.value)}
+                        placeholder="Tell us about yourself, your experience, and what you're looking for..."
+                        rows={4}
+                        data-testid="input-bio"
+                      />
+                    </div>
+
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold">Professional Links (Optional)</h3>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="linkedinUrl">LinkedIn URL</Label>
+                        <Input
+                          id="linkedinUrl"
+                          type="url"
+                          value={basicInfo.linkedinUrl}
+                          onChange={(e) => handleBasicInfoChange("linkedinUrl", e.target.value)}
+                          placeholder="https://linkedin.com/in/yourprofile"
+                          data-testid="input-linkedin"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="websiteUrl">Website URL</Label>
+                        <Input
+                          id="websiteUrl"
+                          type="url"
+                          value={basicInfo.websiteUrl}
+                          onChange={(e) => handleBasicInfoChange("websiteUrl", e.target.value)}
+                          placeholder="https://yourwebsite.com"
+                          data-testid="input-website"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="portfolioUrl">Portfolio URL</Label>
+                        <Input
+                          id="portfolioUrl"
+                          type="url"
+                          value={basicInfo.portfolioUrl}
+                          onChange={(e) => handleBasicInfoChange("portfolioUrl", e.target.value)}
+                          placeholder="https://yourportfolio.com"
+                          data-testid="input-portfolio"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex justify-between gap-4">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setStep(1)}
+                        size="lg"
+                        data-testid="button-back-step-2"
+                      >
+                        <ArrowLeft className="mr-2 w-4 h-4" /> Back
+                      </Button>
+                      <Button
+                        type="button"
+                        onClick={handleNextFromStep2}
+                        size="lg"
+                        data-testid="button-next-step-2"
+                      >
+                        Next <ArrowRight className="ml-2 w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {step === 3 && (
+                  <div className="space-y-6">
+                    <div>
+                      <h3 className="text-xl font-semibold mb-4">Select Your Role(s) *</h3>
+                      <p className="text-muted-foreground mb-6">
+                        Choose one or more roles that best describe you. You can select multiple roles.
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {roles.map((role) => {
+                        const Icon = role.icon;
+                        const isSelected = selectedRoles[role.id as keyof typeof selectedRoles];
+                        
+                        return (
+                          <Card
+                            key={role.id}
+                            className={`cursor-pointer transition-all hover-elevate ${
+                              isSelected ? "border-primary border-2" : ""
+                            }`}
+                            onClick={() => handleRoleToggle(role.id as keyof typeof selectedRoles)}
+                            data-testid={`role-card-${role.id}`}
+                          >
+                            <CardContent className="p-6">
+                              <div className="flex items-start justify-between mb-3">
+                                <div className="w-12 h-12 bg-primary/10 rounded-md flex items-center justify-center">
+                                  <Icon className="w-6 h-6 text-primary" />
+                                </div>
+                                {isSelected ? (
+                                  <CheckCircle className="w-6 h-6 text-primary" />
+                                ) : (
+                                  <Circle className="w-6 h-6 text-muted-foreground" />
+                                )}
+                              </div>
+                              <h4 className="text-lg font-bold mb-2">{role.title}</h4>
+                              <p className="text-sm text-muted-foreground">{role.description}</p>
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
+                    </div>
+
+                    {!hasSelectedRoles && (
+                      <p className="text-sm text-destructive">
+                        Please select at least one role to continue
+                      </p>
+                    )}
+
+                    <div className="flex justify-between gap-4 pt-4">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setStep(2)}
+                        size="lg"
+                        data-testid="button-back-step-3"
+                      >
+                        <ArrowLeft className="mr-2 w-4 h-4" /> Back
+                      </Button>
+                      <Button
+                        type="submit"
+                        disabled={loading || !hasSelectedRoles}
+                        size="lg"
+                        data-testid="button-submit-signup"
+                      >
+                        {loading ? "Creating Account..." : "Create Account"}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      </main>
+      <Footer />
+    </div>
+  );
+}
