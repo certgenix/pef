@@ -835,7 +835,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       await addDoc(opportunitiesRef, newOpportunity);
 
-      console.log("Public opportunity submitted successfully:", { name, email, type, title });
+      console.log("=== OPPORTUNITY SUBMISSION ===");
+      console.log("Submitter:", name, "-", email);
+      console.log("Type:", type);
+      console.log("Title:", title);
+      console.log("Description:", description);
+      console.log("Country:", country, city ? `(${city})` : "");
+      console.log("==============================");
 
       // Send email notification
       try {
@@ -927,16 +933,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           </div>
         `;
 
+        const recipientEmail = "abdulmoiz.cloud25@gmail.com";
+        
         await resend.emails.send({
           from: fromEmail || "PEF Opportunities <onboarding@resend.dev>",
-          to: "delivered@resend.dev",
+          to: recipientEmail,
           subject: `New ${opportunityTypeLabels[type]} Submission - ${title}`,
           html: emailHtml,
         });
 
-        console.log("Opportunity notification email sent successfully");
-      } catch (emailError) {
+        console.log(`Opportunity notification email sent successfully to ${recipientEmail}`);
+      } catch (emailError: any) {
         console.error("Failed to send opportunity notification email:", emailError);
+        console.log("Note: Check server logs above for full opportunity details");
       }
 
       return res.json({
@@ -967,6 +976,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { name, email, country, message } = validationResult.data;
+
+      console.log("=== CONTACT FORM SUBMISSION ===");
+      console.log("Name:", name);
+      console.log("Email:", email);
+      console.log("Country:", country);
+      console.log("Message:", message);
+      console.log("===============================");
 
       try {
         const { client: resend, fromEmail } = await getResendClient();
@@ -1000,16 +1016,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           </div>
         `;
 
+        const recipientEmail = "abdulmoiz.cloud25@gmail.com";
+        
         await resend.emails.send({
           from: fromEmail || "PEF Contact Form <onboarding@resend.dev>",
-          to: "delivered@resend.dev",
+          to: recipientEmail,
           subject: `New Contact Form Submission from ${name}`,
           html: emailHtml,
         });
 
-        console.log("Contact form email sent successfully");
-      } catch (emailError) {
+        console.log(`Contact form email sent successfully to ${recipientEmail}`);
+      } catch (emailError: any) {
         console.error("Failed to send contact form email:", emailError);
+        console.log("Note: Check server logs above for full contact details");
       }
 
       return res.json({ 
