@@ -1017,17 +1017,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         `;
 
         const recipientEmail = "abdulmoiz.cloud25@gmail.com";
+        const senderEmail = fromEmail || "PEF Contact Form <onboarding@resend.dev>";
         
-        await resend.emails.send({
-          from: fromEmail || "PEF Contact Form <onboarding@resend.dev>",
+        console.log(`📧 Attempting to send email FROM: ${senderEmail} TO: ${recipientEmail}`);
+        
+        const result = await resend.emails.send({
+          from: senderEmail,
           to: recipientEmail,
           subject: `New Contact Form Submission from ${name}`,
           html: emailHtml,
         });
 
-        console.log(`Contact form email sent successfully to ${recipientEmail}`);
+        console.log(`✅ Email sent successfully! Resend Response:`, JSON.stringify(result, null, 2));
+        console.log(`⚠️  NOTE: If using onboarding@resend.dev, emails may not be delivered. Please verify your domain in Resend.`);
       } catch (emailError: any) {
-        console.error("Failed to send contact form email:", emailError);
+        console.error("❌ Failed to send contact form email:", emailError);
+        console.error("Error details:", JSON.stringify(emailError, null, 2));
         console.log("Note: Check server logs above for full contact details");
       }
 
