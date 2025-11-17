@@ -696,13 +696,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/public-opportunities", async (req, res) => {
     try {
       const publicOpportunitySchema = z.object({
-        name: z.string().min(1, "Name is required"),
-        email: z.string().email("Valid email is required"),
+        name: z.string().trim().min(1, "Name is required"),
+        email: z.string().trim().email("Valid email is required"),
         type: z.enum(["job", "investment", "partnership", "collaboration"], {
           errorMap: () => ({ message: "Please select a valid opportunity type" }),
         }),
-        title: z.string().min(10, "Title must be at least 10 characters"),
-        description: z.string().min(20, "Description must be at least 20 characters"),
+        title: z.string().trim().min(10, "Title must be at least 10 characters"),
+        description: z.string().trim().min(20, "Description must be at least 20 characters"),
+        sector: z.string().trim().optional(),
+        country: z.string().trim().min(1, "Country is required"),
+        city: z.string().trim().optional(),
+        budgetOrSalary: z.string().trim().optional(),
+        contactPreference: z.string().trim().optional(),
+        employmentType: z.enum(["full-time", "part-time", "remote", "contract"]).optional(),
+        experienceRequired: z.string().trim().optional(),
+        skills: z.string().trim().optional(),
+        benefits: z.string().trim().optional(),
+        applicationEmail: z.string().trim().email().optional(),
+        investmentAmount: z.string().trim().optional(),
+        investmentType: z.string().trim().optional(),
+        partnershipType: z.string().trim().optional(),
       });
 
       const validationResult = publicOpportunitySchema.safeParse(req.body);
@@ -713,7 +726,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const { name, email, type, title, description } = validationResult.data;
+      const { 
+        name, 
+        email, 
+        type, 
+        title, 
+        description,
+        sector,
+        country,
+        city,
+        budgetOrSalary,
+        contactPreference,
+        employmentType,
+        experienceRequired,
+        skills,
+        benefits,
+        applicationEmail,
+        investmentAmount,
+        investmentType,
+        partnershipType,
+      } = validationResult.data;
+
+      if (type === "job") {
+        if (!applicationEmail) {
+          return res.status(400).json({
+            error: "Application email is required for job postings",
+          });
+        }
+        if (!employmentType) {
+          return res.status(400).json({
+            error: "Employment type is required for job postings",
+          });
+        }
+      }
+
+      const details: any = {};
+      
+      if (type === "job") {
+        if (employmentType) details.employmentType = employmentType;
+        if (experienceRequired) details.experienceRequired = experienceRequired;
+        if (skills) details.skills = skills.split(",").map(s => s.trim()).filter(Boolean);
+        if (benefits) details.benefits = benefits.split(",").map(b => b.trim()).filter(Boolean);
+        if (applicationEmail) details.applicationEmail = applicationEmail;
+      } else if (type === "investment") {
+        if (investmentAmount) details.investmentAmount = investmentAmount;
+        if (investmentType) details.investmentType = investmentType;
+      } else if (type === "partnership") {
+        if (partnershipType) details.partnershipType = partnershipType;
+      }
 
       const opportunitiesRef = collection(db, "opportunities");
       const newOpportunity = {
@@ -722,6 +782,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         type,
         title,
         description,
+        sector: sector || null,
+        country,
+        city: city || null,
+        budgetOrSalary: budgetOrSalary || null,
+        contactPreference: contactPreference || null,
+        details: Object.keys(details).length > 0 ? details : null,
         status: "pending",
         views: 0,
         interested: 0,
@@ -732,6 +798,114 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await addDoc(opportunitiesRef, newOpportunity);
 
       console.log("Public opportunity submitted successfully:", { name, email, type, title });
+
+      // Send email notification
+      if (process.env.RESEND_API_KEY) {
+        try {
+          const resend = new Resend(process.env.RESEND_API_KEY);
+          
+          const opportunityTypeLabels: Record<string, string> = {
+            job: "Job Opening",
+            investment: "Investment Opportunity",
+            partnership: "Sponsorship",
+            collaboration: "Business Collaboration",
+          };
+
+          let detailsHtml = "";
+          if (type === "job" && Object.keys(details).length > 0) {
+            detailsHtml = `
+              <div style="margin: 20px 0;">
+                <h3 style="color: #1e40af; margin-bottom: 10px;">Job Details</h3>
+                ${details.employmentType ? `<p style="margin: 5px 0;"><strong>Employment Type:</strong> ${details.employmentType}</p>` : ""}
+                ${details.experienceRequired ? `<p style="margin: 5px 0;"><strong>Experience Required:</strong> ${details.experienceRequired}</p>` : ""}
+                ${details.skills && details.skills.length > 0 ? `<p style="margin: 5px 0;"><strong>Skills:</strong> ${details.skills.join(", ")}</p>` : ""}
+                ${details.benefits && details.benefits.length > 0 ? `<p style="margin: 5px 0;"><strong>Benefits:</strong> ${details.benefits.join(", ")}</p>` : ""}
+                ${details.applicationEmail ? `<p style="margin: 5px 0;"><strong>Application Email:</strong> ${details.applicationEmail}</p>` : ""}
+              </div>
+            `;
+          } else if (type === "investment" && Object.keys(details).length > 0) {
+            detailsHtml = `
+              <div style="margin: 20px 0;">
+                <h3 style="color: #1e40af; margin-bottom: 10px;">Investment Details</h3>
+                ${details.investmentAmount ? `<p style="margin: 5px 0;"><strong>Investment Amount:</strong> ${details.investmentAmount}</p>` : ""}
+                ${details.investmentType ? `<p style="margin: 5px 0;"><strong>Investment Type:</strong> ${details.investmentType}</p>` : ""}
+              </div>
+            `;
+          } else if (type === "partnership" && Object.keys(details).length > 0) {
+            detailsHtml = `
+              <div style="margin: 20px 0;">
+                <h3 style="color: #1e40af; margin-bottom: 10px;">Partnership Details</h3>
+                ${details.partnershipType ? `<p style="margin: 5px 0;"><strong>Partnership Type:</strong> ${details.partnershipType}</p>` : ""}
+              </div>
+            `;
+          }
+
+          const emailHtml = `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <h2 style="color: #1e40af; border-bottom: 2px solid #1e40af; padding-bottom: 10px;">
+                New Opportunity Submission
+              </h2>
+              
+              <div style="margin: 20px 0; background: #f0f9ff; padding: 15px; border-radius: 5px;">
+                <p style="margin: 5px 0;"><strong>Type:</strong> ${opportunityTypeLabels[type] || type}</p>
+              </div>
+
+              <div style="margin: 20px 0;">
+                <h3 style="color: #1e40af; margin-bottom: 10px;">Submitter Information</h3>
+                <p style="margin: 5px 0;"><strong>Name:</strong> ${name}</p>
+                <p style="margin: 5px 0;"><strong>Email:</strong> ${email}</p>
+              </div>
+
+              <div style="margin: 20px 0;">
+                <h3 style="color: #1e40af; margin-bottom: 10px;">Opportunity Information</h3>
+                <p style="margin: 5px 0;"><strong>Title:</strong> ${title}</p>
+                ${sector ? `<p style="margin: 5px 0;"><strong>Sector:</strong> ${sector}</p>` : ""}
+                <p style="margin: 5px 0;"><strong>Country:</strong> ${country}</p>
+                ${city ? `<p style="margin: 5px 0;"><strong>City:</strong> ${city}</p>` : ""}
+                ${budgetOrSalary ? `<p style="margin: 5px 0;"><strong>Budget/Salary:</strong> ${budgetOrSalary}</p>` : ""}
+              </div>
+
+              <div style="margin: 20px 0;">
+                <p style="margin: 10px 0;"><strong>Description:</strong></p>
+                <div style="background: #f3f4f6; padding: 15px; border-radius: 5px; white-space: pre-wrap;">
+                  ${description}
+                </div>
+              </div>
+
+              ${detailsHtml}
+
+              ${contactPreference ? `
+                <div style="margin: 20px 0;">
+                  <h3 style="color: #1e40af; margin-bottom: 10px;">Additional Contact Information</h3>
+                  <div style="background: #f3f4f6; padding: 15px; border-radius: 5px; white-space: pre-wrap;">
+                    ${contactPreference}
+                  </div>
+                </div>
+              ` : ""}
+              
+              <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 12px;">
+                <p>This opportunity was submitted on ${new Date().toLocaleString()}</p>
+                <p>Status: Pending Review</p>
+              </div>
+            </div>
+          `;
+
+          const recipients = ["abdulmoiz.cloud25@gmail.com"];
+
+          await resend.emails.send({
+            from: "PEF Opportunities <onboarding@resend.dev>",
+            to: recipients,
+            subject: `New ${opportunityTypeLabels[type]} Submission - ${title}`,
+            html: emailHtml,
+          });
+
+          console.log("Opportunity notification email sent successfully");
+        } catch (emailError) {
+          console.error("Failed to send opportunity notification email:", emailError);
+        }
+      } else {
+        console.warn("RESEND_API_KEY not configured, skipping email notification");
+      }
 
       return res.json({
         success: true,
