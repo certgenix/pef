@@ -7,10 +7,45 @@ import { Resend } from "resend";
 import { db } from "./firebase-admin";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
-// You can get a FREE API key from https://resend.com/api-keys
-const RESEND_API_KEY = process.env.RESEND_API_KEY || "re_placeholder_get_your_key_from_resend_dot_com";
-
 const AUTO_APPROVE_JOBS = true;
+
+let connectionSettings: any;
+
+async function getResendCredentials() {
+  const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
+  const xReplitToken = process.env.REPL_IDENTITY 
+    ? 'repl ' + process.env.REPL_IDENTITY 
+    : process.env.WEB_REPL_RENEWAL 
+    ? 'depl ' + process.env.WEB_REPL_RENEWAL 
+    : null;
+
+  if (!xReplitToken) {
+    throw new Error('X_REPLIT_TOKEN not found for repl/depl');
+  }
+
+  connectionSettings = await fetch(
+    'https://' + hostname + '/api/v2/connection?include_secrets=true&connector_names=resend',
+    {
+      headers: {
+        'Accept': 'application/json',
+        'X_REPLIT_TOKEN': xReplitToken
+      }
+    }
+  ).then(res => res.json()).then(data => data.items?.[0]);
+
+  if (!connectionSettings || (!connectionSettings.settings.api_key)) {
+    throw new Error('Resend not connected');
+  }
+  return {apiKey: connectionSettings.settings.api_key, fromEmail: connectionSettings.settings.from_email};
+}
+
+async function getResendClient() {
+  const { apiKey, fromEmail } = await getResendCredentials();
+  return {
+    client: new Resend(apiKey),
+    fromEmail: fromEmail
+  };
+}
 
 const completeRegistrationSchema = z.object({
   profile: insertUserProfileSchema.omit({ userId: true }),
@@ -803,9 +838,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Public opportunity submitted successfully:", { name, email, type, title });
 
       // Send email notification
-      if (RESEND_API_KEY && !RESEND_API_KEY.includes("placeholder")) {
-        try {
-          const resend = new Resend(RESEND_API_KEY);
+      try {
+        const { client: resend, fromEmail } = await getResendClient();
         
         const opportunityTypeLabels: Record<string, string> = {
           job: "Job Opening",
@@ -896,18 +930,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const recipients = ["abdulmoiz.cloud25@gmail.com"];
 
         await resend.emails.send({
-          from: "PEF Opportunities <onboarding@resend.dev>",
+          from: fromEmail || "PEF Opportunities <onboarding@resend.dev>",
           to: recipients,
           subject: `New ${opportunityTypeLabels[type]} Submission - ${title}`,
           html: emailHtml,
         });
 
-          console.log("Opportunity notification email sent successfully");
-        } catch (emailError) {
-          console.error("Failed to send opportunity notification email:", emailError);
-        }
-      } else {
-        console.warn("Resend API key not configured, skipping opportunity email notification");
+        console.log("Opportunity notification email sent successfully");
+      } catch (emailError) {
+        console.error("Failed to send opportunity notification email:", emailError);
       }
 
       return res.json({
@@ -939,16 +970,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const { name, email, country, message } = validationResult.data;
 
-      // Check if API key is configured
-      if (!RESEND_API_KEY || RESEND_API_KEY.includes("placeholder")) {
-        console.error("Resend API key not configured. Please add RESEND_API_KEY to your .env file");
-        return res.status(500).json({ 
-          error: "Email service not configured. Please contact us via WhatsApp at +966 558 396 046" 
-        });
-      }
-
       try {
-        const resend = new Resend(RESEND_API_KEY);
+        const { client: resend, fromEmail } = await getResendClient();
 
         const emailHtml = `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -978,7 +1001,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const recipients = ["abdulmoiz.cloud25@gmail.com"];
 
         const { data, error } = await resend.emails.send({
-          from: "PEF Contact Form <onboarding@resend.dev>",
+          from: fromEmail || "PEF Contact Form <onboarding@resend.dev>",
           to: recipients,
           subject: `New Contact Form Submission from ${name}`,
           html: emailHtml,
