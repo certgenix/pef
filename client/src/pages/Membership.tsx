@@ -41,7 +41,11 @@ const benefits = [
 export default function Membership() {
   const [, setLocation] = useLocation();
 
-  const handleJoinClick = () => {
+  const handleJoinNowClick = () => {
+    setLocation("/register");
+  };
+
+  const handleCreateAccountClick = () => {
     setLocation("/signup");
   };
 
@@ -76,7 +80,7 @@ export default function Membership() {
               size="lg"
               className="bg-accent hover:bg-accent text-accent-foreground font-semibold text-lg px-10 py-7 min-h-14"
               data-testid="button-join-now-hero"
-              onClick={handleJoinClick}
+              onClick={handleJoinNowClick}
             >
               Join Now
               <ArrowRight className="ml-2 w-5 h-5" />
@@ -162,7 +166,7 @@ export default function Membership() {
                     size="lg"
                     className="min-h-14 px-10 font-semibold"
                     data-testid="button-create-account"
-                    onClick={handleJoinClick}
+                    onClick={handleCreateAccountClick}
                   >
                     Create Your Account
                     <ArrowRight className="ml-2 w-5 h-5" />
