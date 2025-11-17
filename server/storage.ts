@@ -415,11 +415,12 @@ export class FirestoreStorage implements IStorage {
       contactPreference: opportunity.contactPreference || null,
       details: opportunity.details || null,
       status: opportunity.status || "open",
-      approvalStatus: opportunity.approvalStatus || "pending",
+      approvalStatus: opportunity.approvalStatus || "approved",
       createdAt: new Date(),
       updatedAt: new Date(),
     };
     
+    console.log("Creating opportunity with approvalStatus:", newOpportunity.approvalStatus, "status:", newOpportunity.status);
     await setDoc(doc(db, "opportunities", opportunityId), newOpportunity);
     return newOpportunity;
   }
