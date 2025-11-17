@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
 import { Loader2, Plus } from "lucide-react";
 
 interface PublicOpportunityFormData {
@@ -77,8 +78,9 @@ export default function PublicOpportunityForm() {
     onSuccess: () => {
       toast({
         title: "Opportunity submitted successfully!",
-        description: "Your opportunity will be reviewed and posted soon.",
+        description: "Your opportunity is now live on the board.",
       });
+      queryClient.invalidateQueries({ queryKey: ["/api/opportunities"] });
       setFormData(initialFormData);
       setOpen(false);
     },
