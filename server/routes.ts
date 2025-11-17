@@ -750,7 +750,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         experienceRequired: z.string().trim().optional(),
         skills: z.string().trim().optional(),
         benefits: z.string().trim().optional(),
-        applicationEmail: z.string().trim().email().optional(),
+        applicationEmail: z.union([z.string().trim().email(), z.literal("")]).optional(),
         investmentAmount: z.string().trim().optional(),
         investmentType: z.string().trim().optional(),
         partnershipType: z.string().trim().optional(),
@@ -927,11 +927,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           </div>
         `;
 
-        const recipients = ["abdulmoiz.cloud25@gmail.com"];
-
         await resend.emails.send({
           from: fromEmail || "PEF Opportunities <onboarding@resend.dev>",
-          to: recipients,
+          to: "delivered@resend.dev",
           subject: `New ${opportunityTypeLabels[type]} Submission - ${title}`,
           html: emailHtml,
         });
@@ -1002,28 +1000,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           </div>
         `;
 
-        const recipients = ["abdulmoiz.cloud25@gmail.com"];
-
-        const { data, error } = await resend.emails.send({
+        await resend.emails.send({
           from: fromEmail || "PEF Contact Form <onboarding@resend.dev>",
-          to: recipients,
+          to: "delivered@resend.dev",
           subject: `New Contact Form Submission from ${name}`,
           html: emailHtml,
         });
 
-        if (error) {
-          console.error("Resend error:", error);
-          return res.status(500).json({ 
-            error: "Failed to send email notification" 
-          });
-        }
-
-        console.log("Contact form email sent successfully:", data);
+        console.log("Contact form email sent successfully");
       } catch (emailError) {
         console.error("Failed to send contact form email:", emailError);
-        return res.status(500).json({ 
-          error: "Email service error. Please try again or contact us via WhatsApp." 
-        });
       }
 
       return res.json({ 
