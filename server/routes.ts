@@ -1017,7 +1017,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         `;
 
         const recipientEmail = "abdulmoiz.cloud25@gmail.com";
-        const senderEmail = fromEmail || "PEF Contact Form <onboarding@resend.dev>";
+        const senderEmail = "PEF Contact Form <onboarding@resend.dev>";
         
         console.log(`📧 Attempting to send email FROM: ${senderEmail} TO: ${recipientEmail}`);
         
