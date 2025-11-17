@@ -59,6 +59,7 @@ export const userRoles = pgTable("user_roles", {
   isEmployer: boolean("is_employer").default(false).notNull(),
   isBusinessOwner: boolean("is_business_owner").default(false).notNull(),
   isInvestor: boolean("is_investor").default(false).notNull(),
+  isAdmin: boolean("is_admin").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

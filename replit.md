@@ -158,6 +158,12 @@ Preferred communication style: Simple, everyday language.
 
 **Replit Plugins**: Development-specific plugins for error overlays, cartographer (code navigation), and dev banner when running in Replit environment.
 
+**Resend Email Service**: Transactional email service for sending notifications. Configured to use environment variable `RESEND_API_KEY`. Emails are sent from `onboarding@resend.dev` (testing email) to `abdulmoiz.cloud25@gmail.com` for:
+- Contact form submissions from the `/contact` page
+- New opportunity submissions from the `/opportunities` page
+
+Email notifications include formatted HTML with all submission details, timestamp, and sender information.
+
 ### Asset Management
 
 Generated images stored in `attached_assets/generated_images/` directory (e.g., professional handshake hero image). Vite alias configured for `@assets` path resolution.
@@ -176,4 +182,7 @@ Generated images stored in `attached_assets/generated_images/` directory (e.g., 
 
 **connect-pg-simple**: PostgreSQL session store for Express sessions, prepared for authentication implementation.
 
-**Environment Variables**: `DATABASE_URL` required for database connection. `NODE_ENV` controls development vs production behavior.
+**Environment Variables**: 
+- `DATABASE_URL`: Required for database connection
+- `NODE_ENV`: Controls development vs production behavior
+- `RESEND_API_KEY`: Required for email notifications (contact form and opportunity submissions)
