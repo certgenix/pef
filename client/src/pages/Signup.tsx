@@ -320,25 +320,24 @@ export default function Signup() {
 
                     <div className="space-y-2">
                       <Label htmlFor="password">Password *</Label>
-                      <div className="relative">
+                      <div className="relative flex items-center">
                         <Input
                           id="password"
                           type={showPassword ? "text" : "password"}
                           required
                           value={accountInfo.password}
                           onChange={(e) => handleAccountInfoChange("password", e.target.value)}
+                          className="pr-10"
                           data-testid="input-signup-password"
                         />
-                        <Button
+                        <button
                           type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="absolute right-2 top-1/2 -translate-y-1/2"
+                          className="absolute right-0 top-0 h-full px-3 flex items-center justify-center hover:bg-transparent"
                           onClick={() => setShowPassword(!showPassword)}
                           data-testid="button-toggle-password"
                         >
-                          {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                        </Button>
+                          {showPassword ? <EyeOff className="w-4 h-4 text-muted-foreground" /> : <Eye className="w-4 h-4 text-muted-foreground" />}
+                        </button>
                       </div>
                       <p className="text-xs text-muted-foreground">
                         Password must be at least 6 characters
@@ -347,25 +346,24 @@ export default function Signup() {
 
                     <div className="space-y-2">
                       <Label htmlFor="confirmPassword">Confirm Password *</Label>
-                      <div className="relative">
+                      <div className="relative flex items-center">
                         <Input
                           id="confirmPassword"
                           type={showConfirmPassword ? "text" : "password"}
                           required
                           value={accountInfo.confirmPassword}
                           onChange={(e) => handleAccountInfoChange("confirmPassword", e.target.value)}
+                          className="pr-10"
                           data-testid="input-signup-confirm-password"
                         />
-                        <Button
+                        <button
                           type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="absolute right-2 top-1/2 -translate-y-1/2"
+                          className="absolute right-0 top-0 h-full px-3 flex items-center justify-center hover:bg-transparent"
                           onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                           data-testid="button-toggle-confirm-password"
                         >
-                          {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                        </Button>
+                          {showConfirmPassword ? <EyeOff className="w-4 h-4 text-muted-foreground" /> : <Eye className="w-4 h-4 text-muted-foreground" />}
+                        </button>
                       </div>
                     </div>
 
