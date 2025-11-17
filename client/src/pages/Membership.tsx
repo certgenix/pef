@@ -42,7 +42,7 @@ export default function Membership() {
   const [, setLocation] = useLocation();
 
   const handleJoinClick = () => {
-    setLocation("/register");
+    setLocation("/signup");
   };
 
   const handleLearnMoreClick = () => {
