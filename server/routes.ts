@@ -1050,6 +1050,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // TEMPORARY ADMIN ENDPOINT - Delete all opportunities
+  app.delete("/api/admin/delete-all-opportunities", async (req, res) => {
+    try {
+      const { getDocs, query, collection, deleteDoc, doc } = await import("firebase/firestore");
+      const q = query(collection(db, "opportunities"));
+      const querySnapshot = await getDocs(q);
+      
+      let deleteCount = 0;
+      for (const document of querySnapshot.docs) {
+        await deleteDoc(doc(db, "opportunities", document.id));
+        deleteCount++;
+      }
+      
+      console.log(`Deleted ${deleteCount} opportunities`);
+      return res.json({ success: true, message: `Deleted ${deleteCount} opportunities` });
+    } catch (error) {
+      console.error("Error deleting opportunities:", error);
+      return res.status(500).json({ error: "Failed to delete opportunities" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
