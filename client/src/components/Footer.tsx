@@ -78,7 +78,7 @@ export default function Footer() {
             <h3 className="text-lg font-semibold text-white mb-4">Follow Us</h3>
             <div className="flex gap-4 mb-6">
               <a
-                href="https://linkedin.com"
+                href="https://www.linkedin.com/groups/15770115/?highlightedUpdateUrn=urn%3Ali%3AgroupPost%3A15770115-7393430237310648320&q=highlightedFeedForGroups"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-10 h-10 rounded-md bg-white/10 flex items-center justify-center hover-elevate transition-colors"
