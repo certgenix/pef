@@ -834,7 +834,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         updatedAt: serverTimestamp(),
       };
 
-      await addDoc(opportunitiesRef, newOpportunity);
+      const docRef = await addDoc(opportunitiesRef, newOpportunity);
 
       console.log("=== OPPORTUNITY SUBMISSION ===");
       console.log("Submitter:", name, "-", email);
@@ -842,6 +842,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Title:", title);
       console.log("Description:", description);
       console.log("Country:", country, city ? `(${city})` : "");
+      console.log("Status:", newOpportunity.status);
+      console.log("Approval Status:", newOpportunity.approvalStatus);
+      console.log("Document ID:", docRef.id);
       console.log("==============================");
 
       // Send email notification

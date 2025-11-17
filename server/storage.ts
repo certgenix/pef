@@ -462,9 +462,16 @@ export class FirestoreStorage implements IStorage {
     }
     
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => 
+    const opportunities = querySnapshot.docs.map(doc => 
       normalizeDocData<Opportunity>({ id: doc.id, ...doc.data() })
     );
+    
+    console.log(`Found ${opportunities.length} public opportunities (type: ${type || 'all'})`);
+    opportunities.forEach(opp => {
+      console.log(`  - ${opp.title} | status: ${opp.status} | approvalStatus: ${opp.approvalStatus}`);
+    });
+    
+    return opportunities;
   }
 
   async updateOpportunity(id: string, data: Partial<InsertOpportunity>): Promise<Opportunity | undefined> {
