@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
 import { insertUserProfileSchema, insertUserRolesSchema, insertOpportunitySchema, insertApplicationSchema, jobDetailsSchema } from "@shared/schema";
+import { Resend } from "resend";
 
 const AUTO_APPROVE_JOBS = true;
 
@@ -709,17 +710,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const { name, email, country, message } = validationResult.data;
 
-      console.log("Contact form submission:", {
-        name,
-        email,
-        country,
-        message,
-        timestamp: new Date().toISOString(),
+      if (!process.env.RESEND_API_KEY) {
+        console.error("RESEND_API_KEY is not configured");
+        return res.status(500).json({ 
+          error: "Email service not configured" 
+        });
+      }
+
+      const resend = new Resend(process.env.RESEND_API_KEY);
+
+      const emailHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #1e40af; border-bottom: 2px solid #1e40af; padding-bottom: 10px;">
+            New Contact Form Submission
+          </h2>
+          
+          <div style="margin: 20px 0;">
+            <p style="margin: 10px 0;"><strong>Name:</strong> ${name}</p>
+            <p style="margin: 10px 0;"><strong>Email:</strong> ${email}</p>
+            <p style="margin: 10px 0;"><strong>Country:</strong> ${country}</p>
+          </div>
+          
+          <div style="margin: 20px 0;">
+            <p style="margin: 10px 0;"><strong>Message:</strong></p>
+            <div style="background: #f3f4f6; padding: 15px; border-radius: 5px; white-space: pre-wrap;">
+              ${message}
+            </div>
+          </div>
+          
+          <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 12px;">
+            <p>This email was sent from the PEF contact form at ${new Date().toLocaleString()}</p>
+          </div>
+        </div>
+      `;
+
+      const recipients = ["info@pef.world", "abdulmoiz.cloud25@gmail.com"];
+
+      const { data, error } = await resend.emails.send({
+        from: "PEF Contact Form <onboarding@resend.dev>",
+        to: recipients,
+        subject: `New Contact Form Submission from ${name}`,
+        html: emailHtml,
+        replyTo: email,
       });
+
+      if (error) {
+        console.error("Resend error:", error);
+        return res.status(500).json({ 
+          error: "Failed to send email notification" 
+        });
+      }
+
+      console.log("Contact form email sent successfully:", data);
 
       return res.json({ 
         success: true, 
-        message: "Contact form submitted successfully" 
+        message: "Contact form submitted successfully. We'll get back to you soon!" 
       });
     } catch (error) {
       console.error("Contact form error:", error);
