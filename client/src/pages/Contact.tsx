@@ -30,7 +30,12 @@ export default function Contact() {
         },
       });
       if (!response.ok) {
-        throw new Error("Failed to send message");
+        const errorData = await response.json();
+        if (errorData.details && errorData.details.length > 0) {
+          const messages = errorData.details.map((d: any) => d.message).join(", ");
+          throw new Error(messages);
+        }
+        throw new Error(errorData.error || "Failed to send message");
       }
       return response.json();
     },

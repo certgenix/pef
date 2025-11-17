@@ -3,9 +3,11 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
 import { insertUserProfileSchema, insertUserRolesSchema, insertOpportunitySchema, insertApplicationSchema, jobDetailsSchema } from "@shared/schema";
-import { getUncachableResendClient } from "./resend-client";
+import { Resend } from "resend";
 import { db } from "./firebase-admin";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+
+const RESEND_API_KEY = process.env.RESEND_API_KEY || "";
 
 const AUTO_APPROVE_JOBS = true;
 
@@ -801,7 +803,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Send email notification
       try {
-        const { client: resend, fromEmail } = await getUncachableResendClient();
+        const resend = new Resend(RESEND_API_KEY);
         
         const opportunityTypeLabels: Record<string, string> = {
           job: "Job Opening",
@@ -892,7 +894,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const recipients = ["abdulmoiz.cloud25@gmail.com"];
 
         await resend.emails.send({
-          from: `PEF Opportunities <${fromEmail}>`,
+          from: "PEF Opportunities <onboarding@resend.dev>",
           to: recipients,
           subject: `New ${opportunityTypeLabels[type]} Submission - ${title}`,
           html: emailHtml,
@@ -933,7 +935,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { name, email, country, message } = validationResult.data;
 
       try {
-        const { client: resend, fromEmail } = await getUncachableResendClient();
+        const resend = new Resend(RESEND_API_KEY);
 
         const emailHtml = `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -963,7 +965,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const recipients = ["abdulmoiz.cloud25@gmail.com"];
 
         const { data, error } = await resend.emails.send({
-          from: `PEF Contact Form <${fromEmail}>`,
+          from: "PEF Contact Form <onboarding@resend.dev>",
           to: recipients,
           subject: `New Contact Form Submission from ${name}`,
           html: emailHtml,
@@ -981,7 +983,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } catch (emailError) {
         console.error("Failed to send contact form email:", emailError);
         return res.status(500).json({ 
-          error: "Email service not configured properly" 
+          error: "Email service error. Please try again or contact us via WhatsApp." 
         });
       }
 
