@@ -115,7 +115,7 @@ export default function Header() {
                     Login
                   </Button>
                 </Link>
-                <Link href="/signup">
+                <Link href="/register">
                   <Button className="bg-accent hover:bg-accent text-accent-foreground font-semibold" data-testid="button-join-now">
                     Join Now
                   </Button>
@@ -197,7 +197,7 @@ export default function Header() {
                     Login
                   </Button>
                 </Link>
-                <Link href="/signup">
+                <Link href="/register">
                   <Button
                     className="w-full bg-accent hover:bg-accent text-accent-foreground font-semibold"
                     onClick={() => setIsMobileMenuOpen(false)}
