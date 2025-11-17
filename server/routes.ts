@@ -698,7 +698,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const publicOpportunitySchema = z.object({
         name: z.string().min(1, "Name is required"),
         email: z.string().email("Valid email is required"),
-        type: z.enum(["investment", "partnership", "collaboration"], {
+        type: z.enum(["job", "investment", "partnership", "collaboration"], {
           errorMap: () => ({ message: "Please select a valid opportunity type" }),
         }),
         title: z.string().min(10, "Title must be at least 10 characters"),

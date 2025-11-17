@@ -106,16 +106,14 @@ export default function Opportunities() {
               </p>
             </div>
 
-            <div className="mb-16">
-              <h3 className="text-2xl md:text-3xl font-display font-bold mb-4 text-center">
-                Post Your Opportunity
+            <div className="mb-16 text-center">
+              <h3 className="text-2xl md:text-3xl font-display font-bold mb-4">
+                Share Your Opportunity
               </h3>
-              <p className="text-center text-muted-foreground mb-8 max-w-2xl mx-auto">
-                Share your business opportunity with our global community. No login required!
+              <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
+                Post a job, investment opportunity, or business collaboration with our global community
               </p>
-              <div className="max-w-2xl mx-auto">
-                <PublicOpportunityForm />
-              </div>
+              <PublicOpportunityForm />
             </div>
 
             <h3 className="text-2xl md:text-3xl font-display font-bold mb-8 text-center">
