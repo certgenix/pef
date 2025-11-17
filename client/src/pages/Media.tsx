@@ -88,55 +88,47 @@ export default function Media() {
                 Featured Video
               </h2>
               
-              <a 
-                href="https://www.linkedin.com/feed/update/urn:li:activity:7393430270223458304?utm_source=share&utm_medium=member_desktop&rcm=ACoAADty3ZQBkH_2WlLwlpoggXcuS2hjtRsePaM"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block"
-                data-testid="link-featured-linkedin-video"
-              >
-                <Card className="border-2 hover:border-primary transition-all hover-elevate cursor-pointer" data-testid="card-featured-video">
-                  <CardContent className="p-0">
-                    <div className="aspect-video bg-gradient-to-br from-[#0077B5] to-[#00A0DC] relative flex items-center justify-center">
-                      <div className="absolute inset-0 bg-black/20"></div>
-                      <div className="relative z-10 text-center text-white">
-                        <div className="w-24 h-24 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center mb-4 mx-auto hover:bg-white/30 transition-all">
-                          <Play className="w-12 h-12 text-white ml-2" />
-                        </div>
-                        <div className="flex items-center justify-center gap-2 mb-2">
-                          <SiLinkedin className="w-8 h-8" />
-                          <span className="text-xl font-semibold">LinkedIn Video</span>
-                        </div>
-                        <p className="text-white/90 text-sm flex items-center justify-center gap-1">
-                          Click to watch on LinkedIn
-                          <ExternalLink className="w-4 h-4" />
-                        </p>
-                      </div>
+              <Card className="border-2 border-primary" data-testid="card-featured-video">
+                <CardContent className="p-0">
+                  <div className="aspect-video relative overflow-hidden rounded-t-lg">
+                    <iframe
+                      className="w-full h-full"
+                      src="https://www.youtube.com/embed/Z6qLKDD3T3c"
+                      title="Professional Executive Forum Featured Video"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      allowFullScreen
+                      data-testid="iframe-featured-video"
+                    />
+                  </div>
+                  <div className="p-6">
+                    <div className="flex flex-wrap items-center gap-2 mb-3">
+                      <Badge variant="secondary" data-testid="badge-video-category">
+                        Featured Content
+                      </Badge>
+                      <Badge className="bg-red-600 hover:bg-red-700" data-testid="badge-youtube">
+                        <Video className="w-3 h-3 mr-1" />
+                        YouTube
+                      </Badge>
                     </div>
-                    <div className="p-6">
-                      <div className="flex items-center gap-2 mb-3">
-                        <Badge variant="secondary" data-testid="badge-video-category">
-                          Featured Content
-                        </Badge>
-                        <Badge className="bg-[#0077B5] hover:bg-[#0077B5]" data-testid="badge-linkedin">
-                          <SiLinkedin className="w-3 h-3 mr-1" />
-                          LinkedIn
-                        </Badge>
-                      </div>
-                      <h3 className="text-2xl font-bold mb-2" data-testid="text-video-title">
-                        Professional Executive Forum on LinkedIn
-                      </h3>
-                      <p className="text-muted-foreground mb-4" data-testid="text-video-description">
-                        Watch our featured video post on LinkedIn. Connect with us to stay updated on the latest insights, events, and opportunities from the Professional Executive Forum community.
-                      </p>
-                      <div className="flex items-center gap-2 text-primary font-semibold" data-testid="text-watch-linkedin">
-                        Watch on LinkedIn
-                        <ExternalLink className="w-4 h-4" />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </a>
+                    <h3 className="text-2xl font-bold mb-2" data-testid="text-video-title">
+                      Professional Executive Forum Introduction
+                    </h3>
+                    <p className="text-muted-foreground mb-4" data-testid="text-video-description">
+                      Learn about the Professional Executive Forum and how we're building a global network connecting professionals, employers, business owners, and investors through structured data and intelligent opportunity matching.
+                    </p>
+                    <a 
+                      href="https://www.youtube.com/watch?v=Z6qLKDD3T3c"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 text-primary font-semibold hover:underline"
+                      data-testid="link-watch-youtube"
+                    >
+                      Watch on YouTube
+                      <ExternalLink className="w-4 h-4" />
+                    </a>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
