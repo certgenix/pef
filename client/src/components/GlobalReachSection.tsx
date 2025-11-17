@@ -41,37 +41,35 @@ export default function GlobalReachSection() {
           Launching first in Saudi Arabia, now open to USA, Canada, UK, Dubai, Pakistan, Nigeria, and more coming soon
         </p>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-12">
           {countries.map((country) => (
             <Card
               key={country.code}
-              className={`transition-all duration-300 hover-elevate cursor-pointer overflow-hidden ${
-                hoveredCountry === country.code ? "shadow-lg scale-105 border-primary" : ""
-              } ${country.isPrimary ? "border-2 border-primary bg-primary/5" : ""}`}
+              className={`transition-all duration-300 hover-elevate cursor-pointer ${
+                hoveredCountry === country.code ? "shadow-lg border-primary" : ""
+              } ${country.isPrimary ? "border-2 border-primary bg-primary/5" : ""} ${
+                country.comingSoon ? "opacity-60" : ""
+              }`}
               onMouseEnter={() => setHoveredCountry(country.code)}
               onMouseLeave={() => setHoveredCountry(null)}
               data-testid={`card-country-${country.code.toLowerCase()}`}
             >
-              <CardContent className="p-6 text-center relative overflow-visible">
-                <div 
-                  className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[120px] opacity-[0.15] pointer-events-none select-none ${
-                    hoveredCountry === country.code ? "wave-flag-hover" : "wave-flag"
-                  }`}
-                  style={{ zIndex: 0 }}
-                  aria-hidden="true"
-                >
-                  <country.Flag className="w-full h-auto" />
+              <CardContent className="p-6 flex flex-col items-center gap-4">
+                <div className="w-full aspect-[3/2] rounded-md overflow-hidden shadow-sm border">
+                  <country.Flag className="w-full h-full object-cover" />
                 </div>
-                <h3 className="font-semibold text-lg mb-2 relative z-10">{country.name}</h3>
-                {country.isPrimary && (
-                  <p className="text-sm text-primary font-semibold relative z-10">Primary Launch Market</p>
-                )}
-                {!country.isPrimary && !country.comingSoon && (
-                  <p className="text-sm text-muted-foreground relative z-10">Supported Region</p>
-                )}
-                {country.comingSoon && (
-                  <p className="text-sm text-muted-foreground relative z-10">Coming Soon</p>
-                )}
+                <div className="text-center w-full">
+                  <h3 className="font-semibold text-lg mb-1">{country.name}</h3>
+                  {country.isPrimary && (
+                    <p className="text-sm text-primary font-semibold">Primary Launch Market</p>
+                  )}
+                  {!country.isPrimary && !country.comingSoon && (
+                    <p className="text-sm text-muted-foreground">Supported Region</p>
+                  )}
+                  {country.comingSoon && (
+                    <p className="text-sm text-muted-foreground font-medium">Coming Soon</p>
+                  )}
+                </div>
               </CardContent>
             </Card>
           ))}
