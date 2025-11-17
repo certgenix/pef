@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
 import { insertUserProfileSchema, insertUserRolesSchema, insertOpportunitySchema, insertApplicationSchema, jobDetailsSchema } from "@shared/schema";
-import { Resend } from "resend";
+import { getUncachableResendClient } from "./resend-client";
 import { db } from "./firebase-admin";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
@@ -800,111 +800,107 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Public opportunity submitted successfully:", { name, email, type, title });
 
       // Send email notification
-      if (process.env.RESEND_API_KEY) {
-        try {
-          const resend = new Resend(process.env.RESEND_API_KEY);
-          
-          const opportunityTypeLabels: Record<string, string> = {
-            job: "Job Opening",
-            investment: "Investment Opportunity",
-            partnership: "Sponsorship",
-            collaboration: "Business Collaboration",
-          };
+      try {
+        const { client: resend, fromEmail } = await getUncachableResendClient();
+        
+        const opportunityTypeLabels: Record<string, string> = {
+          job: "Job Opening",
+          investment: "Investment Opportunity",
+          partnership: "Sponsorship",
+          collaboration: "Business Collaboration",
+        };
 
-          let detailsHtml = "";
-          if (type === "job" && Object.keys(details).length > 0) {
-            detailsHtml = `
-              <div style="margin: 20px 0;">
-                <h3 style="color: #1e40af; margin-bottom: 10px;">Job Details</h3>
-                ${details.employmentType ? `<p style="margin: 5px 0;"><strong>Employment Type:</strong> ${details.employmentType}</p>` : ""}
-                ${details.experienceRequired ? `<p style="margin: 5px 0;"><strong>Experience Required:</strong> ${details.experienceRequired}</p>` : ""}
-                ${details.skills && details.skills.length > 0 ? `<p style="margin: 5px 0;"><strong>Skills:</strong> ${details.skills.join(", ")}</p>` : ""}
-                ${details.benefits && details.benefits.length > 0 ? `<p style="margin: 5px 0;"><strong>Benefits:</strong> ${details.benefits.join(", ")}</p>` : ""}
-                ${details.applicationEmail ? `<p style="margin: 5px 0;"><strong>Application Email:</strong> ${details.applicationEmail}</p>` : ""}
-              </div>
-            `;
-          } else if (type === "investment" && Object.keys(details).length > 0) {
-            detailsHtml = `
-              <div style="margin: 20px 0;">
-                <h3 style="color: #1e40af; margin-bottom: 10px;">Investment Details</h3>
-                ${details.investmentAmount ? `<p style="margin: 5px 0;"><strong>Investment Amount:</strong> ${details.investmentAmount}</p>` : ""}
-                ${details.investmentType ? `<p style="margin: 5px 0;"><strong>Investment Type:</strong> ${details.investmentType}</p>` : ""}
-              </div>
-            `;
-          } else if (type === "partnership" && Object.keys(details).length > 0) {
-            detailsHtml = `
-              <div style="margin: 20px 0;">
-                <h3 style="color: #1e40af; margin-bottom: 10px;">Partnership Details</h3>
-                ${details.partnershipType ? `<p style="margin: 5px 0;"><strong>Partnership Type:</strong> ${details.partnershipType}</p>` : ""}
-              </div>
-            `;
-          }
-
-          const emailHtml = `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-              <h2 style="color: #1e40af; border-bottom: 2px solid #1e40af; padding-bottom: 10px;">
-                New Opportunity Submission
-              </h2>
-              
-              <div style="margin: 20px 0; background: #f0f9ff; padding: 15px; border-radius: 5px;">
-                <p style="margin: 5px 0;"><strong>Type:</strong> ${opportunityTypeLabels[type] || type}</p>
-              </div>
-
-              <div style="margin: 20px 0;">
-                <h3 style="color: #1e40af; margin-bottom: 10px;">Submitter Information</h3>
-                <p style="margin: 5px 0;"><strong>Name:</strong> ${name}</p>
-                <p style="margin: 5px 0;"><strong>Email:</strong> ${email}</p>
-              </div>
-
-              <div style="margin: 20px 0;">
-                <h3 style="color: #1e40af; margin-bottom: 10px;">Opportunity Information</h3>
-                <p style="margin: 5px 0;"><strong>Title:</strong> ${title}</p>
-                ${sector ? `<p style="margin: 5px 0;"><strong>Sector:</strong> ${sector}</p>` : ""}
-                <p style="margin: 5px 0;"><strong>Country:</strong> ${country}</p>
-                ${city ? `<p style="margin: 5px 0;"><strong>City:</strong> ${city}</p>` : ""}
-                ${budgetOrSalary ? `<p style="margin: 5px 0;"><strong>Budget/Salary:</strong> ${budgetOrSalary}</p>` : ""}
-              </div>
-
-              <div style="margin: 20px 0;">
-                <p style="margin: 10px 0;"><strong>Description:</strong></p>
-                <div style="background: #f3f4f6; padding: 15px; border-radius: 5px; white-space: pre-wrap;">
-                  ${description}
-                </div>
-              </div>
-
-              ${detailsHtml}
-
-              ${contactPreference ? `
-                <div style="margin: 20px 0;">
-                  <h3 style="color: #1e40af; margin-bottom: 10px;">Additional Contact Information</h3>
-                  <div style="background: #f3f4f6; padding: 15px; border-radius: 5px; white-space: pre-wrap;">
-                    ${contactPreference}
-                  </div>
-                </div>
-              ` : ""}
-              
-              <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 12px;">
-                <p>This opportunity was submitted on ${new Date().toLocaleString()}</p>
-                <p>Status: Pending Review</p>
-              </div>
+        let detailsHtml = "";
+        if (type === "job" && Object.keys(details).length > 0) {
+          detailsHtml = `
+            <div style="margin: 20px 0;">
+              <h3 style="color: #1e40af; margin-bottom: 10px;">Job Details</h3>
+              ${details.employmentType ? `<p style="margin: 5px 0;"><strong>Employment Type:</strong> ${details.employmentType}</p>` : ""}
+              ${details.experienceRequired ? `<p style="margin: 5px 0;"><strong>Experience Required:</strong> ${details.experienceRequired}</p>` : ""}
+              ${details.skills && details.skills.length > 0 ? `<p style="margin: 5px 0;"><strong>Skills:</strong> ${details.skills.join(", ")}</p>` : ""}
+              ${details.benefits && details.benefits.length > 0 ? `<p style="margin: 5px 0;"><strong>Benefits:</strong> ${details.benefits.join(", ")}</p>` : ""}
+              ${details.applicationEmail ? `<p style="margin: 5px 0;"><strong>Application Email:</strong> ${details.applicationEmail}</p>` : ""}
             </div>
           `;
-
-          const recipients = ["abdulmoiz.cloud25@gmail.com"];
-
-          await resend.emails.send({
-            from: "PEF Opportunities <onboarding@resend.dev>",
-            to: recipients,
-            subject: `New ${opportunityTypeLabels[type]} Submission - ${title}`,
-            html: emailHtml,
-          });
-
-          console.log("Opportunity notification email sent successfully");
-        } catch (emailError) {
-          console.error("Failed to send opportunity notification email:", emailError);
+        } else if (type === "investment" && Object.keys(details).length > 0) {
+          detailsHtml = `
+            <div style="margin: 20px 0;">
+              <h3 style="color: #1e40af; margin-bottom: 10px;">Investment Details</h3>
+              ${details.investmentAmount ? `<p style="margin: 5px 0;"><strong>Investment Amount:</strong> ${details.investmentAmount}</p>` : ""}
+              ${details.investmentType ? `<p style="margin: 5px 0;"><strong>Investment Type:</strong> ${details.investmentType}</p>` : ""}
+            </div>
+          `;
+        } else if (type === "partnership" && Object.keys(details).length > 0) {
+          detailsHtml = `
+            <div style="margin: 20px 0;">
+              <h3 style="color: #1e40af; margin-bottom: 10px;">Partnership Details</h3>
+              ${details.partnershipType ? `<p style="margin: 5px 0;"><strong>Partnership Type:</strong> ${details.partnershipType}</p>` : ""}
+            </div>
+          `;
         }
-      } else {
-        console.warn("RESEND_API_KEY not configured, skipping email notification");
+
+        const emailHtml = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #1e40af; border-bottom: 2px solid #1e40af; padding-bottom: 10px;">
+              New Opportunity Submission
+            </h2>
+            
+            <div style="margin: 20px 0; background: #f0f9ff; padding: 15px; border-radius: 5px;">
+              <p style="margin: 5px 0;"><strong>Type:</strong> ${opportunityTypeLabels[type] || type}</p>
+            </div>
+
+            <div style="margin: 20px 0;">
+              <h3 style="color: #1e40af; margin-bottom: 10px;">Submitter Information</h3>
+              <p style="margin: 5px 0;"><strong>Name:</strong> ${name}</p>
+              <p style="margin: 5px 0;"><strong>Email:</strong> ${email}</p>
+            </div>
+
+            <div style="margin: 20px 0;">
+              <h3 style="color: #1e40af; margin-bottom: 10px;">Opportunity Information</h3>
+              <p style="margin: 5px 0;"><strong>Title:</strong> ${title}</p>
+              ${sector ? `<p style="margin: 5px 0;"><strong>Sector:</strong> ${sector}</p>` : ""}
+              <p style="margin: 5px 0;"><strong>Country:</strong> ${country}</p>
+              ${city ? `<p style="margin: 5px 0;"><strong>City:</strong> ${city}</p>` : ""}
+              ${budgetOrSalary ? `<p style="margin: 5px 0;"><strong>Budget/Salary:</strong> ${budgetOrSalary}</p>` : ""}
+            </div>
+
+            <div style="margin: 20px 0;">
+              <p style="margin: 10px 0;"><strong>Description:</strong></p>
+              <div style="background: #f3f4f6; padding: 15px; border-radius: 5px; white-space: pre-wrap;">
+                ${description}
+              </div>
+            </div>
+
+            ${detailsHtml}
+
+            ${contactPreference ? `
+              <div style="margin: 20px 0;">
+                <h3 style="color: #1e40af; margin-bottom: 10px;">Additional Contact Information</h3>
+                <div style="background: #f3f4f6; padding: 15px; border-radius: 5px; white-space: pre-wrap;">
+                  ${contactPreference}
+                </div>
+              </div>
+            ` : ""}
+            
+            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 12px;">
+              <p>This opportunity was submitted on ${new Date().toLocaleString()}</p>
+              <p>Status: Pending Review</p>
+            </div>
+          </div>
+        `;
+
+        const recipients = ["abdulmoiz.cloud25@gmail.com"];
+
+        await resend.emails.send({
+          from: `PEF Opportunities <${fromEmail}>`,
+          to: recipients,
+          subject: `New ${opportunityTypeLabels[type]} Submission - ${title}`,
+          html: emailHtml,
+        });
+
+        console.log("Opportunity notification email sent successfully");
+      } catch (emailError) {
+        console.error("Failed to send opportunity notification email:", emailError);
       }
 
       return res.json({
@@ -936,58 +932,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const { name, email, country, message } = validationResult.data;
 
-      if (!process.env.RESEND_API_KEY) {
-        console.error("RESEND_API_KEY is not configured");
-        return res.status(500).json({ 
-          error: "Email service not configured" 
-        });
-      }
+      try {
+        const { client: resend, fromEmail } = await getUncachableResendClient();
 
-      const resend = new Resend(process.env.RESEND_API_KEY);
-
-      const emailHtml = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #1e40af; border-bottom: 2px solid #1e40af; padding-bottom: 10px;">
-            New Contact Form Submission
-          </h2>
-          
-          <div style="margin: 20px 0;">
-            <p style="margin: 10px 0;"><strong>Name:</strong> ${name}</p>
-            <p style="margin: 10px 0;"><strong>Email:</strong> ${email}</p>
-            <p style="margin: 10px 0;"><strong>Country:</strong> ${country}</p>
-          </div>
-          
-          <div style="margin: 20px 0;">
-            <p style="margin: 10px 0;"><strong>Message:</strong></p>
-            <div style="background: #f3f4f6; padding: 15px; border-radius: 5px; white-space: pre-wrap;">
-              ${message}
+        const emailHtml = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #1e40af; border-bottom: 2px solid #1e40af; padding-bottom: 10px;">
+              New Contact Form Submission
+            </h2>
+            
+            <div style="margin: 20px 0;">
+              <p style="margin: 10px 0;"><strong>Name:</strong> ${name}</p>
+              <p style="margin: 10px 0;"><strong>Email:</strong> ${email}</p>
+              <p style="margin: 10px 0;"><strong>Country:</strong> ${country}</p>
+            </div>
+            
+            <div style="margin: 20px 0;">
+              <p style="margin: 10px 0;"><strong>Message:</strong></p>
+              <div style="background: #f3f4f6; padding: 15px; border-radius: 5px; white-space: pre-wrap;">
+                ${message}
+              </div>
+            </div>
+            
+            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 12px;">
+              <p>This email was sent from the PEF contact form at ${new Date().toLocaleString()}</p>
             </div>
           </div>
-          
-          <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 12px;">
-            <p>This email was sent from the PEF contact form at ${new Date().toLocaleString()}</p>
-          </div>
-        </div>
-      `;
+        `;
 
-      const recipients = ["abdulmoiz.cloud25@gmail.com"];
+        const recipients = ["abdulmoiz.cloud25@gmail.com"];
 
-      const { data, error } = await resend.emails.send({
-        from: "PEF Contact Form <onboarding@resend.dev>",
-        to: recipients,
-        subject: `New Contact Form Submission from ${name}`,
-        html: emailHtml,
-        replyTo: email,
-      });
+        const { data, error } = await resend.emails.send({
+          from: `PEF Contact Form <${fromEmail}>`,
+          to: recipients,
+          subject: `New Contact Form Submission from ${name}`,
+          html: emailHtml,
+          replyTo: email,
+        });
 
-      if (error) {
-        console.error("Resend error:", error);
+        if (error) {
+          console.error("Resend error:", error);
+          return res.status(500).json({ 
+            error: "Failed to send email notification" 
+          });
+        }
+
+        console.log("Contact form email sent successfully:", data);
+      } catch (emailError) {
+        console.error("Failed to send contact form email:", emailError);
         return res.status(500).json({ 
-          error: "Failed to send email notification" 
+          error: "Email service not configured properly" 
         });
       }
-
-      console.log("Contact form email sent successfully:", data);
 
       return res.json({ 
         success: true, 
