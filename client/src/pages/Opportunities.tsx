@@ -1,5 +1,6 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import PublicOpportunityForm from "@/components/PublicOpportunityForm";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -103,6 +104,18 @@ export default function Opportunities() {
               <p className="text-muted-foreground">
                 Plus: <strong>Collaborative initiatives</strong> and other professional opportunities
               </p>
+            </div>
+
+            <div className="mb-16">
+              <h3 className="text-2xl md:text-3xl font-display font-bold mb-4 text-center">
+                Post Your Opportunity
+              </h3>
+              <p className="text-center text-muted-foreground mb-8 max-w-2xl mx-auto">
+                Share your business opportunity with our global community. No login required!
+              </p>
+              <div className="max-w-2xl mx-auto">
+                <PublicOpportunityForm />
+              </div>
             </div>
 
             <h3 className="text-2xl md:text-3xl font-display font-bold mb-8 text-center">
