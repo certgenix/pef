@@ -2,6 +2,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Card, CardContent } from "@/components/ui/card";
 import { Shield, Users, Eye, Target, Globe2 } from "lucide-react";
+import chairmanImage from "@assets/image_1763374410897.png";
 
 export default function About() {
   return (
@@ -43,18 +44,38 @@ export default function About() {
           </div>
         </section>
 
-        <section className="py-16 md:py-24 bg-muted/30">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-8">
-              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Eye className="w-8 h-8 text-primary" />
+        <section className="py-16 md:py-24 bg-gradient-to-br from-[hsl(191,100%,60%)] to-[hsl(191,90%,45%)] relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-1/3 h-full opacity-20">
+            <svg className="w-full h-full" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+              <path fill="white" d="M45.5,-67.3C57.4,-58.5,64.3,-43.3,69.8,-27.5C75.3,-11.7,79.4,4.7,76.8,20.1C74.2,35.5,64.9,49.9,52.7,60.1C40.5,70.3,25.4,76.3,9.5,79.8C-6.4,83.3,-23.1,84.3,-37.8,78.1C-52.5,71.9,-65.2,58.5,-72.4,42.8C-79.6,27.1,-81.3,9.1,-78.7,-7.9C-76.1,-24.9,-69.2,-41,-58.4,-52.8C-47.6,-64.6,-33,-72.1,-17.8,-73.6C-2.6,-75.1,13.2,-70.6,27.4,-63.8C41.6,-57,54.2,-47.9,45.5,-67.3Z" transform="translate(100 100)" />
+            </svg>
+          </div>
+          
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-display font-bold mb-12 text-center text-white">
+              PEF Vision
+            </h2>
+            
+            <div className="grid md:grid-cols-[300px,1fr] gap-8 md:gap-12 items-center">
+              <div className="flex flex-col items-center md:items-start" data-testid="chairman-profile">
+                <div className="mb-4 rounded-md overflow-hidden shadow-xl">
+                  <img 
+                    src={chairmanImage} 
+                    alt="Chairman & Founder PEF" 
+                    className="w-64 h-auto object-cover"
+                    data-testid="img-chairman"
+                  />
+                </div>
+                <p className="text-white font-semibold text-lg text-center md:text-left" data-testid="text-chairman-title">
+                  Chairman & Founder PEF
+                </p>
               </div>
-              <h2 className="text-3xl md:text-4xl font-display font-bold mb-6">
-                Our Vision
-              </h2>
-              <p className="text-lg leading-relaxed text-muted-foreground">
-                To become a global leader in professional and business connectivity, enabling individuals and organizations to find the opportunities they need to grow and succeed.
-              </p>
+              
+              <div className="text-white" data-testid="vision-statement">
+                <p className="text-lg md:text-xl lg:text-2xl leading-relaxed">
+                  To build a trusted and intelligent network where business owners, directors, and professionals connect through meaningful collaboration, creating a smart bridge between opportunities and talent. Our goal is not only to empower job seekers with access to the right people and projects, but also to help discover new business collaborations, unlock investment opportunities, and drive collective growth and integrated success for all.
+                </p>
+              </div>
             </div>
           </div>
         </section>
