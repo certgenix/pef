@@ -979,6 +979,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
               New Contact Form Submission
             </h2>
             
+            <div style="margin: 20px 0; background: #f0f9ff; padding: 15px; border-radius: 5px;">
+              <p style="margin: 5px 0;"><strong>Reply To:</strong> <a href="mailto:${email}" style="color: #1e40af;">${email}</a></p>
+            </div>
+            
             <div style="margin: 20px 0;">
               <p style="margin: 10px 0;"><strong>Name:</strong> ${name}</p>
               <p style="margin: 10px 0;"><strong>Email:</strong> ${email}</p>
@@ -1005,7 +1009,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           to: recipients,
           subject: `New Contact Form Submission from ${name}`,
           html: emailHtml,
-          replyTo: email,
         });
 
         if (error) {
