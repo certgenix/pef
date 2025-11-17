@@ -2,6 +2,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Card, CardContent } from "@/components/ui/card";
 import { Shield, Users, Eye, Target, Globe2 } from "lucide-react";
+import chairmanImage from "@assets/image_1763374783479.png";
 
 export default function About() {
   return (
@@ -27,6 +28,44 @@ export default function About() {
             <p className="text-xl md:text-2xl text-white/90 max-w-3xl mx-auto">
               Connecting professionals, job seekers, employers, business owners, and investors worldwide
             </p>
+          </div>
+        </section>
+
+        <section className="py-16 md:py-24 bg-gradient-to-br from-secondary/10 to-primary/5">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl md:text-4xl font-display font-bold mb-2">
+                PEF Vision
+              </h2>
+            </div>
+            
+            <Card className="overflow-hidden">
+              <CardContent className="p-0">
+                <div className="grid md:grid-cols-2 gap-8 md:gap-0">
+                  <div className="p-8 md:p-12 flex items-center justify-center bg-gradient-to-br from-secondary/20 to-primary/10">
+                    <div className="max-w-sm">
+                      <img 
+                        src={chairmanImage} 
+                        alt="Chairman & Founder PEF" 
+                        className="w-full h-auto rounded-md"
+                        data-testid="img-chairman"
+                      />
+                      <p className="text-center mt-4 text-sm font-medium text-muted-foreground">
+                        Chairman & Founder PEF
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="p-8 md:p-12 flex items-center">
+                    <div>
+                      <p className="text-lg leading-relaxed text-muted-foreground">
+                        To build a trusted and intelligent network where business owners, directors, and professionals connect through meaningful collaboration, creating a smart bridge between opportunities and talent. Our goal is not only to empower job seekers with access to the right people and projects, but also to help discover new business collaborations, unlock investment opportunities, and drive collective growth and integrated success for all.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </section>
 
