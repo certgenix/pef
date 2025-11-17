@@ -2,7 +2,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Card, CardContent } from "@/components/ui/card";
 import { Shield, Users, Eye, Target, Globe2 } from "lucide-react";
-import chairmanImage from "@assets/image_1763374783479.png";
+import chairmanImage from "@assets/image_1763374941295.png";
 
 export default function About() {
   return (
