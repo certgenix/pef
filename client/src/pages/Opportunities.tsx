@@ -22,7 +22,7 @@ const opportunityTypes = [
   },
   {
     icon: Handshake,
-    title: "Partnership Proposals",
+    title: "Sponsorship",
     description: "Strategic collaborations and business partnerships",
     color: "bg-purple-500",
   },

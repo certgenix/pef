@@ -134,7 +134,7 @@ export default function PostOpportunityDialog({ trigger }: PostOpportunityDialog
                     </FormControl>
                     <SelectContent>
                       <SelectItem value="investment">Investment Opportunity</SelectItem>
-                      <SelectItem value="partnership">Partnership Proposal</SelectItem>
+                      <SelectItem value="partnership">Sponsorship</SelectItem>
                       <SelectItem value="collaboration">Collaboration Project</SelectItem>
                     </SelectContent>
                   </Select>
