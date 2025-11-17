@@ -156,7 +156,7 @@ export default function Register() {
       // Prepare data to save to Firestore
       const registrationData = {
         fullName: basicInfo.fullName.trim(),
-        email: basicInfo.email.trim(),
+        email: basicInfo.email.trim().toLowerCase(),
         phone: basicInfo.phone?.trim() ? `${basicInfo.phoneCode} ${basicInfo.phone.trim()}` : "",
         country: basicInfo.country,
         city: basicInfo.city?.trim() || "",

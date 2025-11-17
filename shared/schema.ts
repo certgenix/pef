@@ -29,6 +29,9 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   lastLogin: timestamp("last_login"),
   approvalStatus: approvalStatusEnum("approval_status").default("pending").notNull(),
+  preRegistered: boolean("pre_registered").default(false),
+  preRegisteredAt: timestamp("pre_registered_at"),
+  registrationSource: varchar("registration_source", { length: 50 }),
 });
 
 export const userProfiles = pgTable("user_profiles", {

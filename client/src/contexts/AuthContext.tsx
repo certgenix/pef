@@ -13,6 +13,10 @@ import {
   getDoc,
   setDoc,
   serverTimestamp,
+  collection,
+  query,
+  where,
+  getDocs,
 } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { User, UserRoles } from "../../../shared/types";
@@ -245,6 +249,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     await sendEmailVerification(userCredential.user);
 
+    // Check if email exists in pre-registrations (Join Now submissions)
+    let preRegistrationData: any = null;
+    try {
+      const registrationsRef = collection(db, "registrations");
+      const q = query(registrationsRef, where("email", "==", email.trim().toLowerCase()));
+      const querySnapshot = await getDocs(q);
+      
+      if (!querySnapshot.empty) {
+        // Email was pre-registered via "Join Now"
+        preRegistrationData = querySnapshot.docs[0].data();
+      }
+    } catch (error) {
+      console.error("Error checking pre-registration:", error);
+      // Continue with registration even if pre-registration check fails
+    }
+
     // Consolidated Firestore structure: everything in one users document
     // Use isProfessional/isJobSeeker etc. to match backend schema
     const firestoreData: any = {
@@ -277,6 +297,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       employerData: {},
       businessOwnerData: {},
       investorData: {},
+      // Add pre-registration tracking fields
+      preRegistered: preRegistrationData !== null,
+      preRegisteredAt: preRegistrationData?.createdAt || null,
+      registrationSource: preRegistrationData ? "join_now" : "direct",
     };
 
     await setDoc(doc(db, "users", userCredential.user.uid), firestoreData);
