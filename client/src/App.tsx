@@ -15,6 +15,7 @@ import Signup from "@/pages/Signup";
 import Login from "@/pages/Login";
 import ForgotPassword from "@/pages/ForgotPassword";
 import EditProfile from "@/pages/EditProfile";
+import RoleSelection from "@/pages/RoleSelection";
 import Dashboard from "@/pages/Dashboard";
 import ProfessionalDashboard from "@/pages/dashboards/ProfessionalDashboard";
 import JobSeekerDashboard from "@/pages/dashboards/JobSeekerDashboard";
@@ -37,6 +38,7 @@ function Router() {
       <Route path="/signup" component={Signup} />
       <Route path="/login" component={Login} />
       <Route path="/forgot-password" component={ForgotPassword} />
+      <Route path="/role-selection" component={RoleSelection} />
       <Route path="/edit-profile" component={EditProfile} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/dashboard/professional" component={ProfessionalDashboard} />
