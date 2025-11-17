@@ -7,6 +7,8 @@ import {
   onAuthStateChanged,
   sendPasswordResetEmail,
   sendEmailVerification,
+  GoogleAuthProvider,
+  signInWithPopup,
 } from "firebase/auth";
 import {
   doc,
@@ -38,6 +40,7 @@ interface AuthContextType {
   userData: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
+  signInWithGoogle: () => Promise<{ isNewUser: boolean }>;
   register: (email: string, password: string, name: string, roles: UserRoles, profileData?: ProfileData) => Promise<void>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
@@ -207,7 +210,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           lastUpdated: data.lastUpdated?.toDate(),
         } as User;
         
-        if (firebaseUser) {
+        if (firebaseUser && !data.skipBackendSync) {
           const synced = await syncUserToBackend(userData, firebaseUser);
           if (!synced) {
             console.error("Backend sync failed. Signing out user to prevent broken state.");
@@ -343,6 +346,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await signInWithEmailAndPassword(auth, email, password);
   }
 
+  async function signInWithGoogle() {
+    const provider = new GoogleAuthProvider();
+    const result = await signInWithPopup(auth, provider);
+    const user = result.user;
+
+    const userDoc = await getDoc(doc(db, "users", user.uid));
+    const isNewUser = !userDoc.exists();
+
+    if (isNewUser) {
+      const minimalUserData = {
+        name: user.displayName || "Google User",
+        email: user.email || "",
+        status: "pending",
+        createdAt: serverTimestamp(),
+        lastUpdated: serverTimestamp(),
+        profile: {
+          fullName: user.displayName || "Google User",
+        },
+        roles: {
+          isProfessional: false,
+          isJobSeeker: false,
+          isEmployer: false,
+          isBusinessOwner: false,
+          isInvestor: false,
+        },
+        professionalData: {},
+        jobSeekerData: {},
+        employerData: {},
+        businessOwnerData: {},
+        investorData: {},
+        registrationSource: "google",
+        needsRoleSelection: true,
+        skipBackendSync: true,
+      };
+
+      await setDoc(doc(db, "users", user.uid), minimalUserData);
+    }
+
+    return { isNewUser };
+  }
+
   async function logout() {
     await firebaseSignOut(auth);
     setUserData(null);
@@ -371,6 +415,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     userData,
     loading,
     login,
+    signInWithGoogle,
     register,
     logout,
     resetPassword,

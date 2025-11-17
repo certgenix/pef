@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,12 +9,14 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowRight } from "lucide-react";
+import { SiGoogle } from "react-icons/si";
 
 export default function Login() {
   const [, setLocation] = useLocation();
-  const { login, currentUser, loading: authLoading } = useAuth();
+  const { login, signInWithGoogle, currentUser, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [credentials, setCredentials] = useState({
     email: "",
     password: "",
@@ -54,6 +56,42 @@ export default function Login() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setGoogleLoading(true);
+    try {
+      const result = await signInWithGoogle();
+      
+      if (result.isNewUser) {
+        toast({
+          title: "Welcome!",
+          description: "Please select your roles to complete your profile.",
+        });
+        setLocation("/role-selection");
+      } else {
+        toast({
+          title: "Welcome back!",
+          description: "You have successfully logged in with Google.",
+        });
+        setLocation("/dashboard");
+      }
+    } catch (error: any) {
+      let errorMessage = "Failed to sign in with Google";
+      if (error.code === "auth/popup-closed-by-user") {
+        errorMessage = "Sign-in cancelled";
+      } else if (error.code === "auth/cancelled-popup-request") {
+        errorMessage = "Sign-in cancelled";
+      }
+
+      toast({
+        title: "Google Sign-In Failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setGoogleLoading(false);
     }
   };
 
@@ -103,17 +141,41 @@ export default function Login() {
                   type="submit"
                   size="lg"
                   className="w-full"
-                  disabled={loading}
+                  disabled={loading || googleLoading}
                   data-testid="button-login-submit"
                 >
                   {loading ? "Logging in..." : "Login"}
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
 
+                <div className="relative my-6">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-card px-2 text-muted-foreground">
+                      Or continue with
+                    </span>
+                  </div>
+                </div>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="lg"
+                  className="w-full"
+                  onClick={handleGoogleSignIn}
+                  disabled={loading || googleLoading}
+                  data-testid="button-google-signin"
+                >
+                  <SiGoogle className="mr-2 w-5 h-5" />
+                  {googleLoading ? "Signing in..." : "Sign in with Google"}
+                </Button>
+
                 <div className="text-center text-sm text-muted-foreground">
-                  <a href="#" className="text-primary hover:underline">
+                  <Link href="/forgot-password" className="text-primary hover:underline" data-testid="link-forgot-password">
                     Forgot your password?
-                  </a>
+                  </Link>
                 </div>
               </form>
             </CardContent>
@@ -122,9 +184,9 @@ export default function Login() {
           <div className="text-center mt-6">
             <p className="text-muted-foreground">
               Don't have an account?{" "}
-              <a href="/register" className="text-primary hover:underline font-semibold">
-                Register here
-              </a>
+              <Link href="/register" className="text-primary hover:underline font-semibold" data-testid="link-register">
+                Sign up here
+              </Link>
             </p>
           </div>
         </div>
