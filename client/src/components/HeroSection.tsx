@@ -31,24 +31,25 @@ export default function HeroSection() {
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
-          <Link href="/signup">
+          <Link href="/register">
             <Button
               size="lg"
               className="bg-accent hover:bg-accent text-accent-foreground font-semibold text-lg px-8 py-6 min-h-14"
               data-testid="button-join-forum"
             >
-              Join the Forum
+              Join Now
               <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
           </Link>
-          <Link href="/opportunities">
+          <Link href="/signup">
             <Button
               size="lg"
               variant="outline"
               className="border-2 border-white text-white hover:bg-white/10 backdrop-blur-sm font-semibold text-lg px-8 py-6 min-h-14"
-              data-testid="button-explore"
+              data-testid="button-create-account"
             >
-              Explore Opportunities
+              Create Account
+              <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
           </Link>
         </div>
