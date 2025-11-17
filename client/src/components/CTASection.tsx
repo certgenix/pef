@@ -36,7 +36,7 @@ export default function CTASection() {
               className="bg-accent hover:bg-accent text-accent-foreground font-semibold text-lg px-10 py-7 min-h-14 group"
               data-testid="button-cta-join"
             >
-              Create Your Account
+              Join Now
               <ArrowRight className="ml-2 w-5 h-5 transition-transform group-hover:translate-x-1" />
             </Button>
           </Link>
