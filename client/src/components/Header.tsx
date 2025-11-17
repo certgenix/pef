@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Globe, Menu, X, User, LogOut, LayoutDashboard } from "lucide-react";
+import { Menu, X, User, LogOut, LayoutDashboard } from "lucide-react";
 import { Link } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
+import logoImage from "@assets/image_1763355890421.png";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,9 +44,11 @@ export default function Header() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 md:h-20">
           <Link href="/" className="flex items-center gap-2 hover-elevate rounded-md px-2 py-1" data-testid="link-home">
-            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-accent">
-              <Globe className="w-6 h-6 text-accent-foreground" />
-            </div>
+            <img 
+              src={logoImage} 
+              alt="PEF Logo" 
+              className="w-12 h-12 md:w-14 md:h-14 rounded-full object-cover"
+            />
             <span className="text-xl md:text-2xl font-display font-bold text-white">PEF</span>
           </Link>
 
