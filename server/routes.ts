@@ -4,6 +4,8 @@ import { storage } from "./storage";
 import { z } from "zod";
 import { insertUserProfileSchema, insertUserRolesSchema, insertOpportunitySchema, insertApplicationSchema, jobDetailsSchema } from "@shared/schema";
 import { Resend } from "resend";
+import { db } from "./firebase-admin";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
 const AUTO_APPROVE_JOBS = true;
 
@@ -688,6 +690,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Admin role update error:", error);
       return res.status(500).json({ error: "Failed to update user roles" });
+    }
+  });
+
+  app.post("/api/public-opportunities", async (req, res) => {
+    try {
+      const publicOpportunitySchema = z.object({
+        name: z.string().min(1, "Name is required"),
+        email: z.string().email("Valid email is required"),
+        type: z.enum(["investment", "partnership", "collaboration"], {
+          errorMap: () => ({ message: "Please select a valid opportunity type" }),
+        }),
+        title: z.string().min(10, "Title must be at least 10 characters"),
+        description: z.string().min(20, "Description must be at least 20 characters"),
+      });
+
+      const validationResult = publicOpportunitySchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({
+          error: "Invalid request data",
+          details: validationResult.error.issues,
+        });
+      }
+
+      const { name, email, type, title, description } = validationResult.data;
+
+      const opportunitiesRef = collection(db, "opportunities");
+      const newOpportunity = {
+        submitterName: name,
+        submitterEmail: email,
+        type,
+        title,
+        description,
+        status: "pending",
+        views: 0,
+        interested: 0,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      };
+
+      await addDoc(opportunitiesRef, newOpportunity);
+
+      console.log("Public opportunity submitted successfully:", { name, email, type, title });
+
+      return res.json({
+        success: true,
+        message: "Opportunity submitted successfully. It will be reviewed and published soon.",
+      });
+    } catch (error) {
+      console.error("Public opportunity submission error:", error);
+      return res.status(500).json({ error: "Failed to submit opportunity" });
     }
   });
 
