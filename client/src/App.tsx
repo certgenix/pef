@@ -23,6 +23,15 @@ import EmployerDashboard from "@/pages/dashboards/EmployerDashboard";
 import BusinessOwnerDashboard from "@/pages/dashboards/BusinessOwnerDashboard";
 import InvestorDashboard from "@/pages/dashboards/InvestorDashboard";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
+import ProfileComplete from "@/pages/ProfileComplete";
+import ProfileEdit from "@/pages/ProfileEdit";
+import JobCreate from "@/pages/job/JobCreate";
+import JobView from "@/pages/job/JobView";
+import JobApplicants from "@/pages/job/JobApplicants";
+import BusinessCreate from "@/pages/business/BusinessCreate";
+import BusinessView from "@/pages/business/BusinessView";
+import BrowseJobs from "@/pages/browse/BrowseJobs";
+import BrowseOpportunities from "@/pages/browse/BrowseOpportunities";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -40,12 +49,21 @@ function Router() {
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/role-selection" component={RoleSelection} />
       <Route path="/edit-profile" component={EditProfile} />
+      <Route path="/profile/complete" component={ProfileComplete} />
+      <Route path="/profile/edit" component={ProfileEdit} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/dashboard/professional" component={ProfessionalDashboard} />
       <Route path="/dashboard/job-seeker" component={JobSeekerDashboard} />
       <Route path="/dashboard/employer" component={EmployerDashboard} />
       <Route path="/dashboard/business-owner" component={BusinessOwnerDashboard} />
       <Route path="/dashboard/investor" component={InvestorDashboard} />
+      <Route path="/job/create" component={JobCreate} />
+      <Route path="/job/:id/applicants" component={JobApplicants} />
+      <Route path="/job/:id" component={JobView} />
+      <Route path="/business/create" component={BusinessCreate} />
+      <Route path="/business/:id" component={BusinessView} />
+      <Route path="/browse/jobs" component={BrowseJobs} />
+      <Route path="/browse/opportunities" component={BrowseOpportunities} />
       <Route path="/admin" component={AdminDashboard} />
       <Route component={NotFound} />
     </Switch>
