@@ -72,6 +72,7 @@ export interface User {
   links?: UserLinks;
   roles: UserRoles;
   status: UserStatus;
+  profileCompleted?: boolean;
   createdAt: Date;
   lastUpdated: Date;
   professionalData?: ProfessionalData;

@@ -102,6 +102,7 @@ export function createRolesObject(selectedRoles: RoleType[]): Omit<UserRoles, "i
     isEmployer: selectedRoles.includes("employer"),
     isBusinessOwner: selectedRoles.includes("businessOwner"),
     isInvestor: selectedRoles.includes("investor"),
+    isAdmin: false,
   };
 }
 

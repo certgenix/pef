@@ -7,8 +7,8 @@ import { Button } from "@/components/ui/button";
 import { AlertCircle, CheckCircle, XCircle } from "lucide-react";
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { currentUser, loading: authLoading } = useAuth();
-  const [, setLocation] = useLocation();
+  const { currentUser, userData, loading: authLoading, logout } = useAuth();
+  const [location, setLocation] = useLocation();
   const { status, data } = useMemberStatus();
 
   useEffect(() => {
@@ -16,6 +16,17 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
       setLocation("/login");
     }
   }, [currentUser, authLoading, setLocation]);
+
+  useEffect(() => {
+    if (!authLoading && currentUser && userData && status === "active") {
+      const isOnProfileCompletePage = location === "/profile/complete";
+      const profileCompleted = userData.profileCompleted === true;
+      
+      if (!profileCompleted && !isOnProfileCompletePage) {
+        setLocation("/profile/complete");
+      }
+    }
+  }, [authLoading, currentUser, userData, status, location, setLocation]);
 
   if (authLoading || status === "loading") {
     return (
@@ -69,7 +80,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
                 variant="outline" 
                 className="w-full" 
                 onClick={() => {
-                  useAuth().logout();
+                  logout();
                   setLocation("/login");
                 }}
                 data-testid="button-logout"
@@ -115,7 +126,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
                 variant="outline" 
                 className="w-full" 
                 onClick={() => {
-                  useAuth().logout();
+                  logout();
                   setLocation("/login");
                 }}
                 data-testid="button-logout"

@@ -1,0 +1,209 @@
+I want you to update my entire PEF app to follow this role-based flow with 6 dashboards. 
+You must use my existing UI system (shadcn/ui, DashboardLayout, cards, buttons, role badges, etc.). 
+DO NOT replace or redesign the dashboards; only CONNECT them with the correct logic and features.
+
+────────────────────────────────────────
+🔥 OVERALL GOAL
+────────────────────────────────────────
+Create a complete multi-role ecosystem where the following dashboards exist
+and interact with each other:
+
+1. Professionals
+2. Job Seekers
+3. Employers
+4. Business Owners
+5. Investors
+6. Admin
+
+Implement full role-based routing, permissions, Firestore structure,
+and cross-role interactions according to the rules below.
+
+────────────────────────────────────────
+🔥 PART 1 — FIRESTORE STRUCTURE (REQUIRED)
+────────────────────────────────────────
+
+Use a SIMPLE and ORGANIZED structure:
+
+users/{uid}
+  fullName
+  email
+  country
+  roles: { professional, jobSeeker, employer, businessOwner, investor, admin }
+  profileCompleted
+  professionalData: {...}
+  jobSeekerData: {...}
+  employerData: {...}
+  businessOwnerData: {...}
+  investorData: {...}
+
+jobPosts/{id}
+  employerId
+  title
+  description
+  location
+  requirements
+  applicants: [uid]
+
+businessOpportunities/{id}
+  ownerId
+  title
+  description
+  investmentNeeded
+  collaboratorsNeeded
+  interestedInvestors: [uid]
+
+NO OTHER COLLECTIONS should be needed.
+
+────────────────────────────────────────
+🔥 PART 2 — ROLE-BASED ACCESS RULES
+────────────────────────────────────────
+
+Apply these ability rules:
+
+Professionals:
+  ✓ Can view business opportunities
+  ✓ Can view job posts (preview only)
+  ✓ Can network with all roles
+  ✘ Cannot apply to jobs unless role=jobSeeker
+
+Job Seekers:
+  ✓ Can apply to job posts
+  ✓ Can create CV/resume
+  ✓ Can view employer profiles
+
+Employers:
+  ✓ Can create job posts
+  ✓ Can view job seekers
+  ✓ Can manage applicants
+
+Business Owners:
+  ✓ Can post business opportunities
+  ✓ Can view professionals
+  ✓ Can view investors
+
+Investors:
+  ✓ Can view business opportunities
+  ✓ Can save/bookmark opportunities
+  ✓ Can contact business owners
+
+Admin:
+  ✓ Full access to everything
+  ✓ Can approve/delete posts
+  ✓ Can modify user roles
+  ✓ Can view analytics
+
+────────────────────────────────────────
+🔥 PART 3 — ROUTES THAT MUST BE ADDED
+────────────────────────────────────────
+
+Create or update the following routes:
+
+/dashboard/professional
+/dashboard/job-seeker
+/dashboard/employer
+/dashboard/business-owner
+/dashboard/investor
+/dashboard/admin
+
+/job/create
+/job/:id
+/job/:id/applicants
+
+/business/create
+/business/:id
+/business/:id/investors
+
+/profile/complete
+/profile/edit
+
+/admin/users
+/admin/user/:uid
+/admin/analytics
+
+────────────────────────────────────────
+🔥 PART 4 — CONNECT ALL DASHBOARDS WITH LOGIC
+────────────────────────────────────────
+
+Implement the following flows:
+
+A. Employers → Job Seekers
+   - Employers can post jobs
+   - Job seekers can apply
+   - Employers can view applicants
+
+B. Business Owners → Investors
+   - Business owners can post opportunities
+   - Investors can view and respond
+   - Store interestedInvestors array
+
+C. Business Owners → Professionals
+   - Business owners can browse professionals
+   - Professionals can be invited for collaborations
+
+D. Employers → Professionals
+   - Professionals can see company profiles
+   - No apply button unless they have jobSeeker role
+
+E. Admin → Everyone
+   - Manage all data
+   - Change user roles
+   - Delete posts
+
+────────────────────────────────────────
+🔥 PART 5 — PROTECTEDROUTE IMPROVEMENT
+────────────────────────────────────────
+
+Modify ProtectedRoute:
+
+- If user is logged in but profileCompleted=false → redirect to /profile/complete
+- If user is not logged in → redirect to login
+- If user tries to access a dashboard they do not have permission for → redirect to /dashboard
+
+────────────────────────────────────────
+🔥 PART 6 — PAGES YOU MUST GENERATE
+────────────────────────────────────────
+
+Generate the following FULL pages/components:
+
+1. Job Create Page (Employer)
+2. Job View Page (all roles, with role-based actions)
+3. Applicants Page (Employer only)
+4. Business Opportunity Create Page
+5. Business Opportunity View Page (role-based visibility)
+6. Investor Interest Button
+7. Browse Professionals Page
+8. Browse Job Seekers Page
+9. Browse Employers Page
+10. Admin User List
+11. Admin User Detail Editor
+12. Profile Complete Page
+13. Profile Edit Page
+
+Use my existing UI patterns.
+
+────────────────────────────────────────
+🔥 PART 7 — OUTPUT FORMAT REQUIRED
+────────────────────────────────────────
+
+Please output:
+
+1. Updated routing config
+2. All new components and pages
+3. Firestore read/write logic
+4. Role-based view logic
+5. Updated ProtectedRoute
+6. Any required context/hook updates
+7. Clean Firestore security rules for all roles
+
+────────────────────────────────────────
+🔥 FINAL INSTRUCTIONS
+────────────────────────────────────────
+
+DO NOT break my current dashboards.
+Just CONNECT them and add missing pages.
+
+DO NOT redesign UI.
+Use my existing components.
+
+Write clean, optimized, production-ready React + TypeScript code.
+
