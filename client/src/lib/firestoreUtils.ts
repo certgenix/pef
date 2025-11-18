@@ -212,18 +212,18 @@ export async function getBusinessOpportunity(
 }
 
 export async function getBusinessOpportunities(filters?: {
-  ownerId?: string;
-  type?: string;
+  businessOwnerId?: string;
+  opportunityType?: string;
   limit?: number;
 }): Promise<FirestoreBusinessOpportunity[]> {
   try {
     let q = query(businessOpportunitiesCollection, orderBy("createdAt", "desc"));
 
-    if (filters?.ownerId) {
-      q = query(q, where("ownerId", "==", filters.ownerId));
+    if (filters?.businessOwnerId) {
+      q = query(q, where("businessOwnerId", "==", filters.businessOwnerId));
     }
-    if (filters?.type) {
-      q = query(q, where("type", "==", filters.type));
+    if (filters?.opportunityType) {
+      q = query(q, where("opportunityType", "==", filters.opportunityType));
     }
     if (filters?.limit) {
       q = query(q, limit(filters.limit));
@@ -371,7 +371,7 @@ export async function createInvestorInterest(
       createdAt: serverTimestamp(),
     });
 
-    const oppRef = doc(businessOpportunitiesCollection, interest.opportunityId);
+    const oppRef = doc(businessOpportunitiesCollection, interest.businessOpportunityId);
     const oppDoc = await getDoc(oppRef);
     if (oppDoc.exists()) {
       const currentInvestors = oppDoc.data().interestedInvestors || [];
@@ -395,7 +395,7 @@ export async function getInvestorInterestsByOpportunity(
   try {
     const q = query(
       investorInterestsCollection,
-      where("opportunityId", "==", opportunityId),
+      where("businessOpportunityId", "==", opportunityId),
       orderBy("createdAt", "desc")
     );
     const snapshot = await getDocs(q);
@@ -409,6 +409,30 @@ export async function getInvestorInterestsByOpportunity(
     });
   } catch (error) {
     console.error("Error fetching investor interests:", error);
+    return [];
+  }
+}
+
+export async function getInvestorInterestByUser(
+  userId: string
+): Promise<FirestoreInvestorInterest[]> {
+  try {
+    const q = query(
+      investorInterestsCollection,
+      where("userId", "==", userId),
+      orderBy("createdAt", "desc")
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        ...data,
+        id: doc.id,
+        createdAt: convertTimestamp(data.createdAt),
+      } as FirestoreInvestorInterest;
+    });
+  } catch (error) {
+    console.error("Error fetching investor interests by user:", error);
     return [];
   }
 }

@@ -100,15 +100,20 @@ export interface FirestoreJobPost {
 
 export interface FirestoreBusinessOpportunity {
   id: string;
-  ownerId: string;
+  businessOwnerId: string;
   title: string;
   description: string;
-  industry?: string;
+  opportunityType: "investment" | "partnership" | "acquisition" | "franchise";
+  industry: string;
+  location?: string;
   country?: string;
   city?: string;
-  investmentNeeded?: string;
-  collaboratorsNeeded?: number;
-  type: "investment" | "partnership" | "collaboration";
+  fundingRequired?: number;
+  currency?: string;
+  equity?: string;
+  returnPotential?: string;
+  timeline?: string;
+  keyHighlights?: string[];
   interestedInvestors: string[];
   status: "open" | "closed";
   approvalStatus: "pending" | "approved" | "rejected";
@@ -131,7 +136,8 @@ export interface FirestoreApplication {
 export interface FirestoreInvestorInterest {
   id: string;
   userId: string;
-  opportunityId: string;
+  businessOpportunityId: string;
+  status: "interested" | "contacted" | "meeting_scheduled" | "negotiating" | "declined";
   message?: string;
   contactEmail?: string;
   contactPhone?: string;
