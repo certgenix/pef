@@ -5,7 +5,8 @@ export type RoleType =
   | "jobSeeker" 
   | "employer" 
   | "businessOwner" 
-  | "investor";
+  | "investor"
+  | "admin";
 
 export const ROLE_DEFINITIONS = {
   professional: {
@@ -43,6 +44,13 @@ export const ROLE_DEFINITIONS = {
     description: "Invest in startups, SMEs, and market opportunities",
     permissions: ["view_investments", "contact_businesses", "create_investor_profile"],
   },
+  admin: {
+    id: "admin" as const,
+    key: "isAdmin" as const,
+    label: "Admin",
+    description: "Manage users, content, and platform settings",
+    permissions: ["manage_users", "approve_content", "view_analytics", "manage_system"],
+  },
 } as const;
 
 export function hasRole(userRoles: UserRoles | null, role: RoleType): boolean {
@@ -69,6 +77,7 @@ export function getUserRoles(userRoles: UserRoles | null): RoleType[] {
   if (userRoles.isEmployer) activeRoles.push("employer");
   if (userRoles.isBusinessOwner) activeRoles.push("businessOwner");
   if (userRoles.isInvestor) activeRoles.push("investor");
+  if (userRoles.isAdmin) activeRoles.push("admin");
   
   return activeRoles;
 }
