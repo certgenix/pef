@@ -111,7 +111,7 @@ export function createRolesObject(selectedRoles: RoleType[]): Omit<UserRoles, "i
     isEmployer: selectedRoles.includes("employer"),
     isBusinessOwner: selectedRoles.includes("businessOwner"),
     isInvestor: selectedRoles.includes("investor"),
-    isAdmin: false,
+    isAdmin: selectedRoles.includes("admin"),
   };
 }
 
@@ -123,6 +123,7 @@ export function getRoleRequiredProfiles(roles: RoleType[]): string[] {
   if (roles.includes("employer")) profiles.push("employer");
   if (roles.includes("businessOwner")) profiles.push("businessOwner");
   if (roles.includes("investor")) profiles.push("investor");
+  if (roles.includes("admin")) profiles.push("admin");
   
   return profiles;
 }
