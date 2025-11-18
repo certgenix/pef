@@ -49,7 +49,6 @@ export default function Header() {
               alt="PEF Logo" 
               className="w-12 h-12 md:w-14 md:h-14 rounded-full object-cover"
             />
-            <span className="text-xl md:text-2xl font-display font-bold text-white">PEF</span>
           </Link>
 
           <nav className="hidden lg:flex items-center gap-1">
