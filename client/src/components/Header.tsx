@@ -25,7 +25,7 @@ const navItems = [
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { currentUser, logout } = useAuth();
+  const { currentUser, userData, logout } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -83,7 +83,7 @@ export default function Header() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="bg-transparent border-white/20 hover:bg-white/10 text-white" data-testid="button-user-menu">
                     <User className="w-4 h-4 mr-2" />
-                    {currentUser.displayName || currentUser.email}
+                    {userData?.name || currentUser.displayName || currentUser.email}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
