@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRoles } from "@/hooks/useUserRoles";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -67,27 +66,6 @@ function DashboardContent() {
 
   const safeRoles = Array.isArray(activeRoles) ? activeRoles : [];
   const isAdmin = userData?.roles?.admin || false;
-
-  // Auto-redirect logic
-  useEffect(() => {
-    if (!isLoading && currentUser) {
-      // If admin, redirect to admin dashboard
-      if (isAdmin) {
-        setLocation("/admin");
-        return;
-      }
-      
-      // If user has exactly one role, redirect to that dashboard
-      if (safeRoles.length === 1) {
-        const roleToRedirect = safeRoles[0];
-        const dashboard = roleDashboards.find(d => d.role === roleToRedirect);
-        if (dashboard) {
-          setLocation(dashboard.path);
-        }
-      }
-      // If user has multiple roles (2+), show the selection page (current behavior)
-    }
-  }, [isLoading, currentUser, isAdmin, safeRoles.length, setLocation]);
 
   if (isLoading) {
     return (
