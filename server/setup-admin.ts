@@ -76,12 +76,12 @@ async function setupAdmin() {
       },
       // Embedded roles (consolidated structure)
       roles: {
-        isProfessional: false,
-        isJobSeeker: false,
-        isEmployer: false,
-        isBusinessOwner: false,
-        isInvestor: false,
-        isAdmin: true,  // THIS IS THE KEY FIELD
+        professional: false,
+        jobSeeker: false,
+        employer: false,
+        businessOwner: false,
+        investor: false,
+        admin: true,  // THIS IS THE KEY FIELD - must be 'admin' not 'isAdmin'
       },
       // Empty role-specific data
       professionalData: {},
@@ -109,9 +109,9 @@ async function setupAdmin() {
       console.log(`  ✓ Email: ${data.email}`);
       console.log(`  ✓ Display Name: ${data.displayName}`);
       console.log(`  ✓ Approval Status: ${data.approvalStatus}`);
-      console.log(`  ✓ Admin Role: ${data.roles?.isAdmin ? '✅ TRUE' : '❌ FALSE'}`);
+      console.log(`  ✓ Admin Role: ${data.roles?.admin ? '✅ TRUE' : '❌ FALSE'}`);
       
-      if (!data.roles?.isAdmin) {
+      if (!data.roles?.admin) {
         console.log("\n❌ ERROR: Admin role is not set correctly!");
         process.exit(1);
       }

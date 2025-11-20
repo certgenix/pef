@@ -188,16 +188,16 @@ export class FirestoreStorage implements IStorage {
     
     if (userData.roles) {
       // Roles embedded in user document
-      // Support both naming conventions: isProfessional (backend) and professional (Firestore)
+      // Support both new (professional, jobSeeker, admin) and legacy (isProfessional, isJobSeeker, isAdmin) naming conventions
       roles = {
         id,
         userId: id,
-        isProfessional: userData.roles.isProfessional || userData.roles.professional || false,
-        isJobSeeker: userData.roles.isJobSeeker || userData.roles.jobSeeker || false,
-        isEmployer: userData.roles.isEmployer || userData.roles.employer || false,
-        isBusinessOwner: userData.roles.isBusinessOwner || userData.roles.businessOwner || false,
-        isInvestor: userData.roles.isInvestor || userData.roles.investor || false,
-        isAdmin: userData.roles.isAdmin || userData.roles.admin || false,
+        professional: userData.roles.professional || userData.roles.isProfessional || false,
+        jobSeeker: userData.roles.jobSeeker || userData.roles.isJobSeeker || false,
+        employer: userData.roles.employer || userData.roles.isEmployer || false,
+        businessOwner: userData.roles.businessOwner || userData.roles.isBusinessOwner || false,
+        investor: userData.roles.investor || userData.roles.isInvestor || false,
+        admin: userData.roles.admin || userData.roles.isAdmin || false,
         createdAt: normalizeDate(userData.createdAt),
       };
     }
@@ -265,12 +265,12 @@ export class FirestoreStorage implements IStorage {
           portfolioUrl: data.profile.portfolioUrl || null,
         },
         roles: {
-          isProfessional: data.roles.isProfessional || false,
-          isJobSeeker: data.roles.isJobSeeker || false,
-          isEmployer: data.roles.isEmployer || false,
-          isBusinessOwner: data.roles.isBusinessOwner || false,
-          isInvestor: data.roles.isInvestor || false,
-          isAdmin: data.roles.isAdmin || false,
+          professional: data.roles.professional || false,
+          jobSeeker: data.roles.jobSeeker || false,
+          employer: data.roles.employer || false,
+          businessOwner: data.roles.businessOwner || false,
+          investor: data.roles.investor || false,
+          admin: data.roles.admin || false,
         },
         professionalData: existingUserData.professionalData || {},
         jobSeekerData: existingUserData.jobSeekerData || {},
@@ -362,22 +362,23 @@ export class FirestoreStorage implements IStorage {
     // Update nested roles field in user document (consolidated structure)
     const userRef = doc(db, "users", insertRoles.userId);
     await updateDoc(userRef, {
-      "roles.isProfessional": insertRoles.isProfessional || false,
-      "roles.isJobSeeker": insertRoles.isJobSeeker || false,
-      "roles.isEmployer": insertRoles.isEmployer || false,
-      "roles.isBusinessOwner": insertRoles.isBusinessOwner || false,
-      "roles.isInvestor": insertRoles.isInvestor || false,
+      "roles.professional": insertRoles.professional || false,
+      "roles.jobSeeker": insertRoles.jobSeeker || false,
+      "roles.employer": insertRoles.employer || false,
+      "roles.businessOwner": insertRoles.businessOwner || false,
+      "roles.investor": insertRoles.investor || false,
+      "roles.admin": insertRoles.admin || false,
     });
     
     const roles: UserRoles = {
       id: insertRoles.userId,
       userId: insertRoles.userId,
-      isProfessional: insertRoles.isProfessional || false,
-      isJobSeeker: insertRoles.isJobSeeker || false,
-      isEmployer: insertRoles.isEmployer || false,
-      isBusinessOwner: insertRoles.isBusinessOwner || false,
-      isInvestor: insertRoles.isInvestor || false,
-      isAdmin: insertRoles.isAdmin || false,
+      professional: insertRoles.professional || false,
+      jobSeeker: insertRoles.jobSeeker || false,
+      employer: insertRoles.employer || false,
+      businessOwner: insertRoles.businessOwner || false,
+      investor: insertRoles.investor || false,
+      admin: insertRoles.admin || false,
       createdAt: new Date(),
     };
     
@@ -388,19 +389,19 @@ export class FirestoreStorage implements IStorage {
     // Update nested roles field in user document (consolidated structure)
     const userRef = doc(db, "users", userId);
     await updateDoc(userRef, {
-      "roles.isProfessional": roles.isProfessional || false,
-      "roles.isJobSeeker": roles.isJobSeeker || false,
-      "roles.isEmployer": roles.isEmployer || false,
-      "roles.isBusinessOwner": roles.isBusinessOwner || false,
-      "roles.isInvestor": roles.isInvestor || false,
-      "roles.isAdmin": roles.isAdmin || false,
-      // Clean up old field names if they exist (legacy data cleanup)
-      "roles.professional": deleteField(),
-      "roles.jobSeeker": deleteField(),
-      "roles.employer": deleteField(),
-      "roles.businessOwner": deleteField(),
-      "roles.investor": deleteField(),
-      "roles.admin": deleteField(),
+      "roles.professional": roles.professional || false,
+      "roles.jobSeeker": roles.jobSeeker || false,
+      "roles.employer": roles.employer || false,
+      "roles.businessOwner": roles.businessOwner || false,
+      "roles.investor": roles.investor || false,
+      "roles.admin": roles.admin || false,
+      // Clean up legacy 'is*' field names if they exist
+      "roles.isProfessional": deleteField(),
+      "roles.isJobSeeker": deleteField(),
+      "roles.isEmployer": deleteField(),
+      "roles.isBusinessOwner": deleteField(),
+      "roles.isInvestor": deleteField(),
+      "roles.isAdmin": deleteField(),
     });
   }
 
@@ -714,7 +715,7 @@ export class FirestoreStorage implements IStorage {
       const userData = userDoc.data();
       
       // Check if user has investor role
-      if (userData.roles?.isInvestor || userData.roles?.investor) {
+      if (userData.roles?.investor || userData.roles?.investor) {
         const user = normalizeDocData<User>({ id: userDoc.id, ...userData });
         
         // Only include approved users
@@ -748,7 +749,7 @@ export class FirestoreStorage implements IStorage {
       const userData = userDoc.data();
       
       // Check if user has business owner role
-      if (userData.roles?.isBusinessOwner || userData.roles?.businessOwner) {
+      if (userData.roles?.businessOwner || userData.roles?.businessOwner) {
         const user = normalizeDocData<User>({ id: userDoc.id, ...userData });
         
         // Only include approved users
@@ -811,12 +812,12 @@ export class FirestoreStorage implements IStorage {
       const userData = userDoc.data();
       stats.totalUsers++;
       
-      if (userData.roles?.isProfessional || userData.roles?.professional) stats.professionals++;
-      if (userData.roles?.isJobSeeker || userData.roles?.jobSeeker) stats.jobSeekers++;
-      if (userData.roles?.isEmployer || userData.roles?.employer) stats.employers++;
-      if (userData.roles?.isBusinessOwner || userData.roles?.businessOwner) stats.businessOwners++;
-      if (userData.roles?.isInvestor || userData.roles?.investor) stats.investors++;
-      if (userData.roles?.isAdmin || userData.roles?.admin) stats.admins++;
+      if (userData.roles?.professional || userData.roles?.professional) stats.professionals++;
+      if (userData.roles?.jobSeeker || userData.roles?.jobSeeker) stats.jobSeekers++;
+      if (userData.roles?.employer || userData.roles?.employer) stats.employers++;
+      if (userData.roles?.businessOwner || userData.roles?.businessOwner) stats.businessOwners++;
+      if (userData.roles?.investor || userData.roles?.investor) stats.investors++;
+      if (userData.roles?.admin || userData.roles?.admin) stats.admins++;
       
       if (userData.status === "pending") stats.pendingApprovals++;
       if (userData.status === "approved") stats.approved++;

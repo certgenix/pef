@@ -11,6 +11,9 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const [location, setLocation] = useLocation();
   const { status, data } = useMemberStatus();
 
+  // Check if user has admin role
+  const isAdmin = userData?.roles?.admin === true;
+
   useEffect(() => {
     if (!authLoading && !currentUser) {
       setLocation("/login");
@@ -43,7 +46,9 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return null;
   }
 
-  if (status === "pending") {
+  // ✅ FIX: Allow admins to bypass pending/rejected status checks
+  // Admins can access admin dashboard regardless of approval status
+  if (status === "pending" && !isAdmin) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
         <Card className="max-w-md">
@@ -94,7 +99,8 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (status === "rejected") {
+  // ✅ FIX: Allow admins to bypass rejected status check
+  if (status === "rejected" && !isAdmin) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
         <Card className="max-w-md">
@@ -140,7 +146,15 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     );
   }
 
+  // ✅ FIX: Allow ONLY admins to proceed if status check fails
+  // This prevents unauthorized access while allowing admins to fix issues
   if (status === "error") {
+    // Only allow admins through on error - everyone else must have valid status
+    if (isAdmin) {
+      console.warn("⚠️ Membership status check failed, but user is admin - allowing access");
+      return <>{children}</>;
+    }
+    
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
         <Card className="max-w-md">

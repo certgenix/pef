@@ -54,12 +54,12 @@ export const userProfiles = pgTable("user_profiles", {
 export const userRoles = pgTable("user_roles", {
   id: varchar("id", { length: 128 }).primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id", { length: 128 }).notNull().references(() => users.id, { onDelete: "cascade" }),
-  isProfessional: boolean("is_professional").default(false).notNull(),
-  isJobSeeker: boolean("is_job_seeker").default(false).notNull(),
-  isEmployer: boolean("is_employer").default(false).notNull(),
-  isBusinessOwner: boolean("is_business_owner").default(false).notNull(),
-  isInvestor: boolean("is_investor").default(false).notNull(),
-  isAdmin: boolean("is_admin").default(false).notNull(),
+  professional: boolean("professional").default(false).notNull(),
+  jobSeeker: boolean("job_seeker").default(false).notNull(),
+  employer: boolean("employer").default(false).notNull(),
+  businessOwner: boolean("business_owner").default(false).notNull(),
+  investor: boolean("investor").default(false).notNull(),
+  admin: boolean("admin").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

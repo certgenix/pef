@@ -94,12 +94,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         displayName,
         profile,
         roles: {
-          isProfessional: roles.professional || false,
-          isJobSeeker: roles.jobSeeker || false,
-          isEmployer: roles.employer || false,
-          isBusinessOwner: roles.businessOwner || false,
-          isInvestor: roles.investor || false,
-          isAdmin: roles.admin || false,
+          professional: roles.professional || false,
+          jobSeeker: roles.jobSeeker || false,
+          employer: roles.employer || false,
+          businessOwner: roles.businessOwner || false,
+          investor: roles.investor || false,
+          admin: roles.admin || false,
         },
       });
 
@@ -268,17 +268,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const userWithRoles = await storage.getUserWithRoles(uid);
-      if (!userWithRoles || (!userWithRoles.roles?.isEmployer && !userWithRoles.roles?.isBusinessOwner)) {
+      if (!userWithRoles || (!userWithRoles.roles?.employer && !userWithRoles.roles?.businessOwner)) {
         return res.status(403).json({ error: "Only employers and business owners can post opportunities" });
       }
 
       const opportunityType = req.body.type as string;
       
-      if (userWithRoles.roles?.isEmployer && !userWithRoles.roles?.isBusinessOwner && opportunityType !== "job") {
+      if (userWithRoles.roles?.employer && !userWithRoles.roles?.businessOwner && opportunityType !== "job") {
         return res.status(403).json({ error: "Employers can only post job opportunities" });
       }
 
-      if (userWithRoles.roles?.isBusinessOwner && !userWithRoles.roles?.isEmployer && opportunityType === "job") {
+      if (userWithRoles.roles?.businessOwner && !userWithRoles.roles?.employer && opportunityType === "job") {
         return res.status(403).json({ error: "Business owners cannot post job opportunities (select employer role to post jobs)" });
       }
 
@@ -341,7 +341,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         const userWithRoles = await storage.getUserWithRoles(uid);
-        if (!userWithRoles || (!userWithRoles.roles?.isEmployer && !userWithRoles.roles?.isBusinessOwner)) {
+        if (!userWithRoles || (!userWithRoles.roles?.employer && !userWithRoles.roles?.businessOwner)) {
           return res.status(403).json({ error: "Only employers and business owners can view their posted opportunities" });
         }
 
@@ -558,7 +558,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const userWithRoles = await storage.getUserWithRoles(uid);
-      if (!userWithRoles || !userWithRoles.roles?.isEmployer) {
+      if (!userWithRoles || !userWithRoles.roles?.employer) {
         return res.status(403).json({ error: "Only employers can browse talent" });
       }
 
@@ -593,7 +593,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const userWithRoles = await storage.getUserWithRoles(uid);
-      if (!userWithRoles || !userWithRoles.roles?.isBusinessOwner) {
+      if (!userWithRoles || !userWithRoles.roles?.businessOwner) {
         return res.status(403).json({ error: "Only business owners can view investors" });
       }
 
@@ -623,7 +623,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const userWithRoles = await storage.getUserWithRoles(uid);
-      if (!userWithRoles || !userWithRoles.roles?.isInvestor) {
+      if (!userWithRoles || !userWithRoles.roles?.investor) {
         return res.status(403).json({ error: "Only investors can view business owners" });
       }
 
@@ -658,11 +658,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       await storage.updateUserRoles(uid, {
-        isProfessional: roles.professional || false,
-        isJobSeeker: roles.jobSeeker || false,
-        isEmployer: roles.employer || false,
-        isBusinessOwner: roles.businessOwner || false,
-        isInvestor: roles.investor || false,
+        professional: roles.professional || false,
+        jobSeeker: roles.jobSeeker || false,
+        employer: roles.employer || false,
+        businessOwner: roles.businessOwner || false,
+        investor: roles.investor || false,
       });
 
       return res.json({ success: true, message: "Roles updated successfully" });
@@ -690,7 +690,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const userWithRoles = await storage.getUserWithRoles(uid);
-      if (!userWithRoles || !userWithRoles.roles?.isAdmin) {
+      if (!userWithRoles || !userWithRoles.roles?.admin) {
         return res.status(403).json({ error: "Admin access required" });
       }
 
@@ -720,7 +720,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const userWithRoles = await storage.getUserWithRoles(uid);
-      if (!userWithRoles || !userWithRoles.roles?.isAdmin) {
+      if (!userWithRoles || !userWithRoles.roles?.admin) {
         return res.status(403).json({ error: "Admin access required" });
       }
 
@@ -750,7 +750,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const userWithRoles = await storage.getUserWithRoles(uid);
-      if (!userWithRoles || !userWithRoles.roles?.isAdmin) {
+      if (!userWithRoles || !userWithRoles.roles?.admin) {
         return res.status(403).json({ error: "Admin access required" });
       }
 
@@ -787,7 +787,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const userWithRoles = await storage.getUserWithRoles(uid);
-      if (!userWithRoles || !userWithRoles.roles?.isAdmin) {
+      if (!userWithRoles || !userWithRoles.roles?.admin) {
         return res.status(403).json({ error: "Admin access required" });
       }
 
@@ -799,12 +799,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       await storage.updateUserRoles(userId, {
-        isProfessional: roles.professional || false,
-        isJobSeeker: roles.jobSeeker || false,
-        isEmployer: roles.employer || false,
-        isBusinessOwner: roles.businessOwner || false,
-        isInvestor: roles.investor || false,
-        isAdmin: roles.admin || false,
+        professional: roles.professional || false,
+        jobSeeker: roles.jobSeeker || false,
+        employer: roles.employer || false,
+        businessOwner: roles.businessOwner || false,
+        investor: roles.investor || false,
+        admin: roles.admin || false,
       });
 
       return res.json({ success: true, message: "User roles updated successfully" });
@@ -1274,7 +1274,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const userWithRoles = await storage.getUserWithRoles(uid);
-      if (!userWithRoles || !userWithRoles.roles?.isAdmin) {
+      if (!userWithRoles || !userWithRoles.roles?.admin) {
         return res.status(403).json({ error: "Admin access required" });
       }
 
@@ -1316,7 +1316,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const userWithRoles = await storage.getUserWithRoles(uid);
-      if (!userWithRoles || !userWithRoles.roles?.isAdmin) {
+      if (!userWithRoles || !userWithRoles.roles?.admin) {
         return res.status(403).json({ error: "Admin access required" });
       }
 
@@ -1362,7 +1362,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const userWithRoles = await storage.getUserWithRoles(uid);
-      if (!userWithRoles || !userWithRoles.roles?.isAdmin) {
+      if (!userWithRoles || !userWithRoles.roles?.admin) {
         return res.status(403).json({ error: "Admin access required" });
       }
 
@@ -1420,7 +1420,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const userWithRoles = await storage.getUserWithRoles(uid);
-      if (!userWithRoles || !userWithRoles.roles?.isAdmin) {
+      if (!userWithRoles || !userWithRoles.roles?.admin) {
         return res.status(403).json({ error: "Admin access required" });
       }
 
@@ -1462,7 +1462,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const userWithRoles = await storage.getUserWithRoles(uid);
-      if (!userWithRoles || !userWithRoles.roles?.isAdmin) {
+      if (!userWithRoles || !userWithRoles.roles?.admin) {
         return res.status(403).json({ error: "Admin access required" });
       }
 
@@ -1508,7 +1508,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const userWithRoles = await storage.getUserWithRoles(uid);
-      if (!userWithRoles || !userWithRoles.roles?.isAdmin) {
+      if (!userWithRoles || !userWithRoles.roles?.admin) {
         return res.status(403).json({ error: "Admin access required" });
       }
 
@@ -1566,7 +1566,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const userWithRoles = await storage.getUserWithRoles(uid);
-      if (!userWithRoles || !userWithRoles.roles?.isAdmin) {
+      if (!userWithRoles || !userWithRoles.roles?.admin) {
         return res.status(403).json({ error: "Admin access required" });
       }
 
@@ -1608,7 +1608,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const userWithRoles = await storage.getUserWithRoles(uid);
-      if (!userWithRoles || !userWithRoles.roles?.isAdmin) {
+      if (!userWithRoles || !userWithRoles.roles?.admin) {
         return res.status(403).json({ error: "Admin access required" });
       }
 
@@ -1654,7 +1654,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const userWithRoles = await storage.getUserWithRoles(uid);
-      if (!userWithRoles || !userWithRoles.roles?.isAdmin) {
+      if (!userWithRoles || !userWithRoles.roles?.admin) {
         return res.status(403).json({ error: "Admin access required" });
       }
 
@@ -1689,7 +1689,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const userWithRoles = await storage.getUserWithRoles(uid);
-      if (!userWithRoles || !userWithRoles.roles?.isAdmin) {
+      if (!userWithRoles || !userWithRoles.roles?.admin) {
         return res.status(403).json({ error: "Admin access required" });
       }
 
@@ -1723,7 +1723,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const userWithRoles = await storage.getUserWithRoles(uid);
-      if (!userWithRoles || !userWithRoles.roles?.isAdmin) {
+      if (!userWithRoles || !userWithRoles.roles?.admin) {
         return res.status(403).json({ error: "Admin access required" });
       }
 
@@ -1778,7 +1778,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const userWithRoles = await storage.getUserWithRoles(uid);
-      if (!userWithRoles || !userWithRoles.roles?.isAdmin) {
+      if (!userWithRoles || !userWithRoles.roles?.admin) {
         return res.status(403).json({ error: "Admin access required" });
       }
 
@@ -1836,7 +1836,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const userWithRoles = await storage.getUserWithRoles(uid);
-      if (!userWithRoles || !userWithRoles.roles?.isAdmin) {
+      if (!userWithRoles || !userWithRoles.roles?.admin) {
         return res.status(403).json({ error: "Admin access required" });
       }
 
