@@ -817,12 +817,14 @@ function VideoFormDialog({
       queryClient.invalidateQueries({ queryKey: ['/api/videos'] });
       onSuccess();
     },
-    onError: () => {
+    onError: (error: any) => {
+      const errorMessage = error?.details?.[0]?.message || error?.error || "Failed to create video";
       toast({
         title: "Error",
-        description: "Failed to create video",
+        description: errorMessage,
         variant: "destructive",
       });
+      console.error("Video creation error:", error);
     },
   });
 
@@ -838,12 +840,14 @@ function VideoFormDialog({
       queryClient.invalidateQueries({ queryKey: ['/api/videos'] });
       onSuccess();
     },
-    onError: () => {
+    onError: (error: any) => {
+      const errorMessage = error?.details?.[0]?.message || error?.error || "Failed to update video";
       toast({
         title: "Error",
-        description: "Failed to update video",
+        description: errorMessage,
         variant: "destructive",
       });
+      console.error("Video update error:", error);
     },
   });
 
