@@ -30,6 +30,8 @@ import {
   type InsertInvestorProfile,
   type ProfessionalProfile,
   type JobSeekerProfile,
+  type Video,
+  type InsertVideo,
 } from "@shared/schema";
 
 // Helper function to convert Firestore Timestamps to Date objects
@@ -46,6 +48,7 @@ function normalizeDocData<T>(data: any): T {
   if (data.updatedAt) normalized.updatedAt = normalizeDate(data.updatedAt);
   if (data.lastLogin) normalized.lastLogin = normalizeDate(data.lastLogin);
   if (data.appliedAt) normalized.appliedAt = normalizeDate(data.appliedAt);
+  if (data.publishedAt) normalized.publishedAt = normalizeDate(data.publishedAt);
   return normalized as T;
 }
 
@@ -96,6 +99,11 @@ export interface IStorage {
   checkExistingApplication(userId: string, opportunityId: string): Promise<Application | undefined>;
   
   getTalentByRole(role: "professional" | "jobSeeker"): Promise<TalentProfile[]>;
+  
+  createVideo(video: InsertVideo): Promise<Video>;
+  getAllVideos(): Promise<Video[]>;
+  getVideoById(id: string): Promise<Video | undefined>;
+  deleteVideo(id: string): Promise<void>;
 }
 
 export class FirestoreStorage implements IStorage {
@@ -768,6 +776,55 @@ export class FirestoreStorage implements IStorage {
       roles,
       lastUpdated: new Date(),
     });
+  }
+
+  async createVideo(video: InsertVideo): Promise<Video> {
+    const videoData = {
+      ...video,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    
+    const docRef = await addDoc(collection(db, "videos"), videoData);
+    
+    return {
+      id: docRef.id,
+      ...videoData,
+    };
+  }
+
+  async getAllVideos(): Promise<Video[]> {
+    const videosSnapshot = await getDocs(collection(db, "videos"));
+    const videos: Video[] = [];
+    
+    for (const videoDoc of videosSnapshot.docs) {
+      const videoData = videoDoc.data();
+      videos.push(normalizeDocData<Video>({
+        id: videoDoc.id,
+        ...videoData,
+      }));
+    }
+    
+    return videos.sort((a, b) => {
+      const dateA = a.publishedAt || a.createdAt;
+      const dateB = b.publishedAt || b.createdAt;
+      return dateB.getTime() - dateA.getTime();
+    });
+  }
+
+  async getVideoById(id: string): Promise<Video | undefined> {
+    const docRef = doc(db, "videos", id);
+    const docSnap = await getDoc(docRef);
+    
+    if (docSnap.exists()) {
+      return normalizeDocData<Video>({ id: docSnap.id, ...docSnap.data() });
+    }
+    return undefined;
+  }
+
+  async deleteVideo(id: string): Promise<void> {
+    const docRef = doc(db, "videos", id);
+    await deleteDoc(docRef);
   }
 }
 

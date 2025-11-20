@@ -162,6 +162,18 @@ export const applications = pgTable("applications", {
   uniqueUserOpportunity: sql`UNIQUE (${table.userId}, ${table.opportunityId})`,
 }));
 
+export const videos = pgTable("videos", {
+  id: varchar("id", { length: 128 }).primaryKey().default(sql`gen_random_uuid()`),
+  title: text("title").notNull(),
+  description: text("description"),
+  youtubeId: varchar("youtube_id", { length: 50 }).notNull(),
+  thumbnailUrl: text("thumbnail_url"),
+  publishedAt: timestamp("published_at"),
+  featured: boolean("featured").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({ createdAt: true, lastLogin: true });
 export const selectUserSchema = createSelectSchema(users);
 
@@ -191,6 +203,9 @@ export const selectOpportunitySchema = createSelectSchema(opportunities);
 
 export const insertApplicationSchema = createInsertSchema(applications).omit({ id: true, appliedAt: true, updatedAt: true });
 export const selectApplicationSchema = createSelectSchema(applications);
+
+export const insertVideoSchema = createInsertSchema(videos).omit({ id: true, createdAt: true, updatedAt: true });
+export const selectVideoSchema = createSelectSchema(videos);
 
 export const jobDetailsSchema = z.object({
   employmentType: z.enum(["full-time", "part-time", "remote", "contract"]).optional(),
@@ -235,3 +250,6 @@ export type InsertOpportunity = z.infer<typeof insertOpportunitySchema>;
 
 export type Application = typeof applications.$inferSelect;
 export type InsertApplication = z.infer<typeof insertApplicationSchema>;
+
+export type Video = typeof videos.$inferSelect;
+export type InsertVideo = z.infer<typeof insertVideoSchema>;

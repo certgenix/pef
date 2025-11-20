@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
-import { insertUserProfileSchema, insertUserRolesSchema, insertOpportunitySchema, insertApplicationSchema, jobDetailsSchema } from "@shared/schema";
+import { insertUserProfileSchema, insertUserRolesSchema, insertOpportunitySchema, insertApplicationSchema, jobDetailsSchema, insertVideoSchema } from "@shared/schema";
 import { Resend } from "resend";
 import { db } from "./firebase-admin";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
@@ -1043,6 +1043,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting opportunities:", error);
       return res.status(500).json({ error: "Failed to delete opportunities" });
+    }
+  });
+
+  // Video endpoints
+  app.get("/api/videos", async (req, res) => {
+    try {
+      const videos = await storage.getAllVideos();
+      return res.json(videos);
+    } catch (error) {
+      console.error("Error fetching videos:", error);
+      return res.status(500).json({ error: "Failed to fetch videos" });
+    }
+  });
+
+  app.get("/api/videos/:id", async (req, res) => {
+    try {
+      const video = await storage.getVideoById(req.params.id);
+      if (!video) {
+        return res.status(404).json({ error: "Video not found" });
+      }
+      return res.json(video);
+    } catch (error) {
+      console.error("Error fetching video:", error);
+      return res.status(500).json({ error: "Failed to fetch video" });
+    }
+  });
+
+  app.post("/api/videos", async (req, res) => {
+    try {
+      const validationResult = insertVideoSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          error: "Invalid video data", 
+          details: validationResult.error.issues 
+        });
+      }
+
+      const video = await storage.createVideo(validationResult.data);
+      return res.status(201).json(video);
+    } catch (error) {
+      console.error("Error creating video:", error);
+      return res.status(500).json({ error: "Failed to create video" });
+    }
+  });
+
+  app.delete("/api/videos/:id", async (req, res) => {
+    try {
+      await storage.deleteVideo(req.params.id);
+      return res.json({ success: true, message: "Video deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting video:", error);
+      return res.status(500).json({ error: "Failed to delete video" });
     }
   });
 
