@@ -317,10 +317,10 @@ function ApplicationDetailsDialog({
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <div className="flex items-center justify-between">
-            <DialogTitle>{application.fullName}</DialogTitle>
+          <DialogTitle className="flex items-center justify-between gap-4">
+            <span>{application.fullName}</span>
             {getStatusBadge(application.status)}
-          </div>
+          </DialogTitle>
           <DialogDescription>
             Submitted on {format(new Date(application.createdAt), "MMMM dd, yyyy")}
           </DialogDescription>
