@@ -7,9 +7,35 @@ Good news! The approval system has been completely removed from the application.
 - No waiting for admin approval
 - No "pending" or "rejected" states
 
-## 🔧 How to Fix Your Admin User in Firestore
+## 🔧 How to Fix Your Admin User (Automated)
 
-Since you edited Firestore manually and broke something, here's how to fix it:
+The easiest way is to use the automated fix script:
+
+### Option 1: Fix Specific User by Email (Recommended)
+
+```bash
+ADMIN_EMAIL=your@email.com npm run fix-admin
+```
+
+This will find the user with that email and give them admin access.
+
+### Option 2: Fix User by Firebase UID
+
+```bash
+ADMIN_UID=your-firebase-uid npm run fix-admin
+```
+
+### Option 3: Fix default admin@pef.com
+
+```bash
+npm run fix-admin
+```
+
+This defaults to fixing `admin@pef.com`.
+
+---
+
+## 🔧 Manual Fix (If Script Doesn't Work)
 
 ### Step 1: Go to Firebase Console
 

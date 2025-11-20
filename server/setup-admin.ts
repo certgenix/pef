@@ -37,13 +37,22 @@ async function setupAdmin() {
     console.log("6. Password: [Set a secure password]");
     console.log("7. Copy the UID of the created user");
     
-    // For automation, we'll use environment variable or hardcoded UID
-    const ADMIN_UID = process.env.ADMIN_UID || "PLEASE_SET_UID";
+    // Try to find user by email first
+    let ADMIN_UID = process.env.ADMIN_UID;
     
-    if (ADMIN_UID === "PLEASE_SET_UID") {
-      console.log("\n❌ ERROR: Please set ADMIN_UID environment variable with the Firebase Auth UID");
-      console.log("   Example: ADMIN_UID=your-firebase-uid npm run setup-admin");
-      process.exit(1);
+    if (!ADMIN_UID) {
+      console.log("\nSearching for user by email...");
+      if (!existingAdmins.empty) {
+        ADMIN_UID = existingAdmins.docs[0].id;
+        console.log(`✓ Found existing user with UID: ${ADMIN_UID}`);
+      } else {
+        console.log("\n❌ ERROR: No user found with email", ADMIN_EMAIL);
+        console.log("\nPlease either:");
+        console.log("1. Create a user in Firebase Auth with email:", ADMIN_EMAIL);
+        console.log("2. Or set ADMIN_UID environment variable:");
+        console.log("   Example: ADMIN_UID=your-firebase-uid npm run setup-admin");
+        process.exit(1);
+      }
     }
 
     console.log(`\nUsing UID: ${ADMIN_UID}`);
@@ -81,7 +90,13 @@ async function setupAdmin() {
         employer: false,
         businessOwner: false,
         investor: false,
-        admin: true,  // THIS IS THE KEY FIELD - must be 'admin' not 'isAdmin'
+        admin: true,  // Primary field
+        isAdmin: true,  // Legacy support
+        isProfessional: false,  // Legacy support
+        isJobSeeker: false,  // Legacy support
+        isEmployer: false,  // Legacy support
+        isBusinessOwner: false,  // Legacy support
+        isInvestor: false,  // Legacy support
       },
       // Empty role-specific data
       professionalData: {},

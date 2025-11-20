@@ -211,17 +211,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           lastUpdated: data.lastUpdated?.toDate(),
         } as User;
         
+        // Try to sync to backend, but don't block login if it fails
         if (firebaseUser && !data.skipBackendSync) {
           const synced = await syncUserToBackend(userData, firebaseUser);
           if (!synced) {
-            console.error("Backend sync failed. Signing out user to prevent broken state.");
-            await firebaseSignOut(auth);
-            setUserData(null);
-            throw new Error("Failed to sync user data to backend. Please try logging in again.");
+            console.warn("Backend sync failed, but allowing login with Firestore data");
           }
-        } else {
-          setUserData(userData);
         }
+        
+        // Always set user data from Firestore, even if backend sync failed
+        setUserData(userData);
       } else {
         setUserData(null);
       }
@@ -278,13 +277,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Consolidated Firestore structure: everything in one users document
     // Use isProfessional/isJobSeeker etc. to match backend schema
-    // If pre-registration exists and is approved, set status to approved
-    const status = preRegistrationData?.status === "approved" ? "approved" : "pending";
+    // All users are auto-approved - no approval workflow
+    const status = "approved";
     
     const firestoreData: any = {
       name,
       email: normalizedEmail,
       status,
+      approvalStatus: "approved",
       createdAt: serverTimestamp(),
       lastUpdated: serverTimestamp(),
       profile: {
