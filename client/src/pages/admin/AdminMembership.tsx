@@ -6,12 +6,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Users, ArrowLeft, Search, ExternalLink, Mail, Phone, MapPin, Briefcase } from "lucide-react";
+import { Users, ArrowLeft, Search, ExternalLink, Mail, Phone, MapPin, Briefcase, CheckCircle2, XCircle } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { MembershipApplication } from "@shared/schema";
 import { format } from "date-fns";
 
@@ -208,7 +208,38 @@ function ApplicationDetailsDialog({
   application: MembershipApplication;
   onClose: () => void;
 }) {
+  const { toast } = useToast();
   const roles = application.roles as any;
+  
+  const updateStatusMutation = useMutation({
+    mutationFn: async (status: "approved" | "rejected") => {
+      return await apiRequest(`/api/membership-applications/${application.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ status }),
+        headers: { "Content-Type": "application/json" },
+      });
+    },
+    onSuccess: (_, status) => {
+      // Invalidate both membership applications and admin dashboard queries
+      queryClient.invalidateQueries({ queryKey: ["/api/membership-applications"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+      toast({
+        title: "Success",
+        description: `Application ${status === "approved" ? "approved" : "rejected"} successfully`,
+      });
+      onClose();
+    },
+    onError: (error: any) => {
+      const message = error?.message || "Failed to update application";
+      toast({
+        title: "Error",
+        description: message,
+        variant: "destructive",
+      });
+    },
+  });
+  
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "approved":
@@ -337,6 +368,29 @@ function ApplicationDetailsDialog({
             </div>
           </div>
         </div>
+        
+        {application.status === "pending" && (
+          <DialogFooter className="gap-2">
+            <Button
+              variant="destructive"
+              onClick={() => updateStatusMutation.mutate("rejected")}
+              disabled={updateStatusMutation.isPending}
+              data-testid="button-reject-application"
+            >
+              <XCircle className="w-4 h-4 mr-2" />
+              Reject
+            </Button>
+            <Button
+              variant="default"
+              onClick={() => updateStatusMutation.mutate("approved")}
+              disabled={updateStatusMutation.isPending}
+              data-testid="button-approve-application"
+            >
+              <CheckCircle2 className="w-4 h-4 mr-2" />
+              Approve
+            </Button>
+          </DialogFooter>
+        )}
       </DialogContent>
     </Dialog>
   );

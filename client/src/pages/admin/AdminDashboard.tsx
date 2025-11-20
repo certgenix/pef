@@ -354,7 +354,7 @@ export default function AdminDashboard() {
             </TabsTrigger>
             <TabsTrigger value="all" data-testid="tab-all">
               <Users className="w-4 h-4 mr-2" />
-              All Users ({users.length})
+              All Users ({approvedUsers.length})
             </TabsTrigger>
             <TabsTrigger value="media" data-testid="tab-media">
               <Video className="w-4 h-4 mr-2" />
@@ -427,15 +427,17 @@ export default function AdminDashboard() {
           </TabsContent>
 
           <TabsContent value="all" className="space-y-4">
-            {filterUsers(users).length === 0 ? (
+            {filterUsers(approvedUsers).length === 0 ? (
               <Card>
                 <CardContent className="py-12 text-center">
-                  <p className="text-muted-foreground">No users found</p>
+                  <p className="text-muted-foreground">
+                    {searchQuery ? "No users found" : "No approved users yet"}
+                  </p>
                 </CardContent>
               </Card>
             ) : (
               <UsersTable
-                users={filterUsers(users)}
+                users={filterUsers(approvedUsers)}
                 onUserClick={setSelectedUser}
               />
             )}
