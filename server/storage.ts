@@ -10,7 +10,8 @@ import {
   where,
   Timestamp,
   addDoc,
-  serverTimestamp
+  serverTimestamp,
+  deleteField
 } from "firebase/firestore";
 import { db } from "./firebase-admin";
 import { 
@@ -354,6 +355,14 @@ export class FirestoreStorage implements IStorage {
       "roles.isEmployer": roles.isEmployer || false,
       "roles.isBusinessOwner": roles.isBusinessOwner || false,
       "roles.isInvestor": roles.isInvestor || false,
+      "roles.isAdmin": roles.isAdmin || false,
+      // Clean up old field names if they exist (legacy data cleanup)
+      "roles.professional": deleteField(),
+      "roles.jobSeeker": deleteField(),
+      "roles.employer": deleteField(),
+      "roles.businessOwner": deleteField(),
+      "roles.investor": deleteField(),
+      "roles.admin": deleteField(),
     });
   }
 
