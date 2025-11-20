@@ -34,10 +34,6 @@ export default function Login() {
 
     try {
       await login(credentials.email, credentials.password);
-      toast({
-        title: "Welcome back!",
-        description: "You have successfully logged in.",
-      });
       setLocation("/dashboard");
     } catch (error: any) {
       let errorMessage = "Invalid email or password";
@@ -63,13 +59,6 @@ export default function Login() {
     setGoogleLoading(true);
     try {
       const result = await signInWithGoogle();
-      
-      toast({
-        title: result.isNewUser ? "Welcome!" : "Welcome back!",
-        description: result.isNewUser 
-          ? "You have successfully signed up with Google." 
-          : "You have successfully logged in with Google.",
-      });
       setLocation("/dashboard");
     } catch (error: any) {
       let errorMessage = "Failed to sign in with Google";

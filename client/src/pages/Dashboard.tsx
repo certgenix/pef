@@ -60,7 +60,7 @@ const roleDashboards = [
 ];
 
 function DashboardContent() {
-  const { currentUser, userData } = useAuth();
+  const { currentUser, userData, loading: authLoading } = useAuth();
   const { activeRoles, isLoading, userRoles } = useUserRoles(currentUser?.uid);
   const [location, setLocation] = useLocation();
 
@@ -84,7 +84,9 @@ function DashboardContent() {
 
   // No auto-redirect - let users manually select their dashboard
 
-  if (isLoading) {
+  // Show loading state while auth is loading OR roles are loading OR userData is not yet available
+  // This prevents the dashboard from briefly flashing before redirecting to profile completion
+  if (isLoading || authLoading || !userData) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
