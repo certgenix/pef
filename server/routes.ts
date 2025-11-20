@@ -11,6 +11,19 @@ import crypto from "crypto";
 
 const AUTO_APPROVE_JOBS = true;
 
+const oauthStateStore = new Map<string, { timestamp: number; returnUrl?: string }>();
+
+setInterval(() => {
+  const now = Date.now();
+  const keysToDelete: string[] = [];
+  oauthStateStore.forEach((value, key) => {
+    if (now - value.timestamp > 10 * 60 * 1000) {
+      keysToDelete.push(key);
+    }
+  });
+  keysToDelete.forEach(key => oauthStateStore.delete(key));
+}, 60 * 1000);
+
 async function getResendClient() {
   const apiKey = process.env.RESEND_API_KEY;
   
@@ -148,7 +161,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const state = crypto.randomBytes(16).toString('hex');
+      const state = crypto.randomBytes(32).toString('hex');
+      const returnUrl = (req.query.returnUrl as string) || '/register';
+      
+      oauthStateStore.set(state, { 
+        timestamp: Date.now(),
+        returnUrl 
+      });
+      
       const authUrl = linkedInService.getAuthorizationUrl(state);
       
       return res.json({ authUrl, state });
@@ -163,31 +183,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { code, state, error } = req.query;
 
       if (error) {
-        return res.redirect(`/?linkedin_error=${encodeURIComponent(error as string)}`);
+        return res.redirect(`/register?linkedin_error=${encodeURIComponent(error as string)}`);
       }
 
       if (!code || !state) {
-        return res.redirect('/?linkedin_error=missing_parameters');
+        return res.redirect('/register?linkedin_error=missing_parameters');
       }
+
+      const stateData = oauthStateStore.get(state as string);
+      if (!stateData) {
+        console.error('Invalid or expired OAuth state');
+        return res.redirect('/register?linkedin_error=invalid_state');
+      }
+
+      oauthStateStore.delete(state as string);
 
       const accessToken = await linkedInService.getAccessToken(code as string);
       const profile = await linkedInService.getUserProfile(accessToken);
 
-      const profileData = {
-        id: profile.id,
-        firstName: profile.firstName,
-        lastName: profile.lastName,
-        email: profile.email,
-        profilePicture: profile.profilePicture,
-        headline: profile.headline,
-        location: profile.location,
-      };
+      const sessionToken = crypto.randomBytes(32).toString('hex');
+      oauthStateStore.set(`profile_${sessionToken}`, {
+        timestamp: Date.now(),
+        returnUrl: JSON.stringify({
+          id: profile.id,
+          firstName: profile.firstName,
+          lastName: profile.lastName,
+          email: profile.email,
+          profilePicture: profile.profilePicture,
+          headline: profile.headline,
+          location: profile.location,
+        })
+      });
 
-      const encodedData = encodeURIComponent(JSON.stringify(profileData));
-      return res.redirect(`/?linkedin_data=${encodedData}`);
+      const returnUrl = stateData.returnUrl || '/register';
+      return res.redirect(`${returnUrl}?linkedin_session=${sessionToken}`);
     } catch (error) {
       console.error("LinkedIn callback error:", error);
-      return res.redirect('/?linkedin_error=auth_failed');
+      return res.redirect('/register?linkedin_error=auth_failed');
+    }
+  });
+
+  app.get("/api/auth/linkedin/profile", async (req, res) => {
+    try {
+      const { session } = req.query;
+      
+      if (!session) {
+        return res.status(400).json({ error: "Missing session token" });
+      }
+
+      const profileData = oauthStateStore.get(`profile_${session}`);
+      if (!profileData || !profileData.returnUrl) {
+        return res.status(404).json({ error: "Session not found or expired" });
+      }
+
+      oauthStateStore.delete(`profile_${session}`);
+
+      return res.json(JSON.parse(profileData.returnUrl));
+    } catch (error) {
+      console.error("Error fetching LinkedIn profile:", error);
+      return res.status(500).json({ error: "Failed to fetch profile data" });
     }
   });
 

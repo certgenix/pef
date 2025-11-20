@@ -132,36 +132,45 @@ export default function Register() {
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    const linkedinData = urlParams.get('linkedin_data');
+    const linkedinSession = urlParams.get('linkedin_session');
     const linkedinError = urlParams.get('linkedin_error');
 
-    if (linkedinData) {
-      try {
-        const profile = JSON.parse(decodeURIComponent(linkedinData));
-        setLinkedInProfile(profile);
-        
-        setBasicInfo((prev) => ({
-          ...prev,
-          fullName: `${profile.firstName} ${profile.lastName}`.trim() || prev.fullName,
-          email: profile.email || prev.email,
-          headline: profile.headline || prev.headline,
-          city: profile.location?.city || prev.city,
-        }));
+    if (linkedinSession) {
+      const fetchLinkedInProfile = async () => {
+        try {
+          const response = await fetch(`/api/auth/linkedin/profile?session=${linkedinSession}`);
+          if (!response.ok) {
+            throw new Error('Failed to fetch LinkedIn profile');
+          }
+          
+          const profile = await response.json();
+          setLinkedInProfile(profile);
+          
+          setBasicInfo((prev) => ({
+            ...prev,
+            fullName: `${profile.firstName} ${profile.lastName}`.trim() || prev.fullName,
+            email: profile.email || prev.email,
+            headline: profile.headline || prev.headline,
+            city: profile.location?.city || prev.city,
+          }));
 
-        toast({
-          title: "LinkedIn Profile Imported!",
-          description: "Your LinkedIn profile data has been loaded. Please review and complete the form.",
-        });
+          toast({
+            title: "LinkedIn Profile Imported!",
+            description: "Your LinkedIn profile data has been loaded. Please review and complete the form.",
+          });
+        } catch (error) {
+          console.error('Error fetching LinkedIn profile:', error);
+          toast({
+            title: "Error",
+            description: "Failed to import LinkedIn data",
+            variant: "destructive",
+          });
+        } finally {
+          window.history.replaceState({}, '', window.location.pathname);
+        }
+      };
 
-        window.history.replaceState({}, '', window.location.pathname);
-      } catch (error) {
-        console.error('Error parsing LinkedIn data:', error);
-        toast({
-          title: "Error",
-          description: "Failed to import LinkedIn data",
-          variant: "destructive",
-        });
-      }
+      fetchLinkedInProfile();
     }
 
     if (linkedinError) {
