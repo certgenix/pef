@@ -882,7 +882,12 @@ function VideoFormDialog({
 
   const createVideoMutation = useMutation({
     mutationFn: async (data: VideoFormData) => {
-      return apiRequest('POST', '/api/videos', data);
+      // Convert publishedAt string to Date object
+      const payload = {
+        ...data,
+        publishedAt: data.publishedAt ? new Date(data.publishedAt) : undefined,
+      };
+      return apiRequest('POST', '/api/videos', payload);
     },
     onSuccess: () => {
       toast({
@@ -902,7 +907,12 @@ function VideoFormDialog({
 
   const updateVideoMutation = useMutation({
     mutationFn: async (data: VideoFormData) => {
-      return apiRequest('PATCH', `/api/videos/${video?.id}`, data);
+      // Convert publishedAt string to Date object
+      const payload = {
+        ...data,
+        publishedAt: data.publishedAt ? new Date(data.publishedAt) : undefined,
+      };
+      return apiRequest('PATCH', `/api/videos/${video?.id}`, payload);
     },
     onSuccess: () => {
       toast({
