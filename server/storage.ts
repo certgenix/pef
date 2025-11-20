@@ -8,6 +8,7 @@ import {
   deleteDoc, 
   query, 
   where,
+  orderBy,
   Timestamp,
   addDoc,
   serverTimestamp,
@@ -45,6 +46,7 @@ import {
   type InsertMembershipTier,
   type MembershipApplication,
   type InsertMembershipApplication,
+  insertMembershipApplicationSchema,
 } from "@shared/schema";
 
 // Helper function to convert Firestore Timestamps to Date objects
@@ -991,22 +993,108 @@ export class FirestoreStorage implements IStorage {
   }
 
   async getAllMembershipApplications(): Promise<MembershipApplication[]> {
-    const result = await pgDb.select().from(membershipApplications).orderBy(desc(membershipApplications.createdAt));
-    return result;
+    // Fetch from Firestore 'registrations' collection (Join Now form submissions)
+    const registrationsRef = collection(db, "registrations");
+    const q = query(registrationsRef, orderBy("createdAt", "desc"));
+    const querySnapshot = await getDocs(q);
+    
+    // Transform Firestore data to match MembershipApplication format
+    const applications: MembershipApplication[] = querySnapshot.docs.map(doc => {
+      const data = doc.data();
+      
+      return {
+        id: doc.id,
+        fullName: data.fullName || "",
+        email: data.email || "",
+        phone: data.phone || null,
+        country: data.country || "",
+        city: data.city || null,
+        languages: data.languages || null,
+        headline: data.headline || null,
+        bio: data.bio || null,
+        linkedinUrl: data.linkedinUrl || null,
+        websiteUrl: data.websiteUrl || null,
+        portfolioUrl: data.portfolioUrl || null,
+        roles: data.roles || null,
+        status: data.status || "pending",
+        createdAt: normalizeDate(data.createdAt),
+        updatedAt: normalizeDate(data.updatedAt || data.createdAt),
+      };
+    });
+    
+    return applications;
   }
 
   async getMembershipApplicationById(id: string): Promise<MembershipApplication | undefined> {
-    const [application] = await pgDb.select().from(membershipApplications).where(eq(membershipApplications.id, id));
-    return application;
+    // Fetch from Firestore 'registrations' collection
+    const docRef = doc(db, "registrations", id);
+    const docSnap = await getDoc(docRef);
+    
+    if (!docSnap.exists()) {
+      return undefined;
+    }
+    
+    const data = docSnap.data();
+    return {
+      id: docSnap.id,
+      fullName: data.fullName || "",
+      email: data.email || "",
+      phone: data.phone || null,
+      country: data.country || "",
+      city: data.city || null,
+      languages: data.languages || null,
+      headline: data.headline || null,
+      bio: data.bio || null,
+      linkedinUrl: data.linkedinUrl || null,
+      websiteUrl: data.websiteUrl || null,
+      portfolioUrl: data.portfolioUrl || null,
+      roles: data.roles || null,
+      status: data.status || "pending",
+      createdAt: normalizeDate(data.createdAt),
+      updatedAt: normalizeDate(data.updatedAt || data.createdAt),
+    };
   }
 
   async updateMembershipApplication(id: string, data: Partial<InsertMembershipApplication>): Promise<MembershipApplication | undefined> {
-    const [updated] = await pgDb.update(membershipApplications).set({ ...data, updatedAt: new Date() }).where(eq(membershipApplications.id, id)).returning();
-    return updated;
+    // Update in Firestore 'registrations' collection
+    const docRef = doc(db, "registrations", id);
+    const docSnap = await getDoc(docRef);
+    
+    if (!docSnap.exists()) {
+      return undefined;
+    }
+    
+    // Validate the update data using the schema (partial)
+    // This ensures enum constraints (like status) are enforced
+    const validatedData = insertMembershipApplicationSchema.partial().parse(data);
+    
+    // Filter out undefined values and prepare update payload
+    const updatePayload: Record<string, any> = {};
+    Object.entries(validatedData).forEach(([key, value]) => {
+      if (value !== undefined) {
+        // Convert Date objects to Firestore Timestamps
+        if (value instanceof Date) {
+          updatePayload[key] = Timestamp.fromDate(value);
+        } else {
+          updatePayload[key] = value;
+        }
+      }
+    });
+    
+    // Always update the updatedAt timestamp
+    updatePayload.updatedAt = Timestamp.now();
+    
+    // Update the document
+    await updateDoc(docRef, updatePayload);
+    
+    // Fetch and return the updated document using the getter for consistency
+    return this.getMembershipApplicationById(id);
   }
 
   async deleteMembershipApplication(id: string): Promise<void> {
-    await pgDb.delete(membershipApplications).where(eq(membershipApplications.id, id));
+    // Delete from Firestore 'registrations' collection
+    const docRef = doc(db, "registrations", id);
+    await deleteDoc(docRef);
   }
 }
 
