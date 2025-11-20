@@ -21,6 +21,8 @@ import {
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { auth } from "@/lib/firebase";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 
 interface UserData {
   uid: string;
@@ -57,7 +59,7 @@ interface Stats {
 }
 
 export default function AdminDashboard() {
-  const { currentUser, userData, logout } = useAuth();
+  const { currentUser, userData } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [users, setUsers] = useState<UserData[]>([]);
@@ -199,25 +201,16 @@ export default function AdminDashboard() {
   const rejectedUsers = users.filter((u) => u.status === "rejected");
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="bg-card border-b sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-2xl font-bold flex items-center gap-2">
-                <Shield className="w-6 h-6" />
-                Admin Dashboard
-              </h1>
-              <p className="text-sm text-muted-foreground">Professional Executive Forum</p>
-            </div>
-            <Button onClick={logout} variant="outline" data-testid="button-logout">
-              Logout
-            </Button>
+    <div className="min-h-screen">
+      <Header />
+      <main className="pt-24 md:pt-28 pb-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <div className="mb-8">
+          <div className="flex items-center gap-2 mb-2">
+            <Shield className="w-8 h-8 text-primary" />
+            <h1 className="text-3xl font-bold">Admin Dashboard</h1>
           </div>
+          <p className="text-muted-foreground">Manage users, content, and platform settings</p>
         </div>
-      </header>
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Statistics Cards */}
         {stats && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -433,6 +426,7 @@ export default function AdminDashboard() {
           </TabsContent>
         </Tabs>
       </main>
+      <Footer />
 
       {/* Role Edit Dialog */}
       {selectedUser && (
