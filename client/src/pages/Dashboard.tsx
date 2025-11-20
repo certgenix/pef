@@ -4,7 +4,7 @@ import { useUserRoles } from "@/hooks/useUserRoles";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RoleBadgeList } from "@/components/RoleBadge";
-import { Briefcase, Search, Building2, Handshake, TrendingUp, ArrowRight } from "lucide-react";
+import { Briefcase, Search, Building2, Handshake, TrendingUp, ArrowRight, Shield } from "lucide-react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { useLocation } from "wouter";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
@@ -50,6 +50,14 @@ const roleDashboards = [
     path: "/dashboard/investor",
     color: "bg-amber-100 dark:bg-amber-900",
   },
+  {
+    role: "admin" as const,
+    title: "Admin Dashboard",
+    description: "Manage users, content, and platform settings",
+    icon: Shield,
+    path: "/admin",
+    color: "bg-red-100 dark:bg-red-900",
+  },
 ];
 
 function DashboardContent() {
@@ -58,13 +66,7 @@ function DashboardContent() {
   const [location, setLocation] = useLocation();
 
   const safeRoles = Array.isArray(activeRoles) ? activeRoles : [];
-
-  // Redirect admin users to admin dashboard
-  useEffect(() => {
-    if (!isLoading && userData && location !== "/admin" && userData.roles?.admin) {
-      setLocation("/admin");
-    }
-  }, [isLoading, userData, location, setLocation]);
+  const isAdmin = userData?.roles?.admin || false;
 
   if (isLoading) {
     return (
@@ -94,7 +96,7 @@ function DashboardContent() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {roleDashboards
-            .filter(dashboard => safeRoles.length === 0 || safeRoles.includes(dashboard.role))
+            .filter(dashboard => isAdmin || safeRoles.length === 0 || safeRoles.includes(dashboard.role))
             .map((dashboard) => {
               const Icon = dashboard.icon;
               return (
