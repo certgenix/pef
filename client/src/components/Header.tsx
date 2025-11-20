@@ -23,6 +23,8 @@ const navItems = [
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [aboutOpen, setAboutOpen] = useState(false);
+  const [mediaOpen, setMediaOpen] = useState(false);
   const { currentUser, userData, logout } = useAuth();
 
   useEffect(() => {
@@ -62,40 +64,60 @@ export default function Header() {
               </Link>
             ))}
             
-            <DropdownMenu>
+            <DropdownMenu open={aboutOpen} onOpenChange={setAboutOpen}>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="text-white hover:bg-white/10" data-testid="button-nav-about">
+                <Button 
+                  variant="ghost" 
+                  className="text-white hover:bg-white/10" 
+                  data-testid="button-nav-about"
+                  onMouseEnter={() => setAboutOpen(true)}
+                  onMouseLeave={() => setAboutOpen(false)}
+                >
                   About <ChevronDown className="ml-1 w-4 h-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent>
+              <DropdownMenuContent 
+                className="min-w-[180px]"
+                onMouseEnter={() => setAboutOpen(true)}
+                onMouseLeave={() => setAboutOpen(false)}
+              >
                 <Link href="/about">
-                  <DropdownMenuItem data-testid="link-nav-about">
+                  <DropdownMenuItem className="cursor-pointer text-base py-2.5" data-testid="link-nav-about">
                     About Us
                   </DropdownMenuItem>
                 </Link>
                 <Link href="/leadership">
-                  <DropdownMenuItem data-testid="link-nav-leadership">
+                  <DropdownMenuItem className="cursor-pointer text-base py-2.5" data-testid="link-nav-leadership">
                     Leadership
                   </DropdownMenuItem>
                 </Link>
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <DropdownMenu>
+            <DropdownMenu open={mediaOpen} onOpenChange={setMediaOpen}>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="text-white hover:bg-white/10" data-testid="button-nav-media">
+                <Button 
+                  variant="ghost" 
+                  className="text-white hover:bg-white/10" 
+                  data-testid="button-nav-media"
+                  onMouseEnter={() => setMediaOpen(true)}
+                  onMouseLeave={() => setMediaOpen(false)}
+                >
                   Media <ChevronDown className="ml-1 w-4 h-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent>
+              <DropdownMenuContent 
+                className="min-w-[180px]"
+                onMouseEnter={() => setMediaOpen(true)}
+                onMouseLeave={() => setMediaOpen(false)}
+              >
                 <Link href="/media">
-                  <DropdownMenuItem data-testid="link-nav-media">
+                  <DropdownMenuItem className="cursor-pointer text-base py-2.5" data-testid="link-nav-media">
                     News & Updates
                   </DropdownMenuItem>
                 </Link>
                 <Link href="/gallery">
-                  <DropdownMenuItem data-testid="link-nav-gallery">
+                  <DropdownMenuItem className="cursor-pointer text-base py-2.5" data-testid="link-nav-gallery">
                     Gallery
                   </DropdownMenuItem>
                 </Link>
