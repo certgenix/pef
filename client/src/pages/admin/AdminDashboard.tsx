@@ -824,6 +824,38 @@ function UserManagementDialog({
   );
 }
 
+// Helper function to extract YouTube video ID from various URL formats
+function extractYouTubeId(input: string): string {
+  const trimmed = input.trim();
+  
+  // If it's already just an ID (11 characters, alphanumeric with dashes and underscores)
+  if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) {
+    return trimmed;
+  }
+  
+  // Match various YouTube URL formats
+  const patterns = [
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
+    /youtube\.com\/watch\?.*v=([a-zA-Z0-9_-]{11})/,
+  ];
+  
+  for (const pattern of patterns) {
+    const match = trimmed.match(pattern);
+    if (match && match[1]) {
+      return match[1];
+    }
+  }
+  
+  // Return the original input if no pattern matches
+  return trimmed;
+}
+
+// Helper function to generate YouTube thumbnail URL
+function generateYouTubeThumbnail(videoId: string): string {
+  if (!videoId || videoId.length !== 11) return "";
+  return `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+}
+
 function VideoFormDialog({
   open,
   onClose,
@@ -933,11 +965,22 @@ function VideoFormDialog({
             <Input
               id="youtubeId"
               value={formData.youtubeId}
-              onChange={(e) => setFormData({ ...formData, youtubeId: e.target.value })}
-              placeholder="e.g., dQw4w9WgXcQ"
+              onChange={(e) => {
+                const extractedId = extractYouTubeId(e.target.value);
+                const autoThumbnail = generateYouTubeThumbnail(extractedId);
+                setFormData({ 
+                  ...formData, 
+                  youtubeId: extractedId,
+                  thumbnailUrl: autoThumbnail || formData.thumbnailUrl
+                });
+              }}
+              placeholder="Paste YouTube URL or video ID (e.g., dQw4w9WgXcQ)"
               required
               data-testid="input-video-youtubeid"
             />
+            <p className="text-sm text-muted-foreground">
+              You can paste a full YouTube URL or just the video ID
+            </p>
           </div>
 
           <div className="space-y-2">
@@ -946,8 +989,21 @@ function VideoFormDialog({
               id="thumbnailUrl"
               value={formData.thumbnailUrl}
               onChange={(e) => setFormData({ ...formData, thumbnailUrl: e.target.value })}
+              placeholder="Auto-generated from YouTube ID"
               data-testid="input-video-thumbnail"
             />
+            {formData.thumbnailUrl && (
+              <div className="mt-2 border rounded-md overflow-hidden">
+                <img 
+                  src={formData.thumbnailUrl} 
+                  alt="Video thumbnail preview" 
+                  className="w-full h-auto"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">
