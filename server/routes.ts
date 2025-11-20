@@ -72,11 +72,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ error: "Firebase Admin SDK not implemented yet. Please contact support." });
       }
 
-      const existingUser = await storage.getUserById(uid);
-      if (existingUser) {
-        return res.status(400).json({ error: "User already registered" });
-      }
-
+      // Allow registration to proceed even if user exists - completeRegistration will merge data
       const result = await storage.completeRegistration({
         userId: uid,
         email,
@@ -1687,6 +1683,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!application) {
         return res.status(404).json({ error: "Membership application not found" });
       }
+
+      // When approving an application, also update the user's status
+      if (validationResult.data.status === "approved" && application.email) {
+        const user = await storage.getUserByEmail(application.email.toLowerCase());
+        if (user) {
+          await storage.updateUserStatus(user.id, "approved");
+        } else {
+          // User hasn't created an account yet - this is okay
+          console.log(`Application approved for ${application.email}, but user account not found yet`);
+        }
+      }
+
       return res.json(application);
     } catch (error) {
       console.error("Error updating membership application:", error);

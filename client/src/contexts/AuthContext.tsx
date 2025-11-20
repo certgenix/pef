@@ -270,10 +270,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Consolidated Firestore structure: everything in one users document
     // Use isProfessional/isJobSeeker etc. to match backend schema
+    // If pre-registration exists and is approved, set status to approved
+    const status = preRegistrationData?.status === "approved" ? "approved" : "pending";
+    
     const firestoreData: any = {
       name,
       email,
-      status: "pending",
+      status,
       createdAt: serverTimestamp(),
       lastUpdated: serverTimestamp(),
       profile: {
@@ -312,7 +315,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       name,
       email,
       roles,
-      status: "pending",
+      status,
       createdAt: new Date(),
       lastUpdated: new Date(),
       ...(profileData?.phone && { phone: profileData.phone }),
