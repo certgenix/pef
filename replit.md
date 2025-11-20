@@ -85,6 +85,13 @@ Preferred communication style: Simple, everyday language.
 - Admin approval workflow tracks approval status in Firestore
 - Job Seeker Dashboard displays all opportunities and tracks application status
 - Application tracking system prevents duplicates and maintains status history
+- **LinkedIn OAuth Integration**: Users can import their LinkedIn profile data during registration
+  - Secure OAuth 2.0 flow with state validation (CSRF protection)
+  - Profile data (name, email, headline, location, profile picture) auto-populated in registration form
+  - Server-side session-based data transfer (no sensitive data in URLs)
+  - Single-use session tokens with automatic 10-minute expiration
+  - Allowlisted redirect URLs to prevent open redirect attacks
+  - Endpoints: `/api/auth/linkedin`, `/api/auth/linkedin/callback`, `/api/auth/linkedin/profile`
 
 **CRITICAL Security Issues - MUST FIX BEFORE PRODUCTION**:
 1. ⚠️ **Firebase ID Token Verification**: Backend currently decodes ID tokens WITHOUT signature verification when `FIREBASE_ADMIN_SERVICE_ACCOUNT` is not configured. This is a severe security vulnerability. Must set up Firebase Admin SDK credentials before production deployment.
