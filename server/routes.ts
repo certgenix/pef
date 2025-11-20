@@ -162,7 +162,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const state = crypto.randomBytes(32).toString('hex');
-      const returnUrl = (req.query.returnUrl as string) || '/register';
+      const requestedReturnUrl = (req.query.returnUrl as string) || '/register';
+      
+      const allowedReturnUrls = ['/register', '/'];
+      const returnUrl = allowedReturnUrls.includes(requestedReturnUrl) 
+        ? requestedReturnUrl 
+        : '/register';
       
       oauthStateStore.set(state, { 
         timestamp: Date.now(),
