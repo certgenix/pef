@@ -314,6 +314,30 @@ export default function AdminDashboard() {
           </div>
         )}
 
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <Card className="hover-elevate cursor-pointer" onClick={() => setLocation("/admin/leadership")} data-testid="card-manage-leadership">
+            <CardContent className="p-6">
+              <Users className="w-8 h-8 text-primary mb-2" />
+              <h3 className="font-bold mb-1">Leadership</h3>
+              <p className="text-sm text-muted-foreground">Manage leadership team members</p>
+            </CardContent>
+          </Card>
+          <Card className="hover-elevate cursor-pointer" onClick={() => setLocation("/admin/gallery")} data-testid="card-manage-gallery">
+            <CardContent className="p-6">
+              <Video className="w-8 h-8 text-primary mb-2" />
+              <h3 className="font-bold mb-1">Gallery</h3>
+              <p className="text-sm text-muted-foreground">Manage event gallery images</p>
+            </CardContent>
+          </Card>
+          <Card className="hover-elevate cursor-pointer" onClick={() => setLocation("/admin/membership")} data-testid="card-manage-membership">
+            <CardContent className="p-6">
+              <Users className="w-8 h-8 text-primary mb-2" />
+              <h3 className="font-bold mb-1">Membership Applications</h3>
+              <p className="text-sm text-muted-foreground">Review membership applications</p>
+            </CardContent>
+          </Card>
+        </div>
+
         <Tabs defaultValue="pending" className="space-y-6">
           <TabsList>
             <TabsTrigger value="pending" data-testid="tab-pending">
