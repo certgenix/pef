@@ -55,6 +55,9 @@ export const ROLE_DEFINITIONS = {
 
 export function hasRole(userRoles: UserRoles | null, role: RoleType): boolean {
   if (!userRoles) return false;
+  
+  if (userRoles.isAdmin) return true;
+  
   const roleKey = ROLE_DEFINITIONS[role].key;
   return userRoles[roleKey] === true;
 }
@@ -88,6 +91,8 @@ export function getUserRoleLabels(userRoles: UserRoles | null): string[] {
 
 export function canAccessFeature(userRoles: UserRoles | null, permission: string): boolean {
   if (!userRoles) return false;
+  
+  if (userRoles.isAdmin) return true;
   
   const activeRoles = getUserRoles(userRoles);
   
