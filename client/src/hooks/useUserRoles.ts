@@ -7,6 +7,14 @@ type RoleTypeKey = "professional" | "jobSeeker" | "employer" | "businessOwner" |
 export function useUserRoles(userId?: string) {
   const { userData, loading: authLoading } = useAuth();
   
+  // Defensive logging for role issues
+  if (userData && !userData.roles) {
+    console.warn("⚠️ useUserRoles: userData exists but roles object is missing", { 
+      userId, 
+      userData 
+    });
+  }
+  
   const firestoreRoles: FirestoreUserRoles = userData?.roles || {
     professional: false,
     jobSeeker: false,

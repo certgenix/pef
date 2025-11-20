@@ -69,6 +69,21 @@ function DashboardContent() {
   const safeRoles = Array.isArray(activeRoles) ? activeRoles : [];
   const isAdmin = userData?.roles?.admin || false;
 
+  // Defensive logging for debugging role issues
+  if (currentUser && !isLoading) {
+    if (!userData) {
+      console.warn("⚠️ Dashboard: currentUser exists but userData is null");
+    } else if (!userData.roles) {
+      console.warn("⚠️ Dashboard: userData exists but roles object is missing", userData);
+    } else {
+      console.log("✓ Dashboard: User roles loaded", { 
+        isAdmin, 
+        roles: userData.roles,
+        activeRoles: safeRoles 
+      });
+    }
+  }
+
   // Auto-redirect if user has only one role (only once)
   useEffect(() => {
     if (!isLoading && !hasRedirected.current) {
