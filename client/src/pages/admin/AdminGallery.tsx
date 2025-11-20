@@ -1,21 +1,36 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { Images, Plus, Pencil, Trash2, ArrowLeft } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { GalleryImage, InsertGalleryImage } from "@shared/schema";
+import { insertGalleryImageSchema } from "@shared/schema";
 import { format } from "date-fns";
+import { z } from "zod";
+
+// Form schema with string eventDate that transforms to Date | null
+const galleryImageFormSchema = insertGalleryImageSchema.extend({
+  eventDate: z
+    .string()
+    .trim()
+    .refine((val) => !val || !Number.isNaN(Date.parse(val)), "Invalid date")
+    .transform((val) => (val ? new Date(val) : null)),
+});
+
+type GalleryImageFormValues = z.input<typeof galleryImageFormSchema>;
 
 export default function AdminGallery() {
   const { currentUser, userData } = useAuth();
@@ -190,30 +205,48 @@ function GalleryImageFormDialog({
   image: GalleryImage | null;
 }) {
   const { toast } = useToast();
-  const [formData, setFormData] = useState({
-    title: image?.title || "",
-    description: image?.description || "",
-    imageUrl: image?.imageUrl || "",
-    category: image?.category || "",
-    eventDate: image?.eventDate ? format(new Date(image.eventDate), "yyyy-MM-dd") : "",
-    visible: image?.visible ?? true,
+  
+  const form = useForm<GalleryImageFormValues>({
+    resolver: zodResolver(galleryImageFormSchema),
+    defaultValues: {
+      title: "",
+      imageUrl: "",
+      description: "",
+      category: "",
+      eventDate: "",
+      visible: true,
+    },
   });
 
+  // Reset form when image changes
+  useEffect(() => {
+    if (image) {
+      form.reset({
+        title: image.title,
+        imageUrl: image.imageUrl,
+        description: image.description ?? "",
+        category: image.category ?? "",
+        eventDate: image.eventDate ? format(new Date(image.eventDate), "yyyy-MM-dd") : "",
+        visible: image.visible,
+      });
+    } else {
+      form.reset({
+        title: "",
+        imageUrl: "",
+        description: "",
+        category: "",
+        eventDate: "",
+        visible: true,
+      });
+    }
+  }, [image, form]);
+
   const saveMutation = useMutation({
-    mutationFn: async (data: typeof formData) => {
-      const submitData: Partial<InsertGalleryImage> = {
-        title: data.title,
-        description: data.description || null,
-        imageUrl: data.imageUrl,
-        category: data.category || null,
-        eventDate: data.eventDate ? new Date(data.eventDate) : null,
-        visible: data.visible,
-      };
-      
+    mutationFn: async (data: z.output<typeof galleryImageFormSchema>) => {
       if (image) {
-        return await apiRequest("PATCH", `/api/gallery/${image.id}`, submitData);
+        return await apiRequest("PATCH", `/api/gallery/${image.id}`, data);
       } else {
-        return await apiRequest("POST", "/api/gallery", submitData);
+        return await apiRequest("POST", "/api/gallery", data);
       }
     },
     onSuccess: () => {
@@ -233,21 +266,8 @@ function GalleryImageFormDialog({
     },
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.title || !formData.imageUrl) {
-      toast({
-        title: "Validation Error",
-        description: "Title and image URL are required",
-        variant: "destructive",
-      });
-      return;
-    }
-    saveMutation.mutate(formData);
-  };
-
-  const handleChange = (field: string, value: any) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+  const onSubmit = (values: z.output<typeof galleryImageFormSchema>) => {
+    saveMutation.mutate(values);
   };
 
   return (
@@ -260,91 +280,130 @@ function GalleryImageFormDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <Label htmlFor="title">Title *</Label>
-            <Input
-              id="title"
-              value={formData.title}
-              onChange={(e) => handleChange("title", e.target.value)}
-              placeholder="Annual Conference 2024"
-              data-testid="input-image-title"
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="title"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Title *</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Annual Conference 2024" data-testid="input-image-title" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
 
-          <div>
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              value={formData.description || ""}
-              onChange={(e) => handleChange("description", e.target.value)}
-              placeholder="Brief description of the event..."
-              rows={3}
-              data-testid="input-image-description"
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Description</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      {...field}
+                      value={field.value ?? ""}
+                      placeholder="Brief description of the event..."
+                      rows={3}
+                      data-testid="input-image-description"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
 
-          <div>
-            <Label htmlFor="imageUrl">Image URL *</Label>
-            <Input
-              id="imageUrl"
-              value={formData.imageUrl}
-              onChange={(e) => handleChange("imageUrl", e.target.value)}
-              placeholder="https://example.com/image.jpg"
-              data-testid="input-image-url"
+            <FormField
+              control={form.control}
+              name="imageUrl"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Image URL *</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="https://example.com/image.jpg" data-testid="input-image-url" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
 
-          <div>
-            <Label htmlFor="category">Category</Label>
-            <Input
-              id="category"
-              value={formData.category || ""}
-              onChange={(e) => handleChange("category", e.target.value)}
-              placeholder="Conference, Workshop, Networking, etc."
-              data-testid="input-image-category"
+            <FormField
+              control={form.control}
+              name="category"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Category</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      value={field.value ?? ""}
+                      placeholder="Conference, Workshop, Networking, etc."
+                      data-testid="input-image-category"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
 
-          <div>
-            <Label htmlFor="eventDate">Event Date</Label>
-            <Input
-              id="eventDate"
-              type="date"
-              value={formData.eventDate || ""}
-              onChange={(e) => handleChange("eventDate", e.target.value)}
-              data-testid="input-image-event-date"
+            <FormField
+              control={form.control}
+              name="eventDate"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Event Date</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="date"
+                      value={field.value ?? ""}
+                      onChange={(e) => field.onChange(e.target.value || "")}
+                      data-testid="input-image-event-date"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
 
-          <div className="flex items-center gap-2">
-            <Switch
-              id="visible"
-              checked={formData.visible}
-              onCheckedChange={(checked) => handleChange("visible", checked)}
-              data-testid="switch-image-visible"
+            <FormField
+              control={form.control}
+              name="visible"
+              render={({ field }) => (
+                <FormItem className="flex items-center gap-2 space-y-0">
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                      data-testid="switch-image-visible"
+                    />
+                  </FormControl>
+                  <FormLabel className="!mt-0">Visible in gallery</FormLabel>
+                </FormItem>
+              )}
             />
-            <Label htmlFor="visible">Visible in gallery</Label>
-          </div>
 
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              data-testid="button-cancel-image"
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={saveMutation.isPending}
-              data-testid="button-save-image"
-            >
-              {saveMutation.isPending ? "Saving..." : image ? "Update" : "Add"}
-            </Button>
-          </DialogFooter>
-        </form>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
+                data-testid="button-cancel-image"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={saveMutation.isPending}
+                data-testid="button-save-image"
+              >
+                {saveMutation.isPending ? "Saving..." : image ? "Update" : "Add"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );

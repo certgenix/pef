@@ -1,14 +1,16 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { Users2, Plus, Pencil, Trash2, ArrowLeft } from "lucide-react";
 import Header from "@/components/Header";
@@ -16,6 +18,7 @@ import Footer from "@/components/Footer";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import type { Leader, InsertLeader } from "@shared/schema";
+import { insertLeaderSchema } from "@shared/schema";
 
 export default function AdminLeadership() {
   const { currentUser, userData } = useAuth();
@@ -189,18 +192,47 @@ function LeaderFormDialog({
   leader: Leader | null;
 }) {
   const { toast } = useToast();
-  const [formData, setFormData] = useState<Partial<InsertLeader>>({
-    name: leader?.name || "",
-    title: leader?.title || "",
-    bio: leader?.bio || "",
-    imageUrl: leader?.imageUrl || "",
-    linkedinUrl: leader?.linkedinUrl || "",
-    order: leader?.order || 0,
-    visible: leader?.visible ?? true,
+  
+  const form = useForm<InsertLeader>({
+    resolver: zodResolver(insertLeaderSchema),
+    defaultValues: {
+      name: "",
+      title: "",
+      bio: null,
+      imageUrl: null,
+      linkedinUrl: null,
+      order: 0,
+      visible: true,
+    },
   });
 
+  // Reset form when leader changes
+  useEffect(() => {
+    if (leader) {
+      form.reset({
+        name: leader.name,
+        title: leader.title,
+        bio: leader.bio || null,
+        imageUrl: leader.imageUrl || null,
+        linkedinUrl: leader.linkedinUrl || null,
+        order: leader.order,
+        visible: leader.visible,
+      });
+    } else {
+      form.reset({
+        name: "",
+        title: "",
+        bio: null,
+        imageUrl: null,
+        linkedinUrl: null,
+        order: 0,
+        visible: true,
+      });
+    }
+  }, [leader, form]);
+
   const saveMutation = useMutation({
-    mutationFn: async (data: Partial<InsertLeader>) => {
+    mutationFn: async (data: InsertLeader) => {
       if (leader) {
         return await apiRequest("PATCH", `/api/leaders/${leader.id}`, data);
       } else {
@@ -224,21 +256,8 @@ function LeaderFormDialog({
     },
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.name || !formData.title) {
-      toast({
-        title: "Validation Error",
-        description: "Name and title are required",
-        variant: "destructive",
-      });
-      return;
-    }
-    saveMutation.mutate(formData);
-  };
-
-  const handleChange = (field: string, value: any) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+  const onSubmit = (data: InsertLeader) => {
+    saveMutation.mutate(data);
   };
 
   return (
@@ -251,103 +270,150 @@ function LeaderFormDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <Label htmlFor="name">Name *</Label>
-            <Input
-              id="name"
-              value={formData.name}
-              onChange={(e) => handleChange("name", e.target.value)}
-              placeholder="John Doe"
-              data-testid="input-leader-name"
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Name *</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="John Doe" data-testid="input-leader-name" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
 
-          <div>
-            <Label htmlFor="title">Title *</Label>
-            <Input
-              id="title"
-              value={formData.title}
-              onChange={(e) => handleChange("title", e.target.value)}
-              placeholder="CEO & Founder"
-              data-testid="input-leader-title"
+            <FormField
+              control={form.control}
+              name="title"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Title *</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="CEO & Founder" data-testid="input-leader-title" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
 
-          <div>
-            <Label htmlFor="bio">Bio</Label>
-            <Textarea
-              id="bio"
-              value={formData.bio || ""}
-              onChange={(e) => handleChange("bio", e.target.value)}
-              placeholder="Brief biography..."
-              rows={4}
-              data-testid="input-leader-bio"
+            <FormField
+              control={form.control}
+              name="bio"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Bio</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      {...field}
+                      value={field.value || ""}
+                      placeholder="Brief biography..."
+                      rows={4}
+                      data-testid="input-leader-bio"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
 
-          <div>
-            <Label htmlFor="imageUrl">Image URL</Label>
-            <Input
-              id="imageUrl"
-              value={formData.imageUrl || ""}
-              onChange={(e) => handleChange("imageUrl", e.target.value)}
-              placeholder="https://example.com/image.jpg"
-              data-testid="input-leader-image"
+            <FormField
+              control={form.control}
+              name="imageUrl"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Image URL</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      value={field.value || ""}
+                      placeholder="https://example.com/image.jpg"
+                      data-testid="input-leader-image"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
 
-          <div>
-            <Label htmlFor="linkedinUrl">LinkedIn URL</Label>
-            <Input
-              id="linkedinUrl"
-              value={formData.linkedinUrl || ""}
-              onChange={(e) => handleChange("linkedinUrl", e.target.value)}
-              placeholder="https://linkedin.com/in/username"
-              data-testid="input-leader-linkedin"
+            <FormField
+              control={form.control}
+              name="linkedinUrl"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>LinkedIn URL</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      value={field.value || ""}
+                      placeholder="https://linkedin.com/in/username"
+                      data-testid="input-leader-linkedin"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
 
-          <div>
-            <Label htmlFor="order">Display Order</Label>
-            <Input
-              id="order"
-              type="number"
-              value={formData.order}
-              onChange={(e) => handleChange("order", parseInt(e.target.value) || 0)}
-              placeholder="0"
-              data-testid="input-leader-order"
+            <FormField
+              control={form.control}
+              name="order"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Display Order</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      type="number"
+                      onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                      placeholder="0"
+                      data-testid="input-leader-order"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
 
-          <div className="flex items-center gap-2">
-            <Switch
-              id="visible"
-              checked={formData.visible}
-              onCheckedChange={(checked) => handleChange("visible", checked)}
-              data-testid="switch-leader-visible"
+            <FormField
+              control={form.control}
+              name="visible"
+              render={({ field }) => (
+                <FormItem className="flex items-center gap-2 space-y-0">
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                      data-testid="switch-leader-visible"
+                    />
+                  </FormControl>
+                  <FormLabel className="!mt-0">Visible on leadership page</FormLabel>
+                </FormItem>
+              )}
             />
-            <Label htmlFor="visible">Visible on leadership page</Label>
-          </div>
 
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              data-testid="button-cancel-leader"
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={saveMutation.isPending}
-              data-testid="button-save-leader"
-            >
-              {saveMutation.isPending ? "Saving..." : leader ? "Update" : "Add"}
-            </Button>
-          </DialogFooter>
-        </form>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
+                data-testid="button-cancel-leader"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={saveMutation.isPending}
+                data-testid="button-save-leader"
+              >
+                {saveMutation.isPending ? "Saving..." : leader ? "Update" : "Add"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );
