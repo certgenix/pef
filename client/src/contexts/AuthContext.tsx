@@ -393,14 +393,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const minimalUserData = {
         name: user.displayName || "Google User",
         email: normalizedEmail,
-        status: userStatus,
+        status: "approved",
+        approvalStatus: "approved",
         createdAt: serverTimestamp(),
         lastUpdated: serverTimestamp(),
         profile: {
           fullName: user.displayName || "Google User",
         },
         roles: {
-          isProfessional: false,
+          isProfessional: true,
           isJobSeeker: false,
           isEmployer: false,
           isBusinessOwner: false,
@@ -414,11 +415,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         registrationSource: "google",
         preRegistered: preRegistrationData !== null,
         preRegisteredAt: preRegistrationData?.createdAt || null,
-        needsRoleSelection: true,
-        skipBackendSync: true,
+        needsRoleSelection: false,
+        skipBackendSync: false,
       };
 
       await setDoc(doc(db, "users", user.uid), minimalUserData);
+      
+      // Sync new Google user to backend
+      try {
+        const idToken = await user.getIdToken();
+        await fetch("/api/auth/complete-registration", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${idToken}`,
+          },
+          body: JSON.stringify({
+            name: user.displayName || "Google User",
+            email: normalizedEmail,
+            roles: {
+              professional: true,
+              jobSeeker: false,
+              employer: false,
+              businessOwner: false,
+              investor: false,
+            },
+          }),
+        });
+      } catch (error) {
+        console.error("Error syncing Google user to backend:", error);
+      }
     }
 
     return { isNewUser };

@@ -64,25 +64,21 @@ export default function Login() {
     try {
       const result = await signInWithGoogle();
       
-      if (result.isNewUser) {
-        toast({
-          title: "Welcome!",
-          description: "Please select your roles to complete your profile.",
-        });
-        setLocation("/role-selection");
-      } else {
-        toast({
-          title: "Welcome back!",
-          description: "You have successfully logged in with Google.",
-        });
-        setLocation("/dashboard");
-      }
+      toast({
+        title: result.isNewUser ? "Welcome!" : "Welcome back!",
+        description: result.isNewUser 
+          ? "You have successfully signed up with Google." 
+          : "You have successfully logged in with Google.",
+      });
+      setLocation("/dashboard");
     } catch (error: any) {
       let errorMessage = "Failed to sign in with Google";
       if (error.code === "auth/popup-closed-by-user") {
         errorMessage = "Sign-in cancelled";
       } else if (error.code === "auth/cancelled-popup-request") {
         errorMessage = "Sign-in cancelled";
+      } else if (error.message) {
+        errorMessage = error.message;
       }
 
       toast({
