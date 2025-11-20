@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Users, ArrowLeft, Search, ExternalLink, Mail, Phone, MapPin, Briefcase, CheckCircle2, XCircle } from "lucide-react";
@@ -15,12 +16,92 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { MembershipApplication } from "@shared/schema";
 import { format } from "date-fns";
 
+function ApplicationsTable({
+  applications,
+  searchQuery,
+  onSelectApplication,
+  getStatusBadge,
+}: {
+  applications: MembershipApplication[];
+  searchQuery: string;
+  onSelectApplication: (app: MembershipApplication) => void;
+  getStatusBadge: (status: string) => JSX.Element;
+}) {
+  if (applications.length === 0) {
+    return (
+      <Card>
+        <CardContent className="py-12 text-center">
+          <Users className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+          <p className="text-muted-foreground mb-2">
+            {searchQuery ? "No applications found" : "No applications in this category"}
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b">
+              <th className="text-left p-4 font-medium text-sm text-muted-foreground">Name</th>
+              <th className="text-left p-4 font-medium text-sm text-muted-foreground">Email</th>
+              <th className="text-left p-4 font-medium text-sm text-muted-foreground">Country</th>
+              <th className="text-left p-4 font-medium text-sm text-muted-foreground">Status</th>
+              <th className="text-left p-4 font-medium text-sm text-muted-foreground">Submitted</th>
+            </tr>
+          </thead>
+          <tbody>
+            {applications.map((app) => (
+              <tr
+                key={app.id}
+                onClick={() => onSelectApplication(app)}
+                className="border-b last:border-0 hover-elevate cursor-pointer"
+                data-testid={`row-application-${app.id}`}
+              >
+                <td className="p-4">
+                  <div className="font-medium" data-testid={`text-app-name-${app.id}`}>
+                    {app.fullName}
+                  </div>
+                </td>
+                <td className="p-4">
+                  <div className="text-sm text-muted-foreground" data-testid={`text-app-email-${app.id}`}>
+                    {app.email}
+                  </div>
+                </td>
+                <td className="p-4">
+                  <div className="text-sm" data-testid={`text-app-country-${app.id}`}>
+                    {app.country}
+                  </div>
+                </td>
+                <td className="p-4">
+                  <div data-testid={`badge-app-status-${app.id}`}>
+                    {getStatusBadge(app.status)}
+                  </div>
+                </td>
+                <td className="p-4">
+                  <div className="text-sm text-muted-foreground">
+                    {format(new Date(app.createdAt), "MMM dd, yyyy")}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </Card>
+  );
+}
+
 export default function AdminMembership() {
   const { currentUser, userData } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [selectedApplication, setSelectedApplication] = useState<MembershipApplication | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeTab, setActiveTab] = useState("pending");
 
   const { data: applications = [], isLoading } = useQuery<MembershipApplication[]>({
     queryKey: ["/api/membership-applications"],
@@ -126,68 +207,46 @@ export default function AdminMembership() {
           </div>
         </div>
 
-        {filterApplications(applications).length === 0 ? (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <Users className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-              <p className="text-muted-foreground mb-2">
-                {searchQuery ? "No applications found" : "No membership applications yet"}
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          <Card>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-4 font-medium text-sm text-muted-foreground">Name</th>
-                    <th className="text-left p-4 font-medium text-sm text-muted-foreground">Email</th>
-                    <th className="text-left p-4 font-medium text-sm text-muted-foreground">Country</th>
-                    <th className="text-left p-4 font-medium text-sm text-muted-foreground">Status</th>
-                    <th className="text-left p-4 font-medium text-sm text-muted-foreground">Submitted</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filterApplications(applications).map((app) => (
-                    <tr
-                      key={app.id}
-                      onClick={() => setSelectedApplication(app)}
-                      className="border-b last:border-0 hover-elevate cursor-pointer"
-                      data-testid={`row-application-${app.id}`}
-                    >
-                      <td className="p-4">
-                        <div className="font-medium" data-testid={`text-app-name-${app.id}`}>
-                          {app.fullName}
-                        </div>
-                      </td>
-                      <td className="p-4">
-                        <div className="text-sm text-muted-foreground" data-testid={`text-app-email-${app.id}`}>
-                          {app.email}
-                        </div>
-                      </td>
-                      <td className="p-4">
-                        <div className="text-sm" data-testid={`text-app-country-${app.id}`}>
-                          {app.country}
-                        </div>
-                      </td>
-                      <td className="p-4">
-                        <div data-testid={`badge-app-status-${app.id}`}>
-                          {getStatusBadge(app.status)}
-                        </div>
-                      </td>
-                      <td className="p-4">
-                        <div className="text-sm text-muted-foreground">
-                          {format(new Date(app.createdAt), "MMM dd, yyyy")}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </Card>
-        )}
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="mb-6" data-testid="tabs-application-status">
+            <TabsTrigger value="pending" data-testid="tab-pending">
+              Pending ({pendingApplications.length})
+            </TabsTrigger>
+            <TabsTrigger value="approved" data-testid="tab-approved">
+              Approved ({approvedApplications.length})
+            </TabsTrigger>
+            <TabsTrigger value="rejected" data-testid="tab-rejected">
+              Rejected ({rejectedApplications.length})
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="pending">
+            <ApplicationsTable
+              applications={filterApplications(pendingApplications)}
+              searchQuery={searchQuery}
+              onSelectApplication={setSelectedApplication}
+              getStatusBadge={getStatusBadge}
+            />
+          </TabsContent>
+
+          <TabsContent value="approved">
+            <ApplicationsTable
+              applications={filterApplications(approvedApplications)}
+              searchQuery={searchQuery}
+              onSelectApplication={setSelectedApplication}
+              getStatusBadge={getStatusBadge}
+            />
+          </TabsContent>
+
+          <TabsContent value="rejected">
+            <ApplicationsTable
+              applications={filterApplications(rejectedApplications)}
+              searchQuery={searchQuery}
+              onSelectApplication={setSelectedApplication}
+              getStatusBadge={getStatusBadge}
+            />
+          </TabsContent>
+        </Tabs>
       </main>
       <Footer />
 
