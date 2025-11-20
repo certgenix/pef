@@ -2,7 +2,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Shield, Users, Target, Globe2, TrendingUp, Building2, Briefcase, UserCircle, DollarSign, Quote } from "lucide-react";
+import { Shield, Users, Target, Globe2, TrendingUp, Building2, Briefcase, UserCircle, DollarSign, Quote, Sparkles, Brain, Database } from "lucide-react";
 import { Link } from "wouter";
 import chairmanImage from "@assets/image_1763374941295.png";
 
@@ -208,6 +208,125 @@ export default function About() {
                   </p>
                 </CardContent>
               </Card>
+            </div>
+          </div>
+        </section>
+
+        {/* Core Values */}
+        <section className="py-16 md:py-24 bg-muted/30">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">
+                Our Core Values
+              </h2>
+              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+                The principles that guide everything we do
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-8">
+              <Card className="hover-elevate">
+                <CardContent className="p-8">
+                  <div className="w-14 h-14 bg-primary/10 rounded-md flex items-center justify-center mb-6">
+                    <Users className="w-7 h-7 text-primary" />
+                  </div>
+                  <h3 className="text-2xl font-bold mb-4">Collaboration</h3>
+                  <p className="text-muted-foreground leading-relaxed text-lg">
+                    Building a network where business owners, directors, key professionals, and job seekers connect and support each other's growth.
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="hover-elevate">
+                <CardContent className="p-8">
+                  <div className="w-14 h-14 bg-secondary/10 rounded-md flex items-center justify-center mb-6">
+                    <Shield className="w-7 h-7 text-secondary" />
+                  </div>
+                  <h3 className="text-2xl font-bold mb-4">Trust & Integrity</h3>
+                  <p className="text-muted-foreground leading-relaxed text-lg">
+                    Collecting and organizing verified data to create meaningful connections built on authenticity and professional integrity.
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="hover-elevate">
+                <CardContent className="p-8">
+                  <div className="w-14 h-14 bg-accent/10 rounded-md flex items-center justify-center mb-6">
+                    <TrendingUp className="w-7 h-7 text-accent" />
+                  </div>
+                  <h3 className="text-2xl font-bold mb-3">Collective Growth</h3>
+                  <p className="text-muted-foreground leading-relaxed text-lg">
+                    Facilitating collaborations, job placements, and business opportunities that drive integrated success for all members.
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </section>
+
+        {/* Future Plan - AI Matching Platform */}
+        <section className="py-16 md:py-24 bg-gradient-to-br from-primary/5 via-secondary/5 to-accent/5">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-16">
+              <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full mb-6">
+                <Sparkles className="w-4 h-4" />
+                <span className="text-sm font-semibold">Coming Soon</span>
+              </div>
+              <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">
+                The Future: AI-Powered Matching
+              </h2>
+              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+                Intelligent technology that connects the right people with the right opportunities
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-8">
+              <Card className="hover-elevate border-primary/20">
+                <CardContent className="p-8">
+                  <div className="w-14 h-14 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-md flex items-center justify-center mb-6">
+                    <Brain className="w-7 h-7 text-primary" />
+                  </div>
+                  <h3 className="text-xl font-bold mb-4">Smart Opportunity Matching</h3>
+                  <p className="text-muted-foreground leading-relaxed">
+                    Our AI-based system will automatically suggest relevant opportunities to business owners, helping them discover the perfect partnerships and talent.
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="hover-elevate border-secondary/20">
+                <CardContent className="p-8">
+                  <div className="w-14 h-14 bg-gradient-to-br from-secondary/20 to-accent/20 rounded-md flex items-center justify-center mb-6">
+                    <Target className="w-7 h-7 text-secondary" />
+                  </div>
+                  <h3 className="text-xl font-bold mb-4">Intelligent Career Connections</h3>
+                  <p className="text-muted-foreground leading-relaxed">
+                    Job seekers will be matched with relevant projects, mentors, and companies that align with their skills, experience, and career aspirations.
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="hover-elevate border-accent/20">
+                <CardContent className="p-8">
+                  <div className="w-14 h-14 bg-gradient-to-br from-accent/20 to-primary/20 rounded-md flex items-center justify-center mb-6">
+                    <Database className="w-7 h-7 text-accent" />
+                  </div>
+                  <h3 className="text-xl font-bold mb-4">Data-Driven Decisions</h3>
+                  <p className="text-muted-foreground leading-relaxed">
+                    Leveraging advanced analytics to maximize impact, efficiency, and growth for every member of our professional network.
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="mt-12 text-center">
+              <p className="text-lg text-muted-foreground mb-6">
+                Our AI platform is currently in development and will revolutionize how professionals connect globally
+              </p>
+              <Link href="/contact">
+                <Button size="lg" variant="default" data-testid="button-ai-interest">
+                  Express Interest in Early Access
+                </Button>
+              </Link>
             </div>
           </div>
         </section>
