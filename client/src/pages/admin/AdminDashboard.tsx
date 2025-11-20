@@ -727,13 +727,69 @@ function VideoFormDialog({
     featured: false,
   });
 
+  const extractYouTubeId = (input: string): string => {
+    const trimmed = input.trim();
+    
+    // Already just an ID (11 characters, alphanumeric with dashes/underscores)
+    if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) {
+      return trimmed;
+    }
+    
+    try {
+      // Try parsing as URL
+      const url = new URL(trimmed);
+      
+      // youtube.com/watch?v=ID (handles any query parameter order)
+      if (url.hostname.includes('youtube.com') && url.pathname === '/watch') {
+        const videoId = url.searchParams.get('v');
+        if (videoId && /^[a-zA-Z0-9_-]{11}$/.test(videoId)) {
+          return videoId;
+        }
+      }
+      
+      // youtu.be/ID
+      if (url.hostname === 'youtu.be' && url.pathname.length > 1) {
+        const videoId = url.pathname.slice(1).split('?')[0];
+        if (/^[a-zA-Z0-9_-]{11}$/.test(videoId)) {
+          return videoId;
+        }
+      }
+      
+      // youtube.com/embed/ID, youtube.com/v/ID, youtube.com/shorts/ID, youtube.com/live/ID
+      const pathMatch = url.pathname.match(/^\/(embed|v|shorts|live)\/([a-zA-Z0-9_-]{11})/);
+      if (pathMatch && pathMatch[2]) {
+        return pathMatch[2];
+      }
+    } catch (e) {
+      // Not a valid URL, return trimmed input
+    }
+    
+    return trimmed;
+  };
+
+  const generateThumbnailUrl = (videoId: string): string => {
+    if (!videoId || videoId.length !== 11) return "";
+    return `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+  };
+
+  const handleYouTubeIdChange = (input: string) => {
+    const extractedId = extractYouTubeId(input);
+    const thumbnailUrl = generateThumbnailUrl(extractedId);
+    
+    setFormData({
+      ...formData,
+      youtubeId: extractedId,
+      thumbnailUrl: thumbnailUrl,
+    });
+  };
+
   useEffect(() => {
     if (video) {
       setFormData({
         title: video.title,
         description: video.description || "",
         youtubeId: video.youtubeId,
-        thumbnailUrl: video.thumbnailUrl || "",
+        thumbnailUrl: video.thumbnailUrl || generateThumbnailUrl(video.youtubeId),
         publishedAt: video.publishedAt ? new Date(video.publishedAt).toISOString().split('T')[0] : "",
         featured: video.featured,
       });
@@ -794,11 +850,21 @@ function VideoFormDialog({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Validate YouTube ID is exactly 11 characters
+    if (!formData.youtubeId || !/^[a-zA-Z0-9_-]{11}$/.test(formData.youtubeId)) {
+      toast({
+        title: "Invalid YouTube ID",
+        description: "Please enter a valid YouTube URL or video ID. The video ID should be exactly 11 characters.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const submitData: any = {
       title: formData.title,
       description: formData.description || null,
       youtubeId: formData.youtubeId,
-      thumbnailUrl: formData.thumbnailUrl || null,
+      thumbnailUrl: formData.thumbnailUrl || generateThumbnailUrl(formData.youtubeId),
       featured: formData.featured,
     };
 
@@ -846,29 +912,52 @@ function VideoFormDialog({
           </div>
 
           <div>
-            <Label htmlFor="youtubeId">YouTube Video ID *</Label>
+            <Label htmlFor="youtubeId">YouTube Video URL or ID *</Label>
             <Input
               id="youtubeId"
               value={formData.youtubeId}
-              onChange={(e) => setFormData({ ...formData, youtubeId: e.target.value })}
-              placeholder="e.g., dQw4w9WgXcQ"
+              onChange={(e) => handleYouTubeIdChange(e.target.value)}
+              placeholder="Paste full YouTube URL or just the video ID"
               required
               data-testid="input-video-youtubeid"
             />
             <p className="text-xs text-muted-foreground mt-1">
-              The ID from the YouTube URL (youtube.com/watch?v=<strong>ID</strong>)
+              Paste the full YouTube URL (e.g., https://www.youtube.com/watch?v=kYV4OzMLVJg) or just the ID (kYV4OzMLVJg)
             </p>
           </div>
 
+          {formData.youtubeId && formData.thumbnailUrl && (
+            <div>
+              <Label>Thumbnail Preview</Label>
+              <div className="mt-2 rounded-md overflow-hidden border">
+                <img
+                  src={formData.thumbnailUrl}
+                  alt="Video thumbnail"
+                  className="w-full h-auto"
+                  onError={(e) => {
+                    e.currentTarget.src = `https://img.youtube.com/vi/${formData.youtubeId}/hqdefault.jpg`;
+                  }}
+                  data-testid="img-thumbnail-preview"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Thumbnail automatically generated from YouTube
+              </p>
+            </div>
+          )}
+
           <div>
-            <Label htmlFor="thumbnailUrl">Thumbnail URL</Label>
+            <Label htmlFor="thumbnailUrl">Custom Thumbnail URL (optional)</Label>
             <Input
               id="thumbnailUrl"
               value={formData.thumbnailUrl}
               onChange={(e) => setFormData({ ...formData, thumbnailUrl: e.target.value })}
-              placeholder="https://..."
+              placeholder="Leave blank to use YouTube's thumbnail"
               data-testid="input-video-thumbnail"
             />
+            <p className="text-xs text-muted-foreground mt-1">
+              Override the auto-generated thumbnail with a custom URL
+            </p>
           </div>
 
           <div>
