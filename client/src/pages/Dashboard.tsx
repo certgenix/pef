@@ -7,6 +7,7 @@ import { Briefcase, Search, Building2, Handshake, TrendingUp, ArrowRight, Shield
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { useLocation } from "wouter";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { useEffect } from "react";
 
 const roleDashboards = [
   {
@@ -66,6 +67,25 @@ function DashboardContent() {
 
   const safeRoles = Array.isArray(activeRoles) ? activeRoles : [];
   const isAdmin = userData?.roles?.admin || false;
+
+  // Auto-redirect if user has only one role
+  useEffect(() => {
+    if (!isLoading) {
+      // Admin only - redirect to admin dashboard
+      if (isAdmin && safeRoles.length === 0) {
+        setLocation("/admin");
+        return;
+      }
+      
+      // Single role - redirect to that dashboard
+      if (safeRoles.length === 1) {
+        const roleConfig = roleDashboards.find(d => d.role === safeRoles[0]);
+        if (roleConfig) {
+          setLocation(roleConfig.path);
+        }
+      }
+    }
+  }, [isLoading, safeRoles, isAdmin, setLocation]);
 
   if (isLoading) {
     return (
@@ -137,31 +157,6 @@ function DashboardContent() {
               );
             })}
         </div>
-
-        {safeRoles.length > 1 && (
-          <Card className="mt-8">
-            <CardHeader>
-              <CardTitle>Quick Stats Overview</CardTitle>
-              <CardDescription>Summary across all your roles</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="text-center p-4 rounded-md bg-muted">
-                  <p className="text-2xl font-bold">24</p>
-                  <p className="text-sm text-muted-foreground">Total Activities</p>
-                </div>
-                <div className="text-center p-4 rounded-md bg-muted">
-                  <p className="text-2xl font-bold">8</p>
-                  <p className="text-sm text-muted-foreground">Pending Actions</p>
-                </div>
-                <div className="text-center p-4 rounded-md bg-muted">
-                  <p className="text-2xl font-bold">156</p>
-                  <p className="text-sm text-muted-foreground">Total Connections</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
     </DashboardLayout>
   );
 }
