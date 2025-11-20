@@ -43,12 +43,13 @@ export default function Header() {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 md:h-20">
-          <Link href="/" className="flex items-center gap-2 hover-elevate rounded-md px-2 py-1" data-testid="link-home">
+          <Link href="/" className="flex items-center gap-3 hover-elevate rounded-md px-3 py-2" data-testid="link-home">
             <img 
               src={logoImage} 
               alt="PEF Logo" 
-              className="w-12 h-12 md:w-14 md:h-14 rounded-full object-cover"
+              className="w-10 h-10 md:w-12 md:h-12 rounded-full object-cover ring-2 ring-white/20"
             />
+            <span className="hidden sm:block text-white font-semibold text-lg md:text-xl">PEF</span>
           </Link>
 
           <nav className="hidden lg:flex items-center gap-1">
