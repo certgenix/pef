@@ -95,7 +95,14 @@ function DashboardContent() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {roleDashboards
-            .filter(dashboard => isAdmin || safeRoles.length === 0 || safeRoles.includes(dashboard.role))
+            .filter(dashboard => {
+              // Hide admin card for non-admins
+              if (dashboard.role === "admin" && !isAdmin) return false;
+              // Admins can see all cards
+              if (isAdmin) return true;
+              // Others see only their assigned roles or all if no roles
+              return safeRoles.length === 0 || safeRoles.includes(dashboard.role);
+            })
             .map((dashboard) => {
               const Icon = dashboard.icon;
               return (
