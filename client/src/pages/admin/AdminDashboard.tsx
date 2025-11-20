@@ -78,6 +78,7 @@ interface VideoFormData {
   thumbnailUrl: string;
   publishedAt: string;
   featured: boolean;
+  visible: boolean;
 }
 
 export default function AdminDashboard() {
@@ -725,6 +726,7 @@ function VideoFormDialog({
     thumbnailUrl: "",
     publishedAt: "",
     featured: false,
+    visible: true,
   });
 
   const extractYouTubeId = (input: string): string => {
@@ -785,6 +787,7 @@ function VideoFormDialog({
 
   useEffect(() => {
     if (video) {
+      const videoData = video as any; // Temporary until Firestore types are updated
       setFormData({
         title: video.title,
         description: video.description || "",
@@ -792,6 +795,7 @@ function VideoFormDialog({
         thumbnailUrl: video.thumbnailUrl || generateThumbnailUrl(video.youtubeId),
         publishedAt: video.publishedAt ? new Date(video.publishedAt).toISOString().split('T')[0] : "",
         featured: video.featured,
+        visible: videoData.visible ?? true,
       });
     } else {
       setFormData({
@@ -801,6 +805,7 @@ function VideoFormDialog({
         thumbnailUrl: "",
         publishedAt: "",
         featured: false,
+        visible: true,
       });
     }
   }, [video, open]);
@@ -870,10 +875,13 @@ function VideoFormDialog({
       youtubeId: formData.youtubeId,
       thumbnailUrl: formData.thumbnailUrl || generateThumbnailUrl(formData.youtubeId),
       featured: formData.featured,
+      visible: formData.visible,
     };
 
     if (formData.publishedAt) {
       submitData.publishedAt = new Date(formData.publishedAt).toISOString();
+    } else {
+      submitData.publishedAt = null;
     }
 
     if (video) {
@@ -973,6 +981,18 @@ function VideoFormDialog({
               onChange={(e) => setFormData({ ...formData, publishedAt: e.target.value })}
               data-testid="input-video-publishedat"
             />
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="visible"
+              checked={formData.visible}
+              onCheckedChange={(checked) => setFormData({ ...formData, visible: checked })}
+              data-testid="switch-video-visible"
+            />
+            <Label htmlFor="visible" className="cursor-pointer">
+              Visible on Media page
+            </Label>
           </div>
 
           <div className="flex items-center space-x-2">

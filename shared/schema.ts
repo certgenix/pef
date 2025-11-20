@@ -170,6 +170,7 @@ export const videos = pgTable("videos", {
   thumbnailUrl: text("thumbnail_url"),
   publishedAt: timestamp("published_at"),
   featured: boolean("featured").default(false).notNull(),
+  visible: boolean("visible").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

@@ -38,8 +38,13 @@ export default function Media() {
     queryKey: ['/api/videos'],
   });
 
-  const featuredVideos = videos.filter(v => v.featured);
-  const regularVideos = videos.filter(v => !v.featured);
+  // Only show visible videos on the Media page
+  const visibleVideos = videos.filter(v => {
+    const videoData = v as any; // Temporary until Firestore types are updated
+    return videoData.visible ?? true; // Default to visible if field is missing
+  });
+  const featuredVideos = visibleVideos.filter(v => v.featured);
+  const regularVideos = visibleVideos.filter(v => !v.featured);
   const displayedVideos = showAllVideos ? regularVideos : regularVideos.slice(0, 3);
 
   return (

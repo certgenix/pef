@@ -795,6 +795,7 @@ export class FirestoreStorage implements IStorage {
       thumbnailUrl: video.thumbnailUrl || null,
       publishedAt: video.publishedAt || null,
       featured: video.featured || false,
+      visible: video.visible !== undefined ? video.visible : true,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -848,6 +849,7 @@ export class FirestoreStorage implements IStorage {
     if (data.youtubeId !== undefined) updateData.youtubeId = data.youtubeId;
     if (data.thumbnailUrl !== undefined) updateData.thumbnailUrl = data.thumbnailUrl || null;
     if (data.featured !== undefined) updateData.featured = data.featured;
+    if (data.visible !== undefined) updateData.visible = data.visible;
     
     if (data.publishedAt !== undefined) {
       updateData.publishedAt = data.publishedAt || null;
