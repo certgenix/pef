@@ -1,10 +1,14 @@
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Newspaper, Video, Mail, Calendar, ExternalLink, Play } from "lucide-react";
+import { Newspaper, Video, Calendar, ExternalLink } from "lucide-react";
 import { SiLinkedin } from "react-icons/si";
+import YouTubeEmbed from "@/components/YouTubeEmbed";
+import type { Video as VideoType } from "@shared/schema";
 
 const mediaCategories = [
   {
@@ -28,6 +32,16 @@ const mediaCategories = [
 ];
 
 export default function Media() {
+  const [showAllVideos, setShowAllVideos] = useState(false);
+
+  const { data: videos = [], isLoading } = useQuery<VideoType[]>({
+    queryKey: ['/api/videos'],
+  });
+
+  const featuredVideos = videos.filter(v => v.featured);
+  const regularVideos = videos.filter(v => !v.featured);
+  const displayedVideos = showAllVideos ? regularVideos : regularVideos.slice(0, 3);
+
   return (
     <div className="min-h-screen">
       <Header />
@@ -56,59 +70,128 @@ export default function Media() {
 
         <section className="py-16 md:py-24 bg-background">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="mb-16">
-              <h2 className="text-3xl md:text-4xl font-display font-bold mb-8 text-center">
-                Featured Video
-              </h2>
-              
-              <Card className="border-2 border-primary" data-testid="card-featured-video">
-                <CardContent className="p-0">
-                  <div className="aspect-video relative overflow-hidden rounded-t-lg">
-                    <iframe
-                      className="w-full h-full"
-                      src="https://www.youtube.com/embed/Z6qLKDD3T3c"
-                      title="Professional Executive Forum Featured Video"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                      allowFullScreen
-                      data-testid="iframe-featured-video"
-                    />
-                  </div>
-                  <div className="p-6">
-                    <div className="flex flex-wrap items-center gap-2 mb-3">
-                      <Badge variant="secondary" data-testid="badge-video-category">
-                        Featured Content
-                      </Badge>
-                      <Badge className="bg-red-600 hover:bg-red-700" data-testid="badge-youtube">
-                        <Video className="w-3 h-3 mr-1" />
-                        YouTube
-                      </Badge>
+            {isLoading ? (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">Loading videos...</p>
+              </div>
+            ) : (
+              <>
+                {featuredVideos.length > 0 && (
+                  <div className="mb-16">
+                    <h2 className="text-3xl md:text-4xl font-display font-bold mb-8 text-center">
+                      Featured Videos
+                    </h2>
+                    
+                    <div className="grid grid-cols-1 gap-8 max-w-5xl mx-auto">
+                      {featuredVideos.map((video) => (
+                        <Card key={video.id} className="border-2 border-primary" data-testid={`card-featured-video-${video.id}`}>
+                          <CardContent className="p-0">
+                            <YouTubeEmbed videoId={video.youtubeId} title={video.title} />
+                            <div className="p-6">
+                              <div className="flex flex-wrap items-center gap-2 mb-3">
+                                <Badge variant="secondary" data-testid="badge-video-category">
+                                  Featured Content
+                                </Badge>
+                                <Badge className="bg-red-600 hover:bg-red-700" data-testid="badge-youtube">
+                                  <Video className="w-3 h-3 mr-1" />
+                                  YouTube
+                                </Badge>
+                              </div>
+                              <h3 className="text-2xl font-bold mb-2" data-testid={`text-video-title-${video.id}`}>
+                                {video.title}
+                              </h3>
+                              {video.description && (
+                                <p className="text-muted-foreground mb-4" data-testid={`text-video-description-${video.id}`}>
+                                  {video.description}
+                                </p>
+                              )}
+                              <a 
+                                href={`https://www.youtube.com/watch?v=${video.youtubeId}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 text-primary font-semibold hover:underline"
+                                data-testid={`link-watch-youtube-${video.id}`}
+                              >
+                                Watch on YouTube
+                                <ExternalLink className="w-4 h-4" />
+                              </a>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
                     </div>
-                    <h3 className="text-2xl font-bold mb-2" data-testid="text-video-title">
-                      Professional Executive Forum Introduction
-                    </h3>
-                    <p className="text-muted-foreground mb-4" data-testid="text-video-description">
-                      Learn about the Professional Executive Forum and how we're building a global network connecting professionals, employers, business owners, and investors through structured data and intelligent opportunity matching.
-                    </p>
-                    <a 
-                      href="https://www.youtube.com/watch?v=Z6qLKDD3T3c"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 text-primary font-semibold hover:underline"
-                      data-testid="link-watch-youtube"
-                    >
-                      Watch on YouTube
-                      <ExternalLink className="w-4 h-4" />
-                    </a>
                   </div>
-                </CardContent>
-              </Card>
-            </div>
+                )}
 
+                {regularVideos.length > 0 && (
+                  <div className="mb-16">
+                    <h2 className="text-3xl md:text-4xl font-display font-bold mb-8 text-center">
+                      All Videos
+                    </h2>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {displayedVideos.map((video) => (
+                        <Card key={video.id} className="hover:border-primary/30 transition-all hover-elevate" data-testid={`card-video-${video.id}`}>
+                          <CardContent className="p-0">
+                            <YouTubeEmbed videoId={video.youtubeId} title={video.title} />
+                            <div className="p-4">
+                              <h3 className="font-bold mb-2 line-clamp-2" data-testid={`text-video-title-${video.id}`}>
+                                {video.title}
+                              </h3>
+                              {video.description && (
+                                <p className="text-sm text-muted-foreground mb-3 line-clamp-2" data-testid={`text-video-description-${video.id}`}>
+                                  {video.description}
+                                </p>
+                              )}
+                              <a 
+                                href={`https://www.youtube.com/watch?v=${video.youtubeId}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 text-sm text-primary font-semibold hover:underline"
+                                data-testid={`link-watch-youtube-${video.id}`}
+                              >
+                                Watch on YouTube
+                                <ExternalLink className="w-3 h-3" />
+                              </a>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+
+                    {regularVideos.length > 3 && (
+                      <div className="text-center mt-8">
+                        <Button 
+                          variant="outline" 
+                          size="lg"
+                          onClick={() => setShowAllVideos(!showAllVideos)}
+                          data-testid="button-see-more"
+                        >
+                          {showAllVideos ? "Show Less" : `See More (${regularVideos.length - 3} more videos)`}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {videos.length === 0 && !isLoading && (
+                  <div className="text-center py-12">
+                    <p className="text-muted-foreground mb-4">No videos available yet.</p>
+                    <p className="text-sm text-muted-foreground">Check back soon for new content!</p>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </section>
+
+        <section className="py-16 md:py-24 bg-muted/30">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <h2 className="text-3xl md:text-4xl font-display font-bold mb-8 text-center">
               Media Categories
             </h2>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto mb-16">
               {mediaCategories.map((category) => {
                 const Icon = category.icon;
                 return (
@@ -127,7 +210,7 @@ export default function Media() {
           </div>
         </section>
 
-        <section className="py-16 md:py-24 bg-muted/30">
+        <section className="py-16 md:py-24 bg-background">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h2 className="text-2xl md:text-3xl font-display font-bold mb-4">
               Stay Connected

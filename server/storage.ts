@@ -780,7 +780,12 @@ export class FirestoreStorage implements IStorage {
 
   async createVideo(video: InsertVideo): Promise<Video> {
     const videoData = {
-      ...video,
+      title: video.title,
+      description: video.description || null,
+      youtubeId: video.youtubeId,
+      thumbnailUrl: video.thumbnailUrl || null,
+      publishedAt: video.publishedAt || null,
+      featured: video.featured || false,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
