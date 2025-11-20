@@ -7,7 +7,6 @@ import { Briefcase, Search, Building2, Handshake, TrendingUp, ArrowRight, Shield
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { useLocation } from "wouter";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
-import { useEffect, useRef } from "react";
 
 const roleDashboards = [
   {
@@ -64,7 +63,6 @@ function DashboardContent() {
   const { currentUser, userData } = useAuth();
   const { activeRoles, isLoading, userRoles } = useUserRoles(currentUser?.uid);
   const [location, setLocation] = useLocation();
-  const hasRedirected = useRef(false);
 
   const safeRoles = Array.isArray(activeRoles) ? activeRoles : [];
   const isAdmin = userData?.roles?.admin || false;
@@ -84,24 +82,7 @@ function DashboardContent() {
     }
   }
 
-  // Auto-redirect if user has only one role (only once)
-  useEffect(() => {
-    if (!isLoading && !hasRedirected.current) {
-      // Don't auto-redirect admins - let them see all dashboard cards
-      if (isAdmin) {
-        return;
-      }
-      
-      // Single role - redirect to that dashboard
-      if (safeRoles.length === 1) {
-        const roleConfig = roleDashboards.find(d => d.role === safeRoles[0]);
-        if (roleConfig) {
-          hasRedirected.current = true;
-          setLocation(roleConfig.path);
-        }
-      }
-    }
-  }, [isLoading, safeRoles, isAdmin, setLocation]);
+  // No auto-redirect - let users manually select their dashboard
 
   if (isLoading) {
     return (
@@ -136,8 +117,8 @@ function DashboardContent() {
               if (dashboard.role === "admin" && !isAdmin) return false;
               // Admins can see all cards
               if (isAdmin) return true;
-              // Others see only their assigned roles or all if no roles
-              return safeRoles.length === 0 || safeRoles.includes(dashboard.role);
+              // Non-admins only see cards for their assigned roles
+              return safeRoles.includes(dashboard.role);
             })
             .map((dashboard) => {
               const Icon = dashboard.icon;
