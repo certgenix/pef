@@ -55,21 +55,9 @@ export function useMemberStatus() {
           return { status: "unregistered" as MemberStatus };
         }
 
-        const approvalStatus = data.user.approvalStatus;
-        let status: MemberStatus;
-
-        if (approvalStatus === "approved") {
-          status = "active";
-        } else if (approvalStatus === "pending") {
-          status = "pending";
-        } else if (approvalStatus === "rejected") {
-          status = "rejected";
-        } else {
-          status = "unregistered";
-        }
-
+        // All authenticated users are now active - no approval needed
         return {
-          status,
+          status: "active",
           user: data.user,
           roles: data.roles,
         };

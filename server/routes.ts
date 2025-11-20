@@ -105,7 +105,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       return res.json({
         success: true,
-        message: "Registration completed successfully. Your account is pending admin approval.",
+        message: "Registration completed successfully. Welcome!",
         user: result.user,
         profile: result.profile,
       });

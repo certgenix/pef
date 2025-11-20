@@ -215,7 +215,7 @@ export class FirestoreStorage implements IStorage {
       displayName: insertUser.displayName || null,
       createdAt: new Date(),
       lastLogin: null,
-      approvalStatus: insertUser.approvalStatus || "pending",
+      approvalStatus: insertUser.approvalStatus || "approved",
       preRegistered: insertUser.preRegistered || false,
       preRegisteredAt: insertUser.preRegisteredAt || null,
       registrationSource: insertUser.registrationSource || null,
@@ -246,11 +246,11 @@ export class FirestoreStorage implements IStorage {
         displayName: data.displayName,
         createdAt: new Date(),
         lastLogin: null,
-        // Preserve existing approval status, default to match status
-        approvalStatus: existingUserData.approvalStatus || (existingUserData.status === "approved" ? "approved" : "pending"),
+        // Auto-approve all new users - no admin approval needed
+        approvalStatus: "approved",
         // Preserve existing fields
         name: existingUserData.name || data.profile.fullName,
-        status: existingUserData.status || "pending",
+        status: "approved",
         lastUpdated: new Date(),
         profile: {
           fullName: data.profile.fullName,
