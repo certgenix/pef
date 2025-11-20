@@ -213,11 +213,12 @@ function ApplicationDetailsDialog({
   
   const updateStatusMutation = useMutation({
     mutationFn: async (status: "approved" | "rejected") => {
-      return await apiRequest(`/api/membership-applications/${application.id}`, {
-        method: "PATCH",
-        body: JSON.stringify({ status }),
-        headers: { "Content-Type": "application/json" },
-      });
+      const response = await apiRequest(
+        "PATCH",
+        `/api/membership-applications/${application.id}`,
+        { status }
+      );
+      return await response.json();
     },
     onSuccess: (_, status) => {
       // Invalidate both membership applications and admin dashboard queries

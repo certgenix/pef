@@ -85,9 +85,6 @@ export default function AdminDashboard() {
   const { currentUser, userData } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const [users, setUsers] = useState<UserData[]>([]);
-  const [stats, setStats] = useState<Stats | null>(null);
-  const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [videoDialogOpen, setVideoDialogOpen] = useState(false);
@@ -97,6 +94,18 @@ export default function AdminDashboard() {
   const { data: videos = [], refetch: refetchVideos } = useQuery<VideoType[]>({
     queryKey: ['/api/videos'],
   });
+
+  const { data: users = [], isLoading: usersLoading } = useQuery<UserData[]>({
+    queryKey: ["/api/admin/users"],
+    enabled: !!currentUser && !!userData?.roles?.admin,
+  });
+
+  const { data: stats = null, isLoading: statsLoading } = useQuery<Stats>({
+    queryKey: ["/api/admin/stats"],
+    enabled: !!currentUser && !!userData?.roles?.admin,
+  });
+
+  const loading = usersLoading || statsLoading;
 
   useEffect(() => {
     if (!currentUser) {
@@ -113,46 +122,7 @@ export default function AdminDashboard() {
       setLocation("/");
       return;
     }
-
-    loadData();
   }, [currentUser, userData]);
-
-  async function loadData() {
-    try {
-      setLoading(true);
-      const token = await auth.currentUser?.getIdToken();
-      if (!token) return;
-
-      const [usersResponse, statsResponse] = await Promise.all([
-        fetch("/api/admin/users", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }),
-        fetch("/api/admin/stats", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }),
-      ]);
-
-      if (usersResponse.ok && statsResponse.ok) {
-        const usersData = await usersResponse.json();
-        const statsData = await statsResponse.json();
-        setUsers(usersData);
-        setStats(statsData);
-      }
-    } catch (error) {
-      console.error("Error loading data:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load admin data",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  }
 
   async function handleUpdateStatus(userId: string, status: "approved" | "rejected") {
     try {
@@ -173,7 +143,8 @@ export default function AdminDashboard() {
           title: "Success",
           description: `User ${status} successfully`,
         });
-        await loadData();
+        queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
       }
     } catch (error) {
       toast({
@@ -203,7 +174,8 @@ export default function AdminDashboard() {
           title: "Success",
           description: "User roles updated successfully",
         });
-        await loadData();
+        queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
         setSelectedUser(null);
       }
     } catch (error) {
