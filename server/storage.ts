@@ -9,7 +9,8 @@ import {
   query, 
   where,
   Timestamp,
-  addDoc
+  addDoc,
+  serverTimestamp
 } from "firebase/firestore";
 import { db } from "./firebase-admin";
 import { 
@@ -103,6 +104,7 @@ export interface IStorage {
   createVideo(video: InsertVideo): Promise<Video>;
   getAllVideos(): Promise<Video[]>;
   getVideoById(id: string): Promise<Video | undefined>;
+  updateVideo(id: string, data: Partial<InsertVideo>): Promise<Video | undefined>;
   deleteVideo(id: string): Promise<void>;
 }
 
@@ -176,6 +178,9 @@ export class FirestoreStorage implements IStorage {
       createdAt: new Date(),
       lastLogin: null,
       approvalStatus: insertUser.approvalStatus || "pending",
+      preRegistered: insertUser.preRegistered || false,
+      preRegisteredAt: insertUser.preRegisteredAt || null,
+      registrationSource: insertUser.registrationSource || null,
     };
     
     await setDoc(doc(db, "users", insertUser.id), userData);
@@ -245,6 +250,9 @@ export class FirestoreStorage implements IStorage {
         createdAt: new Date(),
         lastLogin: null,
         approvalStatus: "approved",
+        preRegistered: false,
+        preRegisteredAt: null,
+        registrationSource: null,
       };
 
       const profileId = this.generateId();
@@ -330,6 +338,7 @@ export class FirestoreStorage implements IStorage {
       isEmployer: insertRoles.isEmployer || false,
       isBusinessOwner: insertRoles.isBusinessOwner || false,
       isInvestor: insertRoles.isInvestor || false,
+      isAdmin: insertRoles.isAdmin || false,
       createdAt: new Date(),
     };
     
@@ -670,6 +679,10 @@ export class FirestoreStorage implements IStorage {
               displayName: user.displayName,
               approvalStatus: user.approvalStatus,
               createdAt: user.createdAt,
+              lastLogin: user.lastLogin,
+              preRegistered: user.preRegistered,
+              preRegisteredAt: user.preRegisteredAt,
+              registrationSource: user.registrationSource,
             },
             investorData: userData.investorData || {}
           });
@@ -700,6 +713,10 @@ export class FirestoreStorage implements IStorage {
               displayName: user.displayName,
               approvalStatus: user.approvalStatus,
               createdAt: user.createdAt,
+              lastLogin: user.lastLogin,
+              preRegistered: user.preRegistered,
+              preRegisteredAt: user.preRegisteredAt,
+              registrationSource: user.registrationSource,
             },
             businessOwnerData: userData.businessOwnerData || {}
           });
@@ -770,14 +787,6 @@ export class FirestoreStorage implements IStorage {
     });
   }
 
-  async updateUserRoles(userId: string, roles: any): Promise<void> {
-    const userRef = doc(db, "users", userId);
-    await updateDoc(userRef, {
-      roles,
-      lastUpdated: new Date(),
-    });
-  }
-
   async createVideo(video: InsertVideo): Promise<Video> {
     const videoData = {
       title: video.title,
@@ -823,6 +832,32 @@ export class FirestoreStorage implements IStorage {
     
     if (docSnap.exists()) {
       return normalizeDocData<Video>({ id: docSnap.id, ...docSnap.data() });
+    }
+    return undefined;
+  }
+
+  async updateVideo(id: string, data: Partial<InsertVideo>): Promise<Video | undefined> {
+    const docRef = doc(db, "videos", id);
+    
+    const updateData: any = {
+      updatedAt: Timestamp.now(),
+    };
+    
+    if (data.title !== undefined) updateData.title = data.title;
+    if (data.description !== undefined) updateData.description = data.description || null;
+    if (data.youtubeId !== undefined) updateData.youtubeId = data.youtubeId;
+    if (data.thumbnailUrl !== undefined) updateData.thumbnailUrl = data.thumbnailUrl || null;
+    if (data.featured !== undefined) updateData.featured = data.featured;
+    
+    if (data.publishedAt !== undefined) {
+      updateData.publishedAt = data.publishedAt || null;
+    }
+    
+    await updateDoc(docRef, updateData);
+    
+    const updatedDoc = await getDoc(docRef);
+    if (updatedDoc.exists()) {
+      return normalizeDocData<Video>({ id: updatedDoc.id, ...updatedDoc.data() });
     }
     return undefined;
   }

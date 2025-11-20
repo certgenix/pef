@@ -1088,6 +1088,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/videos/:id", async (req, res) => {
+    try {
+      const partialVideoSchema = insertVideoSchema.partial();
+      const validationResult = partialVideoSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          error: "Invalid video data", 
+          details: validationResult.error.issues 
+        });
+      }
+
+      const video = await storage.updateVideo(req.params.id, validationResult.data);
+      if (!video) {
+        return res.status(404).json({ error: "Video not found" });
+      }
+      return res.json(video);
+    } catch (error) {
+      console.error("Error updating video:", error);
+      return res.status(500).json({ error: "Failed to update video" });
+    }
+  });
+
   app.delete("/api/videos/:id", async (req, res) => {
     try {
       await storage.deleteVideo(req.params.id);

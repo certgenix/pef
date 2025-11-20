@@ -1,10 +1,16 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocation } from "wouter";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import {
   Users,
@@ -16,13 +22,20 @@ import {
   CheckCircle2,
   XCircle,
   Clock,
-  BarChart3,
   Shield,
+  Video,
+  Plus,
+  Pencil,
+  Trash2,
+  Star,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { auth } from "@/lib/firebase";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import YouTubeEmbed from "@/components/YouTubeEmbed";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import type { Video as VideoType } from "@shared/schema";
 
 interface UserData {
   uid: string;
@@ -58,6 +71,15 @@ interface Stats {
   rejected: number;
 }
 
+interface VideoFormData {
+  title: string;
+  description: string;
+  youtubeId: string;
+  thumbnailUrl: string;
+  publishedAt: string;
+  featured: boolean;
+}
+
 export default function AdminDashboard() {
   const { currentUser, userData } = useAuth();
   const [, setLocation] = useLocation();
@@ -66,6 +88,13 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
+  const [videoDialogOpen, setVideoDialogOpen] = useState(false);
+  const [editingVideo, setEditingVideo] = useState<VideoType | null>(null);
+  const [deleteVideoId, setDeleteVideoId] = useState<string | null>(null);
+
+  const { data: videos = [], refetch: refetchVideos } = useQuery<VideoType[]>({
+    queryKey: ['/api/videos'],
+  });
 
   useEffect(() => {
     if (!currentUser) {
@@ -73,7 +102,6 @@ export default function AdminDashboard() {
       return;
     }
 
-    // Check if user has admin role
     if (!userData?.roles?.admin) {
       toast({
         title: "Access Denied",
@@ -185,6 +213,20 @@ export default function AdminDashboard() {
     }
   }
 
+  const handleOpenVideoDialog = (video?: VideoType) => {
+    if (video) {
+      setEditingVideo(video);
+    } else {
+      setEditingVideo(null);
+    }
+    setVideoDialogOpen(true);
+  };
+
+  const handleCloseVideoDialog = () => {
+    setVideoDialogOpen(false);
+    setEditingVideo(null);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -211,7 +253,7 @@ export default function AdminDashboard() {
           </div>
           <p className="text-muted-foreground">Manage users, content, and platform settings</p>
         </div>
-        {/* Statistics Cards */}
+
         {stats && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             <Card>
@@ -249,84 +291,17 @@ export default function AdminDashboard() {
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Rejected</CardTitle>
-                <XCircle className="w-4 h-4 text-muted-foreground" />
+                <CardTitle className="text-sm font-medium">Total Videos</CardTitle>
+                <Video className="w-4 h-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.rejected}</div>
-                <p className="text-xs text-muted-foreground">Denied access</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Professionals</CardTitle>
-                <Briefcase className="w-4 h-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.professionals}</div>
-                <p className="text-xs text-muted-foreground">Professional users</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Job Seekers</CardTitle>
-                <Search className="w-4 h-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.jobSeekers}</div>
-                <p className="text-xs text-muted-foreground">Looking for jobs</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Employers</CardTitle>
-                <Building2 className="w-4 h-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.employers}</div>
-                <p className="text-xs text-muted-foreground">Hiring companies</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Business Owners</CardTitle>
-                <Handshake className="w-4 h-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.businessOwners}</div>
-                <p className="text-xs text-muted-foreground">Business owners</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Investors</CardTitle>
-                <TrendingUp className="w-4 h-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.investors}</div>
-                <p className="text-xs text-muted-foreground">Investor accounts</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Admins</CardTitle>
-                <Shield className="w-4 h-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.admins}</div>
-                <p className="text-xs text-muted-foreground">Administrator accounts</p>
+                <div className="text-2xl font-bold">{videos.length}</div>
+                <p className="text-xs text-muted-foreground">Published content</p>
               </CardContent>
             </Card>
           </div>
         )}
 
-        {/* User Management Tabs */}
         <Tabs defaultValue="pending" className="space-y-6">
           <TabsList>
             <TabsTrigger value="pending" data-testid="tab-pending">
@@ -344,6 +319,10 @@ export default function AdminDashboard() {
             <TabsTrigger value="all" data-testid="tab-all">
               <Users className="w-4 h-4 mr-2" />
               All Users ({users.length})
+            </TabsTrigger>
+            <TabsTrigger value="media" data-testid="tab-media">
+              <Video className="w-4 h-4 mr-2" />
+              Media ({videos.length})
             </TabsTrigger>
           </TabsList>
 
@@ -424,11 +403,83 @@ export default function AdminDashboard() {
               />
             ))}
           </TabsContent>
+
+          <TabsContent value="media" className="space-y-4">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-bold">Video Management</h2>
+              <Button onClick={() => handleOpenVideoDialog()} data-testid="button-add-video">
+                <Plus className="w-4 h-4 mr-2" />
+                Add Video
+              </Button>
+            </div>
+
+            {videos.length === 0 ? (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <Video className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                  <p className="text-muted-foreground mb-2">No videos yet</p>
+                  <p className="text-sm text-muted-foreground">Start by adding your first video</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {videos.map((video) => (
+                  <Card key={video.id} data-testid={`card-admin-video-${video.id}`}>
+                    <CardContent className="p-0">
+                      <div className="relative">
+                        <YouTubeEmbed videoId={video.youtubeId} title={video.title} />
+                        {video.featured && (
+                          <Badge 
+                            className="absolute top-2 right-2 bg-orange-500"
+                            data-testid={`badge-featured-${video.id}`}
+                          >
+                            <Star className="w-3 h-3 mr-1" />
+                            Featured
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="p-4 space-y-3">
+                        <div>
+                          <h3 className="font-bold text-lg mb-1" data-testid={`text-admin-video-title-${video.id}`}>
+                            {video.title}
+                          </h3>
+                          {video.description && (
+                            <p className="text-sm text-muted-foreground line-clamp-2" data-testid={`text-admin-video-description-${video.id}`}>
+                              {video.description}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleOpenVideoDialog(video)}
+                            data-testid={`button-edit-video-${video.id}`}
+                          >
+                            <Pencil className="w-3 h-3 mr-1" />
+                            Edit
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => setDeleteVideoId(video.id)}
+                            data-testid={`button-delete-video-${video.id}`}
+                          >
+                            <Trash2 className="w-3 h-3 mr-1" />
+                            Delete
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
         </Tabs>
       </main>
       <Footer />
 
-      {/* Role Edit Dialog */}
       {selectedUser && (
         <RoleEditDialog
           user={selectedUser}
@@ -436,6 +487,25 @@ export default function AdminDashboard() {
           onSave={(roles) => handleUpdateRoles(selectedUser.uid, roles)}
         />
       )}
+
+      <VideoFormDialog
+        open={videoDialogOpen}
+        onClose={handleCloseVideoDialog}
+        video={editingVideo}
+        onSuccess={() => {
+          refetchVideos();
+          handleCloseVideoDialog();
+        }}
+      />
+
+      <DeleteVideoDialog
+        videoId={deleteVideoId}
+        onClose={() => setDeleteVideoId(null)}
+        onSuccess={() => {
+          refetchVideos();
+          setDeleteVideoId(null);
+        }}
+      />
     </div>
   );
 }
@@ -633,5 +703,276 @@ function RoleEditDialog({
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+function VideoFormDialog({
+  open,
+  onClose,
+  video,
+  onSuccess,
+}: {
+  open: boolean;
+  onClose: () => void;
+  video: VideoType | null;
+  onSuccess: () => void;
+}) {
+  const { toast } = useToast();
+  const [formData, setFormData] = useState<VideoFormData>({
+    title: "",
+    description: "",
+    youtubeId: "",
+    thumbnailUrl: "",
+    publishedAt: "",
+    featured: false,
+  });
+
+  useEffect(() => {
+    if (video) {
+      setFormData({
+        title: video.title,
+        description: video.description || "",
+        youtubeId: video.youtubeId,
+        thumbnailUrl: video.thumbnailUrl || "",
+        publishedAt: video.publishedAt ? new Date(video.publishedAt).toISOString().split('T')[0] : "",
+        featured: video.featured,
+      });
+    } else {
+      setFormData({
+        title: "",
+        description: "",
+        youtubeId: "",
+        thumbnailUrl: "",
+        publishedAt: "",
+        featured: false,
+      });
+    }
+  }, [video, open]);
+
+  const createVideoMutation = useMutation({
+    mutationFn: async (data: Partial<VideoFormData>) => {
+      return apiRequest('POST', '/api/videos', data);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Video created successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/videos'] });
+      onSuccess();
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to create video",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateVideoMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: Partial<VideoFormData> }) => {
+      return apiRequest('PATCH', `/api/videos/${id}`, data);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Video updated successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/videos'] });
+      onSuccess();
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update video",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const submitData: any = {
+      title: formData.title,
+      description: formData.description || null,
+      youtubeId: formData.youtubeId,
+      thumbnailUrl: formData.thumbnailUrl || null,
+      featured: formData.featured,
+    };
+
+    if (formData.publishedAt) {
+      submitData.publishedAt = new Date(formData.publishedAt).toISOString();
+    }
+
+    if (video) {
+      updateVideoMutation.mutate({ id: video.id, data: submitData });
+    } else {
+      createVideoMutation.mutate(submitData);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" data-testid="dialog-video-form">
+        <DialogHeader>
+          <DialogTitle>{video ? "Edit Video" : "Add New Video"}</DialogTitle>
+          <DialogDescription>
+            {video ? "Update video details below" : "Add a new video to the media library"}
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <Label htmlFor="title">Title *</Label>
+            <Input
+              id="title"
+              value={formData.title}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              required
+              data-testid="input-video-title"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="description">Description</Label>
+            <Textarea
+              id="description"
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              rows={3}
+              data-testid="input-video-description"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="youtubeId">YouTube Video ID *</Label>
+            <Input
+              id="youtubeId"
+              value={formData.youtubeId}
+              onChange={(e) => setFormData({ ...formData, youtubeId: e.target.value })}
+              placeholder="e.g., dQw4w9WgXcQ"
+              required
+              data-testid="input-video-youtubeid"
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              The ID from the YouTube URL (youtube.com/watch?v=<strong>ID</strong>)
+            </p>
+          </div>
+
+          <div>
+            <Label htmlFor="thumbnailUrl">Thumbnail URL</Label>
+            <Input
+              id="thumbnailUrl"
+              value={formData.thumbnailUrl}
+              onChange={(e) => setFormData({ ...formData, thumbnailUrl: e.target.value })}
+              placeholder="https://..."
+              data-testid="input-video-thumbnail"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="publishedAt">Published Date</Label>
+            <Input
+              id="publishedAt"
+              type="date"
+              value={formData.publishedAt}
+              onChange={(e) => setFormData({ ...formData, publishedAt: e.target.value })}
+              data-testid="input-video-publishedat"
+            />
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="featured"
+              checked={formData.featured}
+              onCheckedChange={(checked) => setFormData({ ...formData, featured: checked })}
+              data-testid="switch-video-featured"
+            />
+            <Label htmlFor="featured" className="cursor-pointer">
+              Mark as featured
+            </Label>
+          </div>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose} data-testid="button-cancel-video">
+              Cancel
+            </Button>
+            <Button 
+              type="submit" 
+              disabled={createVideoMutation.isPending || updateVideoMutation.isPending}
+              data-testid="button-save-video"
+            >
+              {createVideoMutation.isPending || updateVideoMutation.isPending ? "Saving..." : video ? "Update Video" : "Add Video"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function DeleteVideoDialog({
+  videoId,
+  onClose,
+  onSuccess,
+}: {
+  videoId: string | null;
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
+  const { toast } = useToast();
+
+  const deleteVideoMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return apiRequest('DELETE', `/api/videos/${id}`);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Video deleted successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/videos'] });
+      onSuccess();
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to delete video",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleDelete = () => {
+    if (videoId) {
+      deleteVideoMutation.mutate(videoId);
+    }
+  };
+
+  return (
+    <Dialog open={!!videoId} onOpenChange={onClose}>
+      <DialogContent data-testid="dialog-delete-video">
+        <DialogHeader>
+          <DialogTitle>Delete Video</DialogTitle>
+          <DialogDescription>
+            Are you sure you want to delete this video? This action cannot be undone.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} data-testid="button-cancel-delete">
+            Cancel
+          </Button>
+          <Button 
+            variant="destructive" 
+            onClick={handleDelete}
+            disabled={deleteVideoMutation.isPending}
+            data-testid="button-confirm-delete"
+          >
+            {deleteVideoMutation.isPending ? "Deleting..." : "Delete"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
