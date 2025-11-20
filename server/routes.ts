@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
-import { insertUserProfileSchema, insertUserRolesSchema, insertOpportunitySchema, insertApplicationSchema, jobDetailsSchema, insertVideoSchema } from "@shared/schema";
+import { insertUserProfileSchema, insertUserRolesSchema, insertOpportunitySchema, insertApplicationSchema, jobDetailsSchema, insertVideoSchema, insertLeaderSchema, insertGalleryImageSchema, insertMembershipTierSchema, insertMembershipApplicationSchema } from "@shared/schema";
 import { Resend } from "resend";
 import { db } from "./firebase-admin";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
@@ -1117,6 +1117,614 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting video:", error);
       return res.status(500).json({ error: "Failed to delete video" });
+    }
+  });
+
+  // Leader endpoints
+  app.get("/api/leaders", async (req, res) => {
+    try {
+      const leaders = await storage.getAllLeaders();
+      return res.json(leaders);
+    } catch (error) {
+      console.error("Error fetching leaders:", error);
+      return res.status(500).json({ error: "Failed to fetch leaders" });
+    }
+  });
+
+  app.get("/api/leaders/:id", async (req, res) => {
+    try {
+      const leader = await storage.getLeaderById(req.params.id);
+      if (!leader) {
+        return res.status(404).json({ error: "Leader not found" });
+      }
+      return res.json(leader);
+    } catch (error) {
+      console.error("Error fetching leader:", error);
+      return res.status(500).json({ error: "Failed to fetch leader" });
+    }
+  });
+
+  app.post("/api/leaders", async (req, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const token = authHeader.substring(7);
+      let uid: string;
+
+      if (!process.env.FIREBASE_ADMIN_SERVICE_ACCOUNT) {
+        try {
+          const decodedToken = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+          uid = decodedToken.user_id;
+        } catch (decodeError) {
+          return res.status(401).json({ error: "Invalid token format" });
+        }
+      } else {
+        return res.status(500).json({ error: "Firebase Admin SDK not implemented yet" });
+      }
+
+      const userWithRoles = await storage.getUserWithRoles(uid);
+      if (!userWithRoles || !userWithRoles.roles?.isAdmin) {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      const validationResult = insertLeaderSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          error: "Invalid leader data", 
+          details: validationResult.error.issues 
+        });
+      }
+
+      const leader = await storage.createLeader(validationResult.data);
+      return res.status(201).json(leader);
+    } catch (error) {
+      console.error("Error creating leader:", error);
+      return res.status(500).json({ error: "Failed to create leader" });
+    }
+  });
+
+  app.patch("/api/leaders/:id", async (req, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const token = authHeader.substring(7);
+      let uid: string;
+
+      if (!process.env.FIREBASE_ADMIN_SERVICE_ACCOUNT) {
+        try {
+          const decodedToken = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+          uid = decodedToken.user_id;
+        } catch (decodeError) {
+          return res.status(401).json({ error: "Invalid token format" });
+        }
+      } else {
+        return res.status(500).json({ error: "Firebase Admin SDK not implemented yet" });
+      }
+
+      const userWithRoles = await storage.getUserWithRoles(uid);
+      if (!userWithRoles || !userWithRoles.roles?.isAdmin) {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      const partialLeaderSchema = insertLeaderSchema.partial();
+      const validationResult = partialLeaderSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          error: "Invalid leader data", 
+          details: validationResult.error.issues 
+        });
+      }
+
+      const leader = await storage.updateLeader(req.params.id, validationResult.data);
+      if (!leader) {
+        return res.status(404).json({ error: "Leader not found" });
+      }
+      return res.json(leader);
+    } catch (error) {
+      console.error("Error updating leader:", error);
+      return res.status(500).json({ error: "Failed to update leader" });
+    }
+  });
+
+  app.delete("/api/leaders/:id", async (req, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const token = authHeader.substring(7);
+      let uid: string;
+
+      if (!process.env.FIREBASE_ADMIN_SERVICE_ACCOUNT) {
+        try {
+          const decodedToken = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+          uid = decodedToken.user_id;
+        } catch (decodeError) {
+          return res.status(401).json({ error: "Invalid token format" });
+        }
+      } else {
+        return res.status(500).json({ error: "Firebase Admin SDK not implemented yet" });
+      }
+
+      const userWithRoles = await storage.getUserWithRoles(uid);
+      if (!userWithRoles || !userWithRoles.roles?.isAdmin) {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      await storage.deleteLeader(req.params.id);
+      return res.json({ success: true, message: "Leader deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting leader:", error);
+      return res.status(500).json({ error: "Failed to delete leader" });
+    }
+  });
+
+  // Gallery endpoints
+  app.get("/api/gallery", async (req, res) => {
+    try {
+      const images = await storage.getAllGalleryImages();
+      return res.json(images);
+    } catch (error) {
+      console.error("Error fetching gallery images:", error);
+      return res.status(500).json({ error: "Failed to fetch gallery images" });
+    }
+  });
+
+  app.get("/api/gallery/:id", async (req, res) => {
+    try {
+      const image = await storage.getGalleryImageById(req.params.id);
+      if (!image) {
+        return res.status(404).json({ error: "Gallery image not found" });
+      }
+      return res.json(image);
+    } catch (error) {
+      console.error("Error fetching gallery image:", error);
+      return res.status(500).json({ error: "Failed to fetch gallery image" });
+    }
+  });
+
+  app.post("/api/gallery", async (req, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const token = authHeader.substring(7);
+      let uid: string;
+
+      if (!process.env.FIREBASE_ADMIN_SERVICE_ACCOUNT) {
+        try {
+          const decodedToken = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+          uid = decodedToken.user_id;
+        } catch (decodeError) {
+          return res.status(401).json({ error: "Invalid token format" });
+        }
+      } else {
+        return res.status(500).json({ error: "Firebase Admin SDK not implemented yet" });
+      }
+
+      const userWithRoles = await storage.getUserWithRoles(uid);
+      if (!userWithRoles || !userWithRoles.roles?.isAdmin) {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      const validationResult = insertGalleryImageSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          error: "Invalid gallery image data", 
+          details: validationResult.error.issues 
+        });
+      }
+
+      const image = await storage.createGalleryImage(validationResult.data);
+      return res.status(201).json(image);
+    } catch (error) {
+      console.error("Error creating gallery image:", error);
+      return res.status(500).json({ error: "Failed to create gallery image" });
+    }
+  });
+
+  app.patch("/api/gallery/:id", async (req, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const token = authHeader.substring(7);
+      let uid: string;
+
+      if (!process.env.FIREBASE_ADMIN_SERVICE_ACCOUNT) {
+        try {
+          const decodedToken = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+          uid = decodedToken.user_id;
+        } catch (decodeError) {
+          return res.status(401).json({ error: "Invalid token format" });
+        }
+      } else {
+        return res.status(500).json({ error: "Firebase Admin SDK not implemented yet" });
+      }
+
+      const userWithRoles = await storage.getUserWithRoles(uid);
+      if (!userWithRoles || !userWithRoles.roles?.isAdmin) {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      const partialGalleryImageSchema = insertGalleryImageSchema.partial();
+      const validationResult = partialGalleryImageSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          error: "Invalid gallery image data", 
+          details: validationResult.error.issues 
+        });
+      }
+
+      const image = await storage.updateGalleryImage(req.params.id, validationResult.data);
+      if (!image) {
+        return res.status(404).json({ error: "Gallery image not found" });
+      }
+      return res.json(image);
+    } catch (error) {
+      console.error("Error updating gallery image:", error);
+      return res.status(500).json({ error: "Failed to update gallery image" });
+    }
+  });
+
+  app.delete("/api/gallery/:id", async (req, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const token = authHeader.substring(7);
+      let uid: string;
+
+      if (!process.env.FIREBASE_ADMIN_SERVICE_ACCOUNT) {
+        try {
+          const decodedToken = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+          uid = decodedToken.user_id;
+        } catch (decodeError) {
+          return res.status(401).json({ error: "Invalid token format" });
+        }
+      } else {
+        return res.status(500).json({ error: "Firebase Admin SDK not implemented yet" });
+      }
+
+      const userWithRoles = await storage.getUserWithRoles(uid);
+      if (!userWithRoles || !userWithRoles.roles?.isAdmin) {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      await storage.deleteGalleryImage(req.params.id);
+      return res.json({ success: true, message: "Gallery image deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting gallery image:", error);
+      return res.status(500).json({ error: "Failed to delete gallery image" });
+    }
+  });
+
+  // Membership Tier endpoints
+  app.get("/api/membership-tiers", async (req, res) => {
+    try {
+      const tiers = await storage.getAllMembershipTiers();
+      return res.json(tiers);
+    } catch (error) {
+      console.error("Error fetching membership tiers:", error);
+      return res.status(500).json({ error: "Failed to fetch membership tiers" });
+    }
+  });
+
+  app.get("/api/membership-tiers/:id", async (req, res) => {
+    try {
+      const tier = await storage.getMembershipTierById(req.params.id);
+      if (!tier) {
+        return res.status(404).json({ error: "Membership tier not found" });
+      }
+      return res.json(tier);
+    } catch (error) {
+      console.error("Error fetching membership tier:", error);
+      return res.status(500).json({ error: "Failed to fetch membership tier" });
+    }
+  });
+
+  app.post("/api/membership-tiers", async (req, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const token = authHeader.substring(7);
+      let uid: string;
+
+      if (!process.env.FIREBASE_ADMIN_SERVICE_ACCOUNT) {
+        try {
+          const decodedToken = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+          uid = decodedToken.user_id;
+        } catch (decodeError) {
+          return res.status(401).json({ error: "Invalid token format" });
+        }
+      } else {
+        return res.status(500).json({ error: "Firebase Admin SDK not implemented yet" });
+      }
+
+      const userWithRoles = await storage.getUserWithRoles(uid);
+      if (!userWithRoles || !userWithRoles.roles?.isAdmin) {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      const validationResult = insertMembershipTierSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          error: "Invalid membership tier data", 
+          details: validationResult.error.issues 
+        });
+      }
+
+      const tier = await storage.createMembershipTier(validationResult.data);
+      return res.status(201).json(tier);
+    } catch (error) {
+      console.error("Error creating membership tier:", error);
+      return res.status(500).json({ error: "Failed to create membership tier" });
+    }
+  });
+
+  app.patch("/api/membership-tiers/:id", async (req, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const token = authHeader.substring(7);
+      let uid: string;
+
+      if (!process.env.FIREBASE_ADMIN_SERVICE_ACCOUNT) {
+        try {
+          const decodedToken = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+          uid = decodedToken.user_id;
+        } catch (decodeError) {
+          return res.status(401).json({ error: "Invalid token format" });
+        }
+      } else {
+        return res.status(500).json({ error: "Firebase Admin SDK not implemented yet" });
+      }
+
+      const userWithRoles = await storage.getUserWithRoles(uid);
+      if (!userWithRoles || !userWithRoles.roles?.isAdmin) {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      const partialMembershipTierSchema = insertMembershipTierSchema.partial();
+      const validationResult = partialMembershipTierSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          error: "Invalid membership tier data", 
+          details: validationResult.error.issues 
+        });
+      }
+
+      const tier = await storage.updateMembershipTier(req.params.id, validationResult.data);
+      if (!tier) {
+        return res.status(404).json({ error: "Membership tier not found" });
+      }
+      return res.json(tier);
+    } catch (error) {
+      console.error("Error updating membership tier:", error);
+      return res.status(500).json({ error: "Failed to update membership tier" });
+    }
+  });
+
+  app.delete("/api/membership-tiers/:id", async (req, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const token = authHeader.substring(7);
+      let uid: string;
+
+      if (!process.env.FIREBASE_ADMIN_SERVICE_ACCOUNT) {
+        try {
+          const decodedToken = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+          uid = decodedToken.user_id;
+        } catch (decodeError) {
+          return res.status(401).json({ error: "Invalid token format" });
+        }
+      } else {
+        return res.status(500).json({ error: "Firebase Admin SDK not implemented yet" });
+      }
+
+      const userWithRoles = await storage.getUserWithRoles(uid);
+      if (!userWithRoles || !userWithRoles.roles?.isAdmin) {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      await storage.deleteMembershipTier(req.params.id);
+      return res.json({ success: true, message: "Membership tier deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting membership tier:", error);
+      return res.status(500).json({ error: "Failed to delete membership tier" });
+    }
+  });
+
+  // Membership Application endpoints
+  app.get("/api/membership-applications", async (req, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const token = authHeader.substring(7);
+      let uid: string;
+
+      if (!process.env.FIREBASE_ADMIN_SERVICE_ACCOUNT) {
+        try {
+          const decodedToken = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+          uid = decodedToken.user_id;
+        } catch (decodeError) {
+          return res.status(401).json({ error: "Invalid token format" });
+        }
+      } else {
+        return res.status(500).json({ error: "Firebase Admin SDK not implemented yet" });
+      }
+
+      const userWithRoles = await storage.getUserWithRoles(uid);
+      if (!userWithRoles || !userWithRoles.roles?.isAdmin) {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      const applications = await storage.getAllMembershipApplications();
+      return res.json(applications);
+    } catch (error) {
+      console.error("Error fetching membership applications:", error);
+      return res.status(500).json({ error: "Failed to fetch membership applications" });
+    }
+  });
+
+  app.get("/api/membership-applications/:id", async (req, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const token = authHeader.substring(7);
+      let uid: string;
+
+      if (!process.env.FIREBASE_ADMIN_SERVICE_ACCOUNT) {
+        try {
+          const decodedToken = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+          uid = decodedToken.user_id;
+        } catch (decodeError) {
+          return res.status(401).json({ error: "Invalid token format" });
+        }
+      } else {
+        return res.status(500).json({ error: "Firebase Admin SDK not implemented yet" });
+      }
+
+      const userWithRoles = await storage.getUserWithRoles(uid);
+      if (!userWithRoles || !userWithRoles.roles?.isAdmin) {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      const application = await storage.getMembershipApplicationById(req.params.id);
+      if (!application) {
+        return res.status(404).json({ error: "Membership application not found" });
+      }
+      return res.json(application);
+    } catch (error) {
+      console.error("Error fetching membership application:", error);
+      return res.status(500).json({ error: "Failed to fetch membership application" });
+    }
+  });
+
+  app.post("/api/membership-applications", async (req, res) => {
+    try {
+      const validationResult = insertMembershipApplicationSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          error: "Invalid membership application data", 
+          details: validationResult.error.issues 
+        });
+      }
+
+      const application = await storage.createMembershipApplication(validationResult.data);
+      return res.status(201).json(application);
+    } catch (error) {
+      console.error("Error creating membership application:", error);
+      return res.status(500).json({ error: "Failed to create membership application" });
+    }
+  });
+
+  app.patch("/api/membership-applications/:id", async (req, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const token = authHeader.substring(7);
+      let uid: string;
+
+      if (!process.env.FIREBASE_ADMIN_SERVICE_ACCOUNT) {
+        try {
+          const decodedToken = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+          uid = decodedToken.user_id;
+        } catch (decodeError) {
+          return res.status(401).json({ error: "Invalid token format" });
+        }
+      } else {
+        return res.status(500).json({ error: "Firebase Admin SDK not implemented yet" });
+      }
+
+      const userWithRoles = await storage.getUserWithRoles(uid);
+      if (!userWithRoles || !userWithRoles.roles?.isAdmin) {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      const partialMembershipApplicationSchema = insertMembershipApplicationSchema.partial();
+      const validationResult = partialMembershipApplicationSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          error: "Invalid membership application data", 
+          details: validationResult.error.issues 
+        });
+      }
+
+      const application = await storage.updateMembershipApplication(req.params.id, validationResult.data);
+      if (!application) {
+        return res.status(404).json({ error: "Membership application not found" });
+      }
+      return res.json(application);
+    } catch (error) {
+      console.error("Error updating membership application:", error);
+      return res.status(500).json({ error: "Failed to update membership application" });
+    }
+  });
+
+  app.delete("/api/membership-applications/:id", async (req, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const token = authHeader.substring(7);
+      let uid: string;
+
+      if (!process.env.FIREBASE_ADMIN_SERVICE_ACCOUNT) {
+        try {
+          const decodedToken = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+          uid = decodedToken.user_id;
+        } catch (decodeError) {
+          return res.status(401).json({ error: "Invalid token format" });
+        }
+      } else {
+        return res.status(500).json({ error: "Firebase Admin SDK not implemented yet" });
+      }
+
+      const userWithRoles = await storage.getUserWithRoles(uid);
+      if (!userWithRoles || !userWithRoles.roles?.isAdmin) {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      await storage.deleteMembershipApplication(req.params.id);
+      return res.json({ success: true, message: "Membership application deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting membership application:", error);
+      return res.status(500).json({ error: "Failed to delete membership application" });
     }
   });
 

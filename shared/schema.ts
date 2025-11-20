@@ -175,6 +175,64 @@ export const videos = pgTable("videos", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const leaders = pgTable("leaders", {
+  id: varchar("id", { length: 128 }).primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  title: text("title").notNull(),
+  bio: text("bio"),
+  imageUrl: text("image_url"),
+  linkedinUrl: text("linkedin_url"),
+  order: integer("order").default(0).notNull(),
+  visible: boolean("visible").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const galleryImages = pgTable("gallery_images", {
+  id: varchar("id", { length: 128 }).primaryKey().default(sql`gen_random_uuid()`),
+  title: text("title").notNull(),
+  description: text("description"),
+  imageUrl: text("image_url").notNull(),
+  category: varchar("category", { length: 100 }),
+  eventDate: timestamp("event_date"),
+  visible: boolean("visible").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const membershipTiers = pgTable("membership_tiers", {
+  id: varchar("id", { length: 128 }).primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  description: text("description"),
+  price: integer("price"),
+  currency: varchar("currency", { length: 10 }).default("USD"),
+  features: text("features").array(),
+  highlighted: boolean("highlighted").default(false).notNull(),
+  visible: boolean("visible").default(true).notNull(),
+  order: integer("order").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const membershipApplications = pgTable("membership_applications", {
+  id: varchar("id", { length: 128 }).primaryKey().default(sql`gen_random_uuid()`),
+  fullName: text("full_name").notNull(),
+  email: varchar("email", { length: 255 }).notNull(),
+  phone: varchar("phone", { length: 50 }),
+  country: varchar("country", { length: 100 }).notNull(),
+  city: varchar("city", { length: 100 }),
+  languages: text("languages").array(),
+  headline: text("headline"),
+  bio: text("bio"),
+  linkedinUrl: text("linkedin_url"),
+  websiteUrl: text("website_url"),
+  portfolioUrl: text("portfolio_url"),
+  roles: json("roles"),
+  status: approvalStatusEnum("status").default("pending").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({ createdAt: true, lastLogin: true });
 export const selectUserSchema = createSelectSchema(users);
 
@@ -207,6 +265,18 @@ export const selectApplicationSchema = createSelectSchema(applications);
 
 export const insertVideoSchema = createInsertSchema(videos).omit({ id: true, createdAt: true, updatedAt: true });
 export const selectVideoSchema = createSelectSchema(videos);
+
+export const insertLeaderSchema = createInsertSchema(leaders).omit({ id: true, createdAt: true, updatedAt: true });
+export const selectLeaderSchema = createSelectSchema(leaders);
+
+export const insertGalleryImageSchema = createInsertSchema(galleryImages).omit({ id: true, createdAt: true, updatedAt: true });
+export const selectGalleryImageSchema = createSelectSchema(galleryImages);
+
+export const insertMembershipTierSchema = createInsertSchema(membershipTiers).omit({ id: true, createdAt: true, updatedAt: true });
+export const selectMembershipTierSchema = createSelectSchema(membershipTiers);
+
+export const insertMembershipApplicationSchema = createInsertSchema(membershipApplications).omit({ id: true, createdAt: true, updatedAt: true });
+export const selectMembershipApplicationSchema = createSelectSchema(membershipApplications);
 
 export const jobDetailsSchema = z.object({
   employmentType: z.enum(["full-time", "part-time", "remote", "contract"]).optional(),
@@ -254,3 +324,15 @@ export type InsertApplication = z.infer<typeof insertApplicationSchema>;
 
 export type Video = typeof videos.$inferSelect;
 export type InsertVideo = z.infer<typeof insertVideoSchema>;
+
+export type Leader = typeof leaders.$inferSelect;
+export type InsertLeader = z.infer<typeof insertLeaderSchema>;
+
+export type GalleryImage = typeof galleryImages.$inferSelect;
+export type InsertGalleryImage = z.infer<typeof insertGalleryImageSchema>;
+
+export type MembershipTier = typeof membershipTiers.$inferSelect;
+export type InsertMembershipTier = z.infer<typeof insertMembershipTierSchema>;
+
+export type MembershipApplication = typeof membershipApplications.$inferSelect;
+export type InsertMembershipApplication = z.infer<typeof insertMembershipApplicationSchema>;

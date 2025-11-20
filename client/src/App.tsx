@@ -6,6 +6,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Home from "@/pages/Home";
 import About from "@/pages/About";
+import Leadership from "@/pages/Leadership";
+import Gallery from "@/pages/Gallery";
 import Membership from "@/pages/Membership";
 import Opportunities from "@/pages/Opportunities";
 import Media from "@/pages/Media";
@@ -39,6 +41,8 @@ function Router() {
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/about" component={About} />
+      <Route path="/leadership" component={Leadership} />
+      <Route path="/gallery" component={Gallery} />
       <Route path="/membership" component={Membership} />
       <Route path="/opportunities" component={Opportunities} />
       <Route path="/media" component={Media} />

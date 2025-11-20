@@ -14,6 +14,9 @@ import {
   deleteField
 } from "firebase/firestore";
 import { db } from "./firebase-admin";
+import { db as pgDb } from "./db";
+import { leaders, galleryImages, membershipTiers, membershipApplications } from "@shared/schema";
+import { eq, desc } from "drizzle-orm";
 import { 
   type User,
   type UserProfile,
@@ -34,6 +37,14 @@ import {
   type JobSeekerProfile,
   type Video,
   type InsertVideo,
+  type Leader,
+  type InsertLeader,
+  type GalleryImage,
+  type InsertGalleryImage,
+  type MembershipTier,
+  type InsertMembershipTier,
+  type MembershipApplication,
+  type InsertMembershipApplication,
 } from "@shared/schema";
 
 // Helper function to convert Firestore Timestamps to Date objects
@@ -107,6 +118,30 @@ export interface IStorage {
   getVideoById(id: string): Promise<Video | undefined>;
   updateVideo(id: string, data: Partial<InsertVideo>): Promise<Video | undefined>;
   deleteVideo(id: string): Promise<void>;
+  
+  createLeader(leader: InsertLeader): Promise<Leader>;
+  getAllLeaders(): Promise<Leader[]>;
+  getLeaderById(id: string): Promise<Leader | undefined>;
+  updateLeader(id: string, data: Partial<InsertLeader>): Promise<Leader | undefined>;
+  deleteLeader(id: string): Promise<void>;
+  
+  createGalleryImage(image: InsertGalleryImage): Promise<GalleryImage>;
+  getAllGalleryImages(): Promise<GalleryImage[]>;
+  getGalleryImageById(id: string): Promise<GalleryImage | undefined>;
+  updateGalleryImage(id: string, data: Partial<InsertGalleryImage>): Promise<GalleryImage | undefined>;
+  deleteGalleryImage(id: string): Promise<void>;
+  
+  createMembershipTier(tier: InsertMembershipTier): Promise<MembershipTier>;
+  getAllMembershipTiers(): Promise<MembershipTier[]>;
+  getMembershipTierById(id: string): Promise<MembershipTier | undefined>;
+  updateMembershipTier(id: string, data: Partial<InsertMembershipTier>): Promise<MembershipTier | undefined>;
+  deleteMembershipTier(id: string): Promise<void>;
+  
+  createMembershipApplication(application: InsertMembershipApplication): Promise<MembershipApplication>;
+  getAllMembershipApplications(): Promise<MembershipApplication[]>;
+  getMembershipApplicationById(id: string): Promise<MembershipApplication | undefined>;
+  updateMembershipApplication(id: string, data: Partial<InsertMembershipApplication>): Promise<MembershipApplication | undefined>;
+  deleteMembershipApplication(id: string): Promise<void>;
 }
 
 export class FirestoreStorage implements IStorage {
@@ -876,6 +911,102 @@ export class FirestoreStorage implements IStorage {
   async deleteVideo(id: string): Promise<void> {
     const docRef = doc(db, "videos", id);
     await deleteDoc(docRef);
+  }
+
+  async createLeader(leader: InsertLeader): Promise<Leader> {
+    const [newLeader] = await pgDb.insert(leaders).values(leader).returning();
+    return newLeader;
+  }
+
+  async getAllLeaders(): Promise<Leader[]> {
+    const result = await pgDb.select().from(leaders).where(eq(leaders.visible, true)).orderBy(leaders.order, leaders.createdAt);
+    return result;
+  }
+
+  async getLeaderById(id: string): Promise<Leader | undefined> {
+    const [leader] = await pgDb.select().from(leaders).where(eq(leaders.id, id));
+    return leader;
+  }
+
+  async updateLeader(id: string, data: Partial<InsertLeader>): Promise<Leader | undefined> {
+    const [updated] = await pgDb.update(leaders).set({ ...data, updatedAt: new Date() }).where(eq(leaders.id, id)).returning();
+    return updated;
+  }
+
+  async deleteLeader(id: string): Promise<void> {
+    await pgDb.delete(leaders).where(eq(leaders.id, id));
+  }
+
+  async createGalleryImage(image: InsertGalleryImage): Promise<GalleryImage> {
+    const [newImage] = await pgDb.insert(galleryImages).values(image).returning();
+    return newImage;
+  }
+
+  async getAllGalleryImages(): Promise<GalleryImage[]> {
+    const result = await pgDb.select().from(galleryImages).where(eq(galleryImages.visible, true)).orderBy(desc(galleryImages.eventDate || galleryImages.createdAt));
+    return result;
+  }
+
+  async getGalleryImageById(id: string): Promise<GalleryImage | undefined> {
+    const [image] = await pgDb.select().from(galleryImages).where(eq(galleryImages.id, id));
+    return image;
+  }
+
+  async updateGalleryImage(id: string, data: Partial<InsertGalleryImage>): Promise<GalleryImage | undefined> {
+    const [updated] = await pgDb.update(galleryImages).set({ ...data, updatedAt: new Date() }).where(eq(galleryImages.id, id)).returning();
+    return updated;
+  }
+
+  async deleteGalleryImage(id: string): Promise<void> {
+    await pgDb.delete(galleryImages).where(eq(galleryImages.id, id));
+  }
+
+  async createMembershipTier(tier: InsertMembershipTier): Promise<MembershipTier> {
+    const [newTier] = await pgDb.insert(membershipTiers).values(tier).returning();
+    return newTier;
+  }
+
+  async getAllMembershipTiers(): Promise<MembershipTier[]> {
+    const result = await pgDb.select().from(membershipTiers).where(eq(membershipTiers.visible, true)).orderBy(membershipTiers.order);
+    return result;
+  }
+
+  async getMembershipTierById(id: string): Promise<MembershipTier | undefined> {
+    const [tier] = await pgDb.select().from(membershipTiers).where(eq(membershipTiers.id, id));
+    return tier;
+  }
+
+  async updateMembershipTier(id: string, data: Partial<InsertMembershipTier>): Promise<MembershipTier | undefined> {
+    const [updated] = await pgDb.update(membershipTiers).set({ ...data, updatedAt: new Date() }).where(eq(membershipTiers.id, id)).returning();
+    return updated;
+  }
+
+  async deleteMembershipTier(id: string): Promise<void> {
+    await pgDb.delete(membershipTiers).where(eq(membershipTiers.id, id));
+  }
+
+  async createMembershipApplication(application: InsertMembershipApplication): Promise<MembershipApplication> {
+    const [newApplication] = await pgDb.insert(membershipApplications).values(application).returning();
+    return newApplication;
+  }
+
+  async getAllMembershipApplications(): Promise<MembershipApplication[]> {
+    const result = await pgDb.select().from(membershipApplications).orderBy(desc(membershipApplications.createdAt));
+    return result;
+  }
+
+  async getMembershipApplicationById(id: string): Promise<MembershipApplication | undefined> {
+    const [application] = await pgDb.select().from(membershipApplications).where(eq(membershipApplications.id, id));
+    return application;
+  }
+
+  async updateMembershipApplication(id: string, data: Partial<InsertMembershipApplication>): Promise<MembershipApplication | undefined> {
+    const [updated] = await pgDb.update(membershipApplications).set({ ...data, updatedAt: new Date() }).where(eq(membershipApplications.id, id)).returning();
+    return updated;
+  }
+
+  async deleteMembershipApplication(id: string): Promise<void> {
+    await pgDb.delete(membershipApplications).where(eq(membershipApplications.id, id));
   }
 }
 
