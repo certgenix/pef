@@ -2,7 +2,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { RoleType } from "@shared/roleUtils";
 import { UserRoles as FirestoreUserRoles } from "@shared/types";
 
-type RoleTypeKey = "professional" | "jobSeeker" | "employer" | "businessOwner" | "investor";
+type RoleTypeKey = "professional" | "jobSeeker" | "employer" | "businessOwner" | "investor" | "admin";
 
 export function useUserRoles(userId?: string) {
   const { userData, loading: authLoading } = useAuth();
@@ -13,6 +13,7 @@ export function useUserRoles(userId?: string) {
     employer: false,
     businessOwner: false,
     investor: false,
+    admin: false,
   };
 
   const activeRoles: RoleType[] = Object.entries(firestoreRoles)
@@ -51,5 +52,6 @@ export function useUserRoles(userId?: string) {
     isEmployer: firestoreRoles.employer,
     isBusinessOwner: firestoreRoles.businessOwner,
     isInvestor: firestoreRoles.investor,
+    isAdmin: firestoreRoles.admin,
   };
 }

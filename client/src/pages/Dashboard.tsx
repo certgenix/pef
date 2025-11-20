@@ -108,7 +108,7 @@ function DashboardContent() {
         <p className="text-muted-foreground mb-4">
           Welcome back! Select a dashboard to get started.
         </p>
-        {safeRoles.length > 0 && (
+        {(safeRoles.length > 0 || isAdmin) && (
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">Your Roles:</span>
             <RoleBadgeList roles={safeRoles} variant="sm" />
