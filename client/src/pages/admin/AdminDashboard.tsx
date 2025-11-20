@@ -89,6 +89,7 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const [videoDialogOpen, setVideoDialogOpen] = useState(false);
   const [editingVideo, setEditingVideo] = useState<VideoType | null>(null);
   const [deleteVideoId, setDeleteVideoId] = useState<string | null>(null);
@@ -243,6 +244,16 @@ export default function AdminDashboard() {
   const approvedUsers = users.filter((u) => u.status === "approved");
   const rejectedUsers = users.filter((u) => u.status === "rejected");
 
+  const filterUsers = (userList: UserData[]) => {
+    if (!searchQuery.trim()) return userList;
+    const query = searchQuery.toLowerCase();
+    return userList.filter(
+      (user) =>
+        user.name.toLowerCase().includes(query) ||
+        user.email.toLowerCase().includes(query)
+    );
+  };
+
   return (
     <div className="min-h-screen">
       <Header />
@@ -327,82 +338,83 @@ export default function AdminDashboard() {
             </TabsTrigger>
           </TabsList>
 
+          <div className="mb-4">
+            <div className="relative max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by name or email..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9"
+                data-testid="input-search-users"
+              />
+            </div>
+          </div>
+
           <TabsContent value="pending" className="space-y-4">
-            {pendingUsers.length === 0 ? (
+            {filterUsers(pendingUsers).length === 0 ? (
               <Card>
                 <CardContent className="py-12 text-center">
-                  <p className="text-muted-foreground">No pending user registrations</p>
+                  <p className="text-muted-foreground">
+                    {searchQuery ? "No users found" : "No pending user registrations"}
+                  </p>
                 </CardContent>
               </Card>
             ) : (
-              pendingUsers.map((user) => (
-                <UserCard
-                  key={user.uid}
-                  user={user}
-                  onApprove={() => handleUpdateStatus(user.uid, "approved")}
-                  onReject={() => handleUpdateStatus(user.uid, "rejected")}
-                  onEditRoles={() => setSelectedUser(user)}
-                  showActions={true}
-                />
-              ))
+              <UsersTable
+                users={filterUsers(pendingUsers)}
+                onUserClick={setSelectedUser}
+              />
             )}
           </TabsContent>
 
           <TabsContent value="approved" className="space-y-4">
-            {approvedUsers.length === 0 ? (
+            {filterUsers(approvedUsers).length === 0 ? (
               <Card>
                 <CardContent className="py-12 text-center">
-                  <p className="text-muted-foreground">No approved users</p>
+                  <p className="text-muted-foreground">
+                    {searchQuery ? "No users found" : "No approved users"}
+                  </p>
                 </CardContent>
               </Card>
             ) : (
-              approvedUsers.map((user) => (
-                <UserCard
-                  key={user.uid}
-                  user={user}
-                  onEditRoles={() => setSelectedUser(user)}
-                  onSuspend={() => handleUpdateStatus(user.uid, "rejected")}
-                />
-              ))
+              <UsersTable
+                users={filterUsers(approvedUsers)}
+                onUserClick={setSelectedUser}
+              />
             )}
           </TabsContent>
 
           <TabsContent value="rejected" className="space-y-4">
-            {rejectedUsers.length === 0 ? (
+            {filterUsers(rejectedUsers).length === 0 ? (
               <Card>
                 <CardContent className="py-12 text-center">
-                  <p className="text-muted-foreground">No rejected users</p>
+                  <p className="text-muted-foreground">
+                    {searchQuery ? "No users found" : "No rejected users"}
+                  </p>
                 </CardContent>
               </Card>
             ) : (
-              rejectedUsers.map((user) => (
-                <UserCard
-                  key={user.uid}
-                  user={user}
-                  onApprove={() => handleUpdateStatus(user.uid, "approved")}
-                />
-              ))
+              <UsersTable
+                users={filterUsers(rejectedUsers)}
+                onUserClick={setSelectedUser}
+              />
             )}
           </TabsContent>
 
           <TabsContent value="all" className="space-y-4">
-            {users.map((user) => (
-              <UserCard
-                key={user.uid}
-                user={user}
-                onEditRoles={() => setSelectedUser(user)}
-                onApprove={
-                  user.status !== "approved"
-                    ? () => handleUpdateStatus(user.uid, "approved")
-                    : undefined
-                }
-                onReject={
-                  user.status !== "rejected"
-                    ? () => handleUpdateStatus(user.uid, "rejected")
-                    : undefined
-                }
+            {filterUsers(users).length === 0 ? (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <p className="text-muted-foreground">No users found</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <UsersTable
+                users={filterUsers(users)}
+                onUserClick={setSelectedUser}
               />
-            ))}
+            )}
           </TabsContent>
 
           <TabsContent value="media" className="space-y-4">
@@ -482,10 +494,18 @@ export default function AdminDashboard() {
       <Footer />
 
       {selectedUser && (
-        <RoleEditDialog
+        <UserManagementDialog
           user={selectedUser}
           onClose={() => setSelectedUser(null)}
-          onSave={(roles) => handleUpdateRoles(selectedUser.uid, roles)}
+          onApprove={() => {
+            handleUpdateStatus(selectedUser.uid, "approved");
+            setSelectedUser(null);
+          }}
+          onReject={() => {
+            handleUpdateStatus(selectedUser.uid, "rejected");
+            setSelectedUser(null);
+          }}
+          onUpdateRoles={(roles) => handleUpdateRoles(selectedUser.uid, roles)}
         />
       )}
 
@@ -511,20 +531,12 @@ export default function AdminDashboard() {
   );
 }
 
-function UserCard({
-  user,
-  onApprove,
-  onReject,
-  onSuspend,
-  onEditRoles,
-  showActions,
+function UsersTable({
+  users,
+  onUserClick,
 }: {
-  user: UserData;
-  onApprove?: () => void;
-  onReject?: () => void;
-  onSuspend?: () => void;
-  onEditRoles?: () => void;
-  showActions?: boolean;
+  users: UserData[];
+  onUserClick: (user: UserData) => void;
 }) {
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -540,115 +552,95 @@ function UserCard({
   };
 
   return (
-    <Card data-testid={`card-user-${user.uid}`}>
-      <CardHeader>
-        <div className="flex flex-wrap justify-between items-start gap-2">
-          <div>
-            <CardTitle>{user.name}</CardTitle>
-            <CardDescription>{user.email}</CardDescription>
-          </div>
-          {getStatusBadge(user.status)}
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <div>
-            <p className="text-muted-foreground">Country</p>
-            <p>{user.profile?.country || "Not provided"}</p>
-          </div>
-          <div>
-            <p className="text-muted-foreground">City</p>
-            <p>{user.profile?.city || "Not provided"}</p>
-          </div>
-          <div className="col-span-2">
-            <p className="text-muted-foreground">Headline</p>
-            <p>{user.profile?.headline || "Not provided"}</p>
-          </div>
-          <div className="col-span-2">
-            <p className="text-muted-foreground">Roles</p>
-            <div className="flex flex-wrap gap-2 mt-1">
-              {user.roles?.isProfessional && (
-                <Badge variant="outline">
-                  <Briefcase className="w-3 h-3 mr-1" />
-                  Professional
-                </Badge>
-              )}
-              {user.roles?.isJobSeeker && (
-                <Badge variant="outline">
-                  <Search className="w-3 h-3 mr-1" />
-                  Job Seeker
-                </Badge>
-              )}
-              {user.roles?.isEmployer && (
-                <Badge variant="outline">
-                  <Building2 className="w-3 h-3 mr-1" />
-                  Employer
-                </Badge>
-              )}
-              {user.roles?.isBusinessOwner && (
-                <Badge variant="outline">
-                  <Handshake className="w-3 h-3 mr-1" />
-                  Business Owner
-                </Badge>
-              )}
-              {user.roles?.isInvestor && (
-                <Badge variant="outline">
-                  <TrendingUp className="w-3 h-3 mr-1" />
-                  Investor
-                </Badge>
-              )}
-              {user.roles?.isAdmin && (
-                <Badge variant="default">
-                  <Shield className="w-3 h-3 mr-1" />
-                  Admin
-                </Badge>
-              )}
-            </div>
-          </div>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {showActions && onApprove && (
-            <Button
-              onClick={onApprove}
-              variant="default"
-              data-testid={`button-approve-${user.uid}`}
-            >
-              Approve
-            </Button>
-          )}
-          {showActions && onReject && (
-            <Button
-              onClick={onReject}
-              variant="destructive"
-              data-testid={`button-reject-${user.uid}`}
-            >
-              Reject
-            </Button>
-          )}
-          {onSuspend && (
-            <Button onClick={onSuspend} variant="destructive" data-testid={`button-suspend-${user.uid}`}>
-              Suspend
-            </Button>
-          )}
-          {onEditRoles && (
-            <Button onClick={onEditRoles} variant="outline" data-testid={`button-edit-roles-${user.uid}`}>
-              Edit Roles
-            </Button>
-          )}
-        </div>
-      </CardContent>
+    <Card>
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b">
+              <th className="text-left p-4 font-medium text-sm text-muted-foreground">Name</th>
+              <th className="text-left p-4 font-medium text-sm text-muted-foreground">Email</th>
+              <th className="text-left p-4 font-medium text-sm text-muted-foreground">Status</th>
+              <th className="text-left p-4 font-medium text-sm text-muted-foreground">Roles</th>
+            </tr>
+          </thead>
+          <tbody>
+            {users.map((user) => (
+              <tr
+                key={user.uid}
+                onClick={() => onUserClick(user)}
+                className="border-b last:border-0 hover-elevate cursor-pointer"
+                data-testid={`row-user-${user.uid}`}
+              >
+                <td className="p-4">
+                  <div className="font-medium" data-testid={`text-user-name-${user.uid}`}>
+                    {user.name}
+                  </div>
+                </td>
+                <td className="p-4">
+                  <div className="text-sm text-muted-foreground" data-testid={`text-user-email-${user.uid}`}>
+                    {user.email}
+                  </div>
+                </td>
+                <td className="p-4">
+                  <div data-testid={`badge-user-status-${user.uid}`}>
+                    {getStatusBadge(user.status)}
+                  </div>
+                </td>
+                <td className="p-4">
+                  <div className="flex flex-wrap gap-1">
+                    {user.roles?.isProfessional && (
+                      <Badge variant="outline" className="text-xs">
+                        Professional
+                      </Badge>
+                    )}
+                    {user.roles?.isJobSeeker && (
+                      <Badge variant="outline" className="text-xs">
+                        Job Seeker
+                      </Badge>
+                    )}
+                    {user.roles?.isEmployer && (
+                      <Badge variant="outline" className="text-xs">
+                        Employer
+                      </Badge>
+                    )}
+                    {user.roles?.isBusinessOwner && (
+                      <Badge variant="outline" className="text-xs">
+                        Business
+                      </Badge>
+                    )}
+                    {user.roles?.isInvestor && (
+                      <Badge variant="outline" className="text-xs">
+                        Investor
+                      </Badge>
+                    )}
+                    {user.roles?.isAdmin && (
+                      <Badge variant="default" className="text-xs">
+                        Admin
+                      </Badge>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </Card>
   );
 }
 
-function RoleEditDialog({
+function UserManagementDialog({
   user,
   onClose,
-  onSave,
+  onApprove,
+  onReject,
+  onUpdateRoles,
 }: {
   user: UserData;
   onClose: () => void;
-  onSave: (roles: any) => void;
+  onApprove: () => void;
+  onReject: () => void;
+  onUpdateRoles: (roles: any) => void;
 }) {
   const [roles, setRoles] = useState({
     professional: user.roles?.isProfessional || false,
@@ -659,51 +651,176 @@ function RoleEditDialog({
     admin: user.roles?.isAdmin || false,
   });
 
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "approved":
+        return <Badge variant="default">Approved</Badge>;
+      case "rejected":
+        return <Badge variant="destructive">Rejected</Badge>;
+      case "pending":
+        return <Badge variant="secondary">Pending</Badge>;
+      default:
+        return <Badge>{status}</Badge>;
+    }
+  };
+
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <Card className="max-w-md w-full">
-        <CardHeader>
-          <CardTitle>Edit User Roles</CardTitle>
-          <CardDescription>{user.name} ({user.email})</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {[
-            { key: "professional", label: "Professional", icon: Briefcase },
-            { key: "jobSeeker", label: "Job Seeker", icon: Search },
-            { key: "employer", label: "Employer", icon: Building2 },
-            { key: "businessOwner", label: "Business Owner", icon: Handshake },
-            { key: "investor", label: "Investor", icon: TrendingUp },
-            { key: "admin", label: "Admin", icon: Shield },
-          ].map(({ key, label, icon: Icon }) => (
-            <div key={key} className="flex items-center space-x-2">
-              <Checkbox
-                id={key}
-                checked={roles[key as keyof typeof roles]}
-                onCheckedChange={(checked) =>
-                  setRoles({ ...roles, [key]: checked })
-                }
-                data-testid={`checkbox-role-${key}`}
-              />
-              <label
-                htmlFor={key}
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-2"
-              >
-                <Icon className="w-4 h-4" />
-                {label}
-              </label>
+    <Dialog open={true} onOpenChange={onClose}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" data-testid="dialog-user-management">
+        <DialogHeader>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <DialogTitle>Manage User</DialogTitle>
+            {getStatusBadge(user.status)}
+          </div>
+          <DialogDescription>
+            <div className="space-y-1 mt-2">
+              <div className="font-medium text-foreground">{user.name}</div>
+              <div className="text-sm">{user.email}</div>
             </div>
-          ))}
-          <div className="flex gap-2 pt-4">
-            <Button onClick={onClose} variant="outline" className="flex-1" data-testid="button-cancel-roles">
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-6">
+          <div>
+            <h3 className="font-medium mb-3">Profile Information</h3>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <p className="text-muted-foreground mb-1">Country</p>
+                <p className="font-medium">{user.profile?.country || "Not provided"}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground mb-1">City</p>
+                <p className="font-medium">{user.profile?.city || "Not provided"}</p>
+              </div>
+              <div className="col-span-2">
+                <p className="text-muted-foreground mb-1">Headline</p>
+                <p className="font-medium">{user.profile?.headline || "Not provided"}</p>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h3 className="font-medium mb-3">User Roles</h3>
+            <div className="space-y-3">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="professional"
+                  checked={roles.professional}
+                  onCheckedChange={(checked) =>
+                    setRoles({ ...roles, professional: checked as boolean })
+                  }
+                  data-testid="checkbox-role-professional"
+                />
+                <Label htmlFor="professional" className="flex items-center gap-2 cursor-pointer">
+                  <Briefcase className="w-4 h-4" />
+                  Professional
+                </Label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="jobSeeker"
+                  checked={roles.jobSeeker}
+                  onCheckedChange={(checked) =>
+                    setRoles({ ...roles, jobSeeker: checked as boolean })
+                  }
+                  data-testid="checkbox-role-jobseeker"
+                />
+                <Label htmlFor="jobSeeker" className="flex items-center gap-2 cursor-pointer">
+                  <Search className="w-4 h-4" />
+                  Job Seeker
+                </Label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="employer"
+                  checked={roles.employer}
+                  onCheckedChange={(checked) =>
+                    setRoles({ ...roles, employer: checked as boolean })
+                  }
+                  data-testid="checkbox-role-employer"
+                />
+                <Label htmlFor="employer" className="flex items-center gap-2 cursor-pointer">
+                  <Building2 className="w-4 h-4" />
+                  Employer
+                </Label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="businessOwner"
+                  checked={roles.businessOwner}
+                  onCheckedChange={(checked) =>
+                    setRoles({ ...roles, businessOwner: checked as boolean })
+                  }
+                  data-testid="checkbox-role-businessowner"
+                />
+                <Label htmlFor="businessOwner" className="flex items-center gap-2 cursor-pointer">
+                  <Handshake className="w-4 h-4" />
+                  Business Owner
+                </Label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="investor"
+                  checked={roles.investor}
+                  onCheckedChange={(checked) =>
+                    setRoles({ ...roles, investor: checked as boolean })
+                  }
+                  data-testid="checkbox-role-investor"
+                />
+                <Label htmlFor="investor" className="flex items-center gap-2 cursor-pointer">
+                  <TrendingUp className="w-4 h-4" />
+                  Investor
+                </Label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="admin"
+                  checked={roles.admin}
+                  onCheckedChange={(checked) =>
+                    setRoles({ ...roles, admin: checked as boolean })
+                  }
+                  data-testid="checkbox-role-admin"
+                />
+                <Label htmlFor="admin" className="flex items-center gap-2 cursor-pointer">
+                  <Shield className="w-4 h-4" />
+                  Admin
+                </Label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <DialogFooter className="flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 flex-1">
+            {user.status !== "approved" && (
+              <Button onClick={onApprove} variant="default" data-testid="button-approve-user">
+                <CheckCircle2 className="w-4 h-4 mr-2" />
+                Approve
+              </Button>
+            )}
+            {user.status !== "rejected" && (
+              <Button onClick={onReject} variant="destructive" data-testid="button-reject-user">
+                <XCircle className="w-4 h-4 mr-2" />
+                {user.status === "approved" ? "Suspend" : "Reject"}
+              </Button>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <Button onClick={onClose} variant="outline" data-testid="button-cancel-user">
               Cancel
             </Button>
-            <Button onClick={() => onSave(roles)} className="flex-1" data-testid="button-save-roles">
-              Save Changes
+            <Button onClick={() => onUpdateRoles(roles)} data-testid="button-save-roles">
+              Save Roles
             </Button>
           </div>
-        </CardContent>
-      </Card>
-    </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -720,189 +837,78 @@ function VideoFormDialog({
 }) {
   const { toast } = useToast();
   const [formData, setFormData] = useState<VideoFormData>({
-    title: "",
-    description: "",
-    youtubeId: "",
-    thumbnailUrl: "",
-    publishedAt: "",
-    featured: false,
-    visible: true,
+    title: video?.title || "",
+    description: video?.description || "",
+    youtubeId: video?.youtubeId || "",
+    thumbnailUrl: video?.thumbnailUrl || "",
+    publishedAt: video?.publishedAt 
+      ? (typeof video.publishedAt === 'string' ? video.publishedAt : new Date(video.publishedAt).toISOString().split('T')[0])
+      : new Date().toISOString().split('T')[0],
+    featured: video?.featured || false,
+    visible: video?.visible ?? true,
   });
 
-  const extractYouTubeId = (input: string): string => {
-    const trimmed = input.trim();
-    
-    // Already just an ID (11 characters, alphanumeric with dashes/underscores)
-    if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) {
-      return trimmed;
-    }
-    
-    try {
-      // Try parsing as URL
-      const url = new URL(trimmed);
-      
-      // youtube.com/watch?v=ID (handles any query parameter order)
-      if (url.hostname.includes('youtube.com') && url.pathname === '/watch') {
-        const videoId = url.searchParams.get('v');
-        if (videoId && /^[a-zA-Z0-9_-]{11}$/.test(videoId)) {
-          return videoId;
-        }
-      }
-      
-      // youtu.be/ID
-      if (url.hostname === 'youtu.be' && url.pathname.length > 1) {
-        const videoId = url.pathname.slice(1).split('?')[0];
-        if (/^[a-zA-Z0-9_-]{11}$/.test(videoId)) {
-          return videoId;
-        }
-      }
-      
-      // youtube.com/embed/ID, youtube.com/v/ID, youtube.com/shorts/ID, youtube.com/live/ID
-      const pathMatch = url.pathname.match(/^\/(embed|v|shorts|live)\/([a-zA-Z0-9_-]{11})/);
-      if (pathMatch && pathMatch[2]) {
-        return pathMatch[2];
-      }
-    } catch (e) {
-      // Not a valid URL, return trimmed input
-    }
-    
-    return trimmed;
-  };
-
-  const generateThumbnailUrl = (videoId: string): string => {
-    if (!videoId || videoId.length !== 11) return "";
-    return `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
-  };
-
-  const handleYouTubeIdChange = (input: string) => {
-    const extractedId = extractYouTubeId(input);
-    const thumbnailUrl = generateThumbnailUrl(extractedId);
-    
-    setFormData({
-      ...formData,
-      youtubeId: extractedId,
-      thumbnailUrl: thumbnailUrl,
-    });
-  };
-
-  useEffect(() => {
-    if (video) {
-      const videoData = video as any; // Temporary until Firestore types are updated
-      setFormData({
-        title: video.title,
-        description: video.description || "",
-        youtubeId: video.youtubeId,
-        thumbnailUrl: video.thumbnailUrl || generateThumbnailUrl(video.youtubeId),
-        publishedAt: video.publishedAt ? new Date(video.publishedAt).toISOString().split('T')[0] : "",
-        featured: video.featured,
-        visible: videoData.visible ?? true,
-      });
-    } else {
-      setFormData({
-        title: "",
-        description: "",
-        youtubeId: "",
-        thumbnailUrl: "",
-        publishedAt: "",
-        featured: false,
-        visible: true,
-      });
-    }
-  }, [video, open]);
-
   const createVideoMutation = useMutation({
-    mutationFn: async (data: Partial<VideoFormData>) => {
+    mutationFn: async (data: VideoFormData) => {
       return apiRequest('POST', '/api/videos', data);
     },
     onSuccess: () => {
       toast({
         title: "Success",
-        description: "Video created successfully",
+        description: "Video added successfully",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/videos'] });
       onSuccess();
     },
-    onError: (error: any) => {
-      const errorMessage = error?.details?.[0]?.message || error?.error || "Failed to create video";
+    onError: () => {
       toast({
         title: "Error",
-        description: errorMessage,
+        description: "Failed to add video",
         variant: "destructive",
       });
-      console.error("Video creation error:", error);
     },
   });
 
   const updateVideoMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: Partial<VideoFormData> }) => {
-      return apiRequest('PATCH', `/api/videos/${id}`, data);
+    mutationFn: async (data: VideoFormData) => {
+      return apiRequest('PATCH', `/api/videos/${video?.id}`, data);
     },
     onSuccess: () => {
       toast({
         title: "Success",
         description: "Video updated successfully",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/videos'] });
       onSuccess();
     },
-    onError: (error: any) => {
-      const errorMessage = error?.details?.[0]?.message || error?.error || "Failed to update video";
+    onError: () => {
       toast({
         title: "Error",
-        description: errorMessage,
+        description: "Failed to update video",
         variant: "destructive",
       });
-      console.error("Video update error:", error);
     },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
-    // Validate YouTube ID is exactly 11 characters
-    if (!formData.youtubeId || !/^[a-zA-Z0-9_-]{11}$/.test(formData.youtubeId)) {
-      toast({
-        title: "Invalid YouTube ID",
-        description: "Please enter a valid YouTube URL or video ID. The video ID should be exactly 11 characters.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const submitData: any = {
-      title: formData.title,
-      description: formData.description || null,
-      youtubeId: formData.youtubeId,
-      thumbnailUrl: formData.thumbnailUrl || generateThumbnailUrl(formData.youtubeId),
-      featured: formData.featured,
-      visible: formData.visible,
-    };
-
-    if (formData.publishedAt) {
-      submitData.publishedAt = new Date(formData.publishedAt).toISOString();
-    } else {
-      submitData.publishedAt = null;
-    }
-
     if (video) {
-      updateVideoMutation.mutate({ id: video.id, data: submitData });
+      updateVideoMutation.mutate(formData);
     } else {
-      createVideoMutation.mutate(submitData);
+      createVideoMutation.mutate(formData);
     }
   };
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" data-testid="dialog-video-form">
+      <DialogContent className="max-w-2xl" data-testid="dialog-video-form">
         <DialogHeader>
           <DialogTitle>{video ? "Edit Video" : "Add New Video"}</DialogTitle>
           <DialogDescription>
-            {video ? "Update video details below" : "Add a new video to the media library"}
+            {video ? "Update video information" : "Add a new video to the media gallery"}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <Label htmlFor="title">Title *</Label>
+          <div className="space-y-2">
+            <Label htmlFor="title">Title</Label>
             <Input
               id="title"
               value={formData.title}
@@ -912,67 +918,39 @@ function VideoFormDialog({
             />
           </div>
 
-          <div>
+          <div className="space-y-2">
             <Label htmlFor="description">Description</Label>
             <Textarea
               id="description"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              rows={3}
               data-testid="input-video-description"
             />
           </div>
 
-          <div>
-            <Label htmlFor="youtubeId">YouTube Video URL or ID *</Label>
+          <div className="space-y-2">
+            <Label htmlFor="youtubeId">YouTube Video ID</Label>
             <Input
               id="youtubeId"
               value={formData.youtubeId}
-              onChange={(e) => handleYouTubeIdChange(e.target.value)}
-              placeholder="Paste full YouTube URL or just the video ID"
+              onChange={(e) => setFormData({ ...formData, youtubeId: e.target.value })}
+              placeholder="e.g., dQw4w9WgXcQ"
               required
               data-testid="input-video-youtubeid"
             />
-            <p className="text-xs text-muted-foreground mt-1">
-              Paste the full YouTube URL (e.g., https://www.youtube.com/watch?v=kYV4OzMLVJg) or just the ID (kYV4OzMLVJg)
-            </p>
           </div>
 
-          {formData.youtubeId && formData.thumbnailUrl && (
-            <div>
-              <Label>Thumbnail Preview</Label>
-              <div className="mt-2 rounded-md overflow-hidden border">
-                <img
-                  src={formData.thumbnailUrl}
-                  alt="Video thumbnail"
-                  className="w-full h-auto"
-                  onError={(e) => {
-                    e.currentTarget.src = `https://img.youtube.com/vi/${formData.youtubeId}/hqdefault.jpg`;
-                  }}
-                  data-testid="img-thumbnail-preview"
-                />
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Thumbnail automatically generated from YouTube
-              </p>
-            </div>
-          )}
-
-          <div>
-            <Label htmlFor="thumbnailUrl">Custom Thumbnail URL (optional)</Label>
+          <div className="space-y-2">
+            <Label htmlFor="thumbnailUrl">Thumbnail URL</Label>
             <Input
               id="thumbnailUrl"
               value={formData.thumbnailUrl}
               onChange={(e) => setFormData({ ...formData, thumbnailUrl: e.target.value })}
-              placeholder="Leave blank to use YouTube's thumbnail"
               data-testid="input-video-thumbnail"
             />
-            <p className="text-xs text-muted-foreground mt-1">
-              Override the auto-generated thumbnail with a custom URL
-            </p>
           </div>
 
-          <div>
+          <div className="space-y-2">
             <Label htmlFor="publishedAt">Published Date</Label>
             <Input
               id="publishedAt"
