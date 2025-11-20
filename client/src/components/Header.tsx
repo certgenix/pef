@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Menu, X, User, LogOut, LayoutDashboard } from "lucide-react";
+import { Menu, X, User, LogOut, LayoutDashboard, ChevronDown } from "lucide-react";
 import { Link } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
 import logoImage from "@assets/image_1763355890421.png";
@@ -15,12 +15,8 @@ import {
 
 const navItems = [
   { label: "Home", path: "/" },
-  { label: "About", path: "/about" },
-  { label: "Leadership", path: "/leadership" },
   { label: "Membership", path: "/membership" },
   { label: "Opportunities", path: "/opportunities" },
-  { label: "Media", path: "/media" },
-  { label: "Gallery", path: "/gallery" },
   { label: "Contact", path: "/contact" },
 ];
 
@@ -65,6 +61,47 @@ export default function Header() {
                 </Button>
               </Link>
             ))}
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="text-white hover:bg-white/10" data-testid="button-nav-about">
+                  About <ChevronDown className="ml-1 w-4 h-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <Link href="/about">
+                  <DropdownMenuItem data-testid="link-nav-about">
+                    About Us
+                  </DropdownMenuItem>
+                </Link>
+                <Link href="/leadership">
+                  <DropdownMenuItem data-testid="link-nav-leadership">
+                    Leadership
+                  </DropdownMenuItem>
+                </Link>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="text-white hover:bg-white/10" data-testid="button-nav-media">
+                  Media <ChevronDown className="ml-1 w-4 h-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <Link href="/media">
+                  <DropdownMenuItem data-testid="link-nav-media">
+                    News & Updates
+                  </DropdownMenuItem>
+                </Link>
+                <Link href="/gallery">
+                  <DropdownMenuItem data-testid="link-nav-gallery">
+                    Gallery
+                  </DropdownMenuItem>
+                </Link>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
             {currentUser && (
               <Link href="/dashboard">
                 <Button
@@ -152,6 +189,48 @@ export default function Header() {
                 </Button>
               </Link>
             ))}
+            
+            <Link href="/about">
+              <Button
+                variant="ghost"
+                className="w-full justify-start text-white hover:bg-white/10"
+                onClick={() => setIsMobileMenuOpen(false)}
+                data-testid="link-mobile-about"
+              >
+                About
+              </Button>
+            </Link>
+            <Link href="/leadership">
+              <Button
+                variant="ghost"
+                className="w-full justify-start text-white hover:bg-white/10 pl-8"
+                onClick={() => setIsMobileMenuOpen(false)}
+                data-testid="link-mobile-leadership"
+              >
+                Leadership
+              </Button>
+            </Link>
+            
+            <Link href="/media">
+              <Button
+                variant="ghost"
+                className="w-full justify-start text-white hover:bg-white/10"
+                onClick={() => setIsMobileMenuOpen(false)}
+                data-testid="link-mobile-media"
+              >
+                Media
+              </Button>
+            </Link>
+            <Link href="/gallery">
+              <Button
+                variant="ghost"
+                className="w-full justify-start text-white hover:bg-white/10 pl-8"
+                onClick={() => setIsMobileMenuOpen(false)}
+                data-testid="link-mobile-gallery"
+              >
+                Gallery
+              </Button>
+            </Link>
             {currentUser ? (
               <>
                 <Link href="/dashboard">
