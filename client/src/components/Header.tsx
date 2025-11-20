@@ -64,7 +64,7 @@ export default function Header() {
               </Link>
             ))}
             
-            <DropdownMenu open={aboutOpen} onOpenChange={setAboutOpen}>
+            <DropdownMenu open={aboutOpen} onOpenChange={setAboutOpen} modal={false}>
               <DropdownMenuTrigger asChild>
                 <Button 
                   variant="ghost" 
@@ -94,7 +94,7 @@ export default function Header() {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <DropdownMenu open={mediaOpen} onOpenChange={setMediaOpen}>
+            <DropdownMenu open={mediaOpen} onOpenChange={setMediaOpen} modal={false}>
               <DropdownMenuTrigger asChild>
                 <Button 
                   variant="ghost" 
