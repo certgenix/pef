@@ -880,6 +880,23 @@ function VideoFormDialog({
     visible: video?.visible ?? true,
   });
 
+  // Reset form data when video changes or dialog opens
+  useEffect(() => {
+    if (open) {
+      setFormData({
+        title: video?.title || "",
+        description: video?.description || "",
+        youtubeId: video?.youtubeId || "",
+        thumbnailUrl: video?.thumbnailUrl || "",
+        publishedAt: video?.publishedAt 
+          ? (typeof video.publishedAt === 'string' ? video.publishedAt : new Date(video.publishedAt).toISOString().split('T')[0])
+          : new Date().toISOString().split('T')[0],
+        featured: video?.featured || false,
+        visible: video?.visible ?? true,
+      });
+    }
+  }, [open, video]);
+
   const createVideoMutation = useMutation({
     mutationFn: async (data: VideoFormData) => {
       // Convert publishedAt string to Date object
