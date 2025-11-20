@@ -7,7 +7,7 @@ import { Briefcase, Search, Building2, Handshake, TrendingUp, ArrowRight, Shield
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { useLocation } from "wouter";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 const roleDashboards = [
   {
@@ -64,15 +64,17 @@ function DashboardContent() {
   const { currentUser, userData } = useAuth();
   const { activeRoles, isLoading, userRoles } = useUserRoles(currentUser?.uid);
   const [location, setLocation] = useLocation();
+  const hasRedirected = useRef(false);
 
   const safeRoles = Array.isArray(activeRoles) ? activeRoles : [];
   const isAdmin = userData?.roles?.admin || false;
 
-  // Auto-redirect if user has only one role
+  // Auto-redirect if user has only one role (only once)
   useEffect(() => {
-    if (!isLoading) {
+    if (!isLoading && !hasRedirected.current) {
       // Admin only - redirect to admin dashboard
       if (isAdmin && safeRoles.length === 0) {
+        hasRedirected.current = true;
         setLocation("/admin");
         return;
       }
@@ -81,6 +83,7 @@ function DashboardContent() {
       if (safeRoles.length === 1) {
         const roleConfig = roleDashboards.find(d => d.role === safeRoles[0]);
         if (roleConfig) {
+          hasRedirected.current = true;
           setLocation(roleConfig.path);
         }
       }
