@@ -22,6 +22,7 @@ import {
 } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { User, UserRoles } from "../../../shared/types";
+import { checkEmailExists } from "@/lib/emailValidation";
 
 interface ProfileData {
   phone?: string | null;
@@ -244,9 +245,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     roles: UserRoles,
     profileData?: ProfileData
   ) {
+    const normalizedEmail = email.trim().toLowerCase();
+    
+    const emailCheck = await checkEmailExists(normalizedEmail);
+    if (emailCheck.exists) {
+      throw new Error(emailCheck.message || "This email is already registered.");
+    }
+
     const userCredential = await createUserWithEmailAndPassword(
       auth,
-      email,
+      normalizedEmail,
       password
     );
 
@@ -256,7 +264,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let preRegistrationData: any = null;
     try {
       const registrationsRef = collection(db, "registrations");
-      const q = query(registrationsRef, where("email", "==", email.trim().toLowerCase()));
+      const q = query(registrationsRef, where("email", "==", normalizedEmail));
       const querySnapshot = await getDocs(q);
       
       if (!querySnapshot.empty) {
@@ -275,7 +283,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     const firestoreData: any = {
       name,
-      email,
+      email: normalizedEmail,
       status,
       createdAt: serverTimestamp(),
       lastUpdated: serverTimestamp(),
@@ -313,7 +321,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const newUser: Omit<User, "uid"> = {
       name,
-      email,
+      email: normalizedEmail,
       roles,
       status,
       createdAt: new Date(),
@@ -358,10 +366,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const isNewUser = !userDoc.exists();
 
     if (isNewUser) {
+      const normalizedEmail = (user.email || "").trim().toLowerCase();
+      
+      const emailCheck = await checkEmailExists(normalizedEmail);
+      if (emailCheck.exists) {
+        await firebaseSignOut(auth);
+        throw new Error(emailCheck.message || "This email is already registered. Please log in with your existing account.");
+      }
+      
+      let preRegistrationData: any = null;
+      let userStatus = "pending";
+      
+      try {
+        const registrationsRef = collection(db, "registrations");
+        const q = query(registrationsRef, where("email", "==", normalizedEmail));
+        const querySnapshot = await getDocs(q);
+        
+        if (!querySnapshot.empty) {
+          preRegistrationData = querySnapshot.docs[0].data();
+          userStatus = preRegistrationData?.status === "approved" ? "approved" : "pending";
+        }
+      } catch (error) {
+        console.error("Error checking pre-registration:", error);
+      }
+
       const minimalUserData = {
         name: user.displayName || "Google User",
-        email: user.email || "",
-        status: "pending",
+        email: normalizedEmail,
+        status: userStatus,
         createdAt: serverTimestamp(),
         lastUpdated: serverTimestamp(),
         profile: {
@@ -380,6 +412,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         businessOwnerData: {},
         investorData: {},
         registrationSource: "google",
+        preRegistered: preRegistrationData !== null,
+        preRegisteredAt: preRegistrationData?.createdAt || null,
         needsRoleSelection: true,
         skipBackendSync: true,
       };

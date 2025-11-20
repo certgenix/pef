@@ -14,6 +14,7 @@ import { collection, addDoc, Timestamp } from "firebase/firestore";
 import { Briefcase, Search, Building2, Handshake, TrendingUp, ArrowRight, ArrowLeft, CheckCircle, Circle } from "lucide-react";
 import { SiLinkedin } from "react-icons/si";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { checkEmailExists } from "@/lib/emailValidation";
 
 const roles = [
   {
@@ -234,10 +235,23 @@ export default function Register() {
 
     setLoading(true);
     try {
+      const emailToCheck = basicInfo.email.trim().toLowerCase();
+      
+      const emailCheck = await checkEmailExists(emailToCheck);
+      if (emailCheck.exists) {
+        toast({
+          title: "Email Already Exists",
+          description: emailCheck.message,
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+
       // Prepare data to save to Firestore
       const registrationData = {
         fullName: basicInfo.fullName.trim(),
-        email: basicInfo.email.trim().toLowerCase(),
+        email: emailToCheck,
         phone: basicInfo.phone?.trim() ? `${basicInfo.phoneCode} ${basicInfo.phone.trim()}` : "",
         country: basicInfo.country,
         city: basicInfo.city?.trim() || "",
