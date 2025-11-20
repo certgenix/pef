@@ -249,8 +249,8 @@ export default function AdminDashboard() {
     const query = searchQuery.toLowerCase();
     return userList.filter(
       (user) =>
-        user.name.toLowerCase().includes(query) ||
-        user.email.toLowerCase().includes(query)
+        (user.name || "").toLowerCase().includes(query) ||
+        (user.email || "").toLowerCase().includes(query)
     );
   };
 
