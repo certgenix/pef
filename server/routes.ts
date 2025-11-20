@@ -6,6 +6,8 @@ import { insertUserProfileSchema, insertUserRolesSchema, insertOpportunitySchema
 import { Resend } from "resend";
 import { db } from "./firebase-admin";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { linkedInService } from "./linkedin-service";
+import crypto from "crypto";
 
 const AUTO_APPROVE_JOBS = true;
 
@@ -135,6 +137,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Auth error:", error);
       return res.status(500).json({ error: "Authentication failed" });
+    }
+  });
+
+  app.get("/api/auth/linkedin", async (req, res) => {
+    try {
+      if (!process.env.LINKEDIN_CLIENT_ID || !process.env.LINKEDIN_CLIENT_SECRET) {
+        return res.status(500).json({ 
+          error: "LinkedIn OAuth not configured. Please set LINKEDIN_CLIENT_ID and LINKEDIN_CLIENT_SECRET." 
+        });
+      }
+
+      const state = crypto.randomBytes(16).toString('hex');
+      const authUrl = linkedInService.getAuthorizationUrl(state);
+      
+      return res.json({ authUrl, state });
+    } catch (error) {
+      console.error("LinkedIn auth initiation error:", error);
+      return res.status(500).json({ error: "Failed to initiate LinkedIn authorization" });
+    }
+  });
+
+  app.get("/api/auth/linkedin/callback", async (req, res) => {
+    try {
+      const { code, state, error } = req.query;
+
+      if (error) {
+        return res.redirect(`/?linkedin_error=${encodeURIComponent(error as string)}`);
+      }
+
+      if (!code || !state) {
+        return res.redirect('/?linkedin_error=missing_parameters');
+      }
+
+      const accessToken = await linkedInService.getAccessToken(code as string);
+      const profile = await linkedInService.getUserProfile(accessToken);
+
+      const profileData = {
+        id: profile.id,
+        firstName: profile.firstName,
+        lastName: profile.lastName,
+        email: profile.email,
+        profilePicture: profile.profilePicture,
+        headline: profile.headline,
+        location: profile.location,
+      };
+
+      const encodedData = encodeURIComponent(JSON.stringify(profileData));
+      return res.redirect(`/?linkedin_data=${encodedData}`);
+    } catch (error) {
+      console.error("LinkedIn callback error:", error);
+      return res.redirect('/?linkedin_error=auth_failed');
     }
   });
 
