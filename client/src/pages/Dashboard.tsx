@@ -87,10 +87,8 @@ function DashboardContent() {
   // Auto-redirect if user has only one role (only once)
   useEffect(() => {
     if (!isLoading && !hasRedirected.current) {
-      // Admin only - redirect to admin dashboard
-      if (isAdmin && safeRoles.length === 0) {
-        hasRedirected.current = true;
-        setLocation("/admin");
+      // Don't auto-redirect admins - let them see all dashboard cards
+      if (isAdmin) {
         return;
       }
       

@@ -49,7 +49,6 @@ export default function Header() {
               alt="PEF Logo" 
               className="w-10 h-10 md:w-12 md:h-12 rounded-full object-cover ring-2 ring-white/20"
             />
-            <span className="hidden sm:block text-white font-semibold text-lg md:text-xl">PEF</span>
           </Link>
 
           <nav className="hidden lg:flex items-center gap-1">
@@ -126,7 +125,7 @@ export default function Header() {
             </DropdownMenu>
 
             {currentUser && (
-              <Link href="/dashboard">
+              <Link href={userData?.roles?.admin ? "/admin" : "/dashboard"}>
                 <Button
                   variant="ghost"
                   className="text-white hover:bg-white/10"
