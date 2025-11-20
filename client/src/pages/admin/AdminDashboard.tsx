@@ -41,7 +41,7 @@ interface UserData {
   uid: string;
   name: string;
   email: string;
-  status: "pending" | "approved" | "rejected";
+  status: string;
   createdAt: Date;
   roles?: {
     isProfessional?: boolean;
@@ -66,9 +66,6 @@ interface Stats {
   businessOwners: number;
   investors: number;
   admins: number;
-  pendingApprovals: number;
-  approved: number;
-  rejected: number;
 }
 
 interface VideoFormData {
@@ -123,37 +120,6 @@ export default function AdminDashboard() {
       return;
     }
   }, [currentUser, userData]);
-
-  async function handleUpdateStatus(userId: string, status: "approved" | "rejected") {
-    try {
-      const token = await auth.currentUser?.getIdToken();
-      if (!token) return;
-
-      const response = await fetch(`/api/admin/users/${userId}/status`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ status }),
-      });
-
-      if (response.ok) {
-        toast({
-          title: "Success",
-          description: `User ${status} successfully`,
-        });
-        queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
-        queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: `Failed to ${status} user`,
-        variant: "destructive",
-      });
-    }
-  }
 
   async function handleUpdateRoles(userId: string, roles: any) {
     try {
@@ -212,10 +178,6 @@ export default function AdminDashboard() {
     );
   }
 
-  const pendingUsers = users.filter((u) => u.status === "pending");
-  const approvedUsers = users.filter((u) => u.status === "approved");
-  const rejectedUsers = users.filter((u) => u.status === "rejected");
-
   const filterUsers = (userList: UserData[]) => {
     if (!searchQuery.trim()) return userList;
     const query = searchQuery.toLowerCase();
@@ -239,7 +201,7 @@ export default function AdminDashboard() {
         </div>
 
         {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Users</CardTitle>
@@ -248,28 +210,6 @@ export default function AdminDashboard() {
               <CardContent>
                 <div className="text-2xl font-bold">{stats.totalUsers}</div>
                 <p className="text-xs text-muted-foreground">All registered users</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Pending Approvals</CardTitle>
-                <Clock className="w-4 h-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.pendingApprovals}</div>
-                <p className="text-xs text-muted-foreground">Awaiting review</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Approved</CardTitle>
-                <CheckCircle2 className="w-4 h-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.approved}</div>
-                <p className="text-xs text-muted-foreground">Active users</p>
               </CardContent>
             </Card>
 
@@ -310,20 +250,8 @@ export default function AdminDashboard() {
           </Card>
         </div>
 
-        <Tabs defaultValue="pending" className="space-y-6">
+        <Tabs defaultValue="all" className="space-y-6">
           <TabsList>
-            <TabsTrigger value="pending" data-testid="tab-pending">
-              <Clock className="w-4 h-4 mr-2" />
-              Pending ({pendingUsers.length})
-            </TabsTrigger>
-            <TabsTrigger value="approved" data-testid="tab-approved">
-              <CheckCircle2 className="w-4 h-4 mr-2" />
-              Approved ({approvedUsers.length})
-            </TabsTrigger>
-            <TabsTrigger value="rejected" data-testid="tab-rejected">
-              <XCircle className="w-4 h-4 mr-2" />
-              Rejected ({rejectedUsers.length})
-            </TabsTrigger>
             <TabsTrigger value="all" data-testid="tab-all">
               <Users className="w-4 h-4 mr-2" />
               All Users ({users.length})
@@ -346,57 +274,6 @@ export default function AdminDashboard() {
               />
             </div>
           </div>
-
-          <TabsContent value="pending" className="space-y-4">
-            {filterUsers(pendingUsers).length === 0 ? (
-              <Card>
-                <CardContent className="py-12 text-center">
-                  <p className="text-muted-foreground">
-                    {searchQuery ? "No users found" : "No pending user registrations"}
-                  </p>
-                </CardContent>
-              </Card>
-            ) : (
-              <UsersTable
-                users={filterUsers(pendingUsers)}
-                onUserClick={setSelectedUser}
-              />
-            )}
-          </TabsContent>
-
-          <TabsContent value="approved" className="space-y-4">
-            {filterUsers(approvedUsers).length === 0 ? (
-              <Card>
-                <CardContent className="py-12 text-center">
-                  <p className="text-muted-foreground">
-                    {searchQuery ? "No users found" : "No approved users"}
-                  </p>
-                </CardContent>
-              </Card>
-            ) : (
-              <UsersTable
-                users={filterUsers(approvedUsers)}
-                onUserClick={setSelectedUser}
-              />
-            )}
-          </TabsContent>
-
-          <TabsContent value="rejected" className="space-y-4">
-            {filterUsers(rejectedUsers).length === 0 ? (
-              <Card>
-                <CardContent className="py-12 text-center">
-                  <p className="text-muted-foreground">
-                    {searchQuery ? "No users found" : "No rejected users"}
-                  </p>
-                </CardContent>
-              </Card>
-            ) : (
-              <UsersTable
-                users={filterUsers(rejectedUsers)}
-                onUserClick={setSelectedUser}
-              />
-            )}
-          </TabsContent>
 
           <TabsContent value="all" className="space-y-4">
             {filterUsers(users).length === 0 ? (
@@ -495,14 +372,6 @@ export default function AdminDashboard() {
         <UserManagementDialog
           user={selectedUser}
           onClose={() => setSelectedUser(null)}
-          onApprove={() => {
-            handleUpdateStatus(selectedUser.uid, "approved");
-            setSelectedUser(null);
-          }}
-          onReject={() => {
-            handleUpdateStatus(selectedUser.uid, "rejected");
-            setSelectedUser(null);
-          }}
           onUpdateRoles={(roles) => handleUpdateRoles(selectedUser.uid, roles)}
         />
       )}
@@ -630,14 +499,10 @@ function UsersTable({
 function UserManagementDialog({
   user,
   onClose,
-  onApprove,
-  onReject,
   onUpdateRoles,
 }: {
   user: UserData;
   onClose: () => void;
-  onApprove: () => void;
-  onReject: () => void;
   onUpdateRoles: (roles: any) => void;
 }) {
   const [roles, setRoles] = useState({
@@ -649,27 +514,11 @@ function UserManagementDialog({
     admin: user.roles?.isAdmin || false,
   });
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "approved":
-        return <Badge variant="default">Approved</Badge>;
-      case "rejected":
-        return <Badge variant="destructive">Rejected</Badge>;
-      case "pending":
-        return <Badge variant="secondary">Pending</Badge>;
-      default:
-        return <Badge>{status}</Badge>;
-    }
-  };
-
   return (
     <Dialog open={true} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" data-testid="dialog-user-management">
         <DialogHeader>
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <DialogTitle>Manage User</DialogTitle>
-            {getStatusBadge(user.status)}
-          </div>
+          <DialogTitle>Manage User</DialogTitle>
           <DialogDescription>
             <div className="space-y-1 mt-2">
               <div className="font-medium text-foreground">{user.name}</div>
@@ -793,29 +642,13 @@ function UserManagementDialog({
           </div>
         </div>
 
-        <DialogFooter className="flex-wrap gap-2">
-          <div className="flex flex-wrap gap-2 flex-1">
-            {user.status !== "approved" && (
-              <Button onClick={onApprove} variant="default" data-testid="button-approve-user">
-                <CheckCircle2 className="w-4 h-4 mr-2" />
-                Approve
-              </Button>
-            )}
-            {user.status !== "rejected" && (
-              <Button onClick={onReject} variant="destructive" data-testid="button-reject-user">
-                <XCircle className="w-4 h-4 mr-2" />
-                {user.status === "approved" ? "Suspend" : "Reject"}
-              </Button>
-            )}
-          </div>
-          <div className="flex gap-2">
-            <Button onClick={onClose} variant="outline" data-testid="button-cancel-user">
-              Cancel
-            </Button>
-            <Button onClick={() => onUpdateRoles(roles)} data-testid="button-save-roles">
-              Save Roles
-            </Button>
-          </div>
+        <DialogFooter className="flex gap-2">
+          <Button onClick={onClose} variant="outline" data-testid="button-cancel-user">
+            Cancel
+          </Button>
+          <Button onClick={() => onUpdateRoles(roles)} data-testid="button-save-roles">
+            Save Roles
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
