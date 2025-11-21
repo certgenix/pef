@@ -64,6 +64,7 @@ function normalizeDocData<T>(data: any): T {
   if (data.lastLogin) normalized.lastLogin = normalizeDate(data.lastLogin);
   if (data.appliedAt) normalized.appliedAt = normalizeDate(data.appliedAt);
   if (data.publishedAt) normalized.publishedAt = normalizeDate(data.publishedAt);
+  if (data.eventDate) normalized.eventDate = normalizeDate(data.eventDate);
   return normalized as T;
 }
 
