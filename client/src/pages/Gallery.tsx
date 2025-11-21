@@ -4,10 +4,11 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Images, Calendar } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Images, Calendar, X, Tag } from "lucide-react";
 import type { GalleryImage } from "@shared/schema";
 import { format } from "date-fns";
+import { Button } from "@/components/ui/button";
 
 export default function Gallery() {
   const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null);
@@ -40,7 +41,7 @@ export default function Gallery() {
               Event Gallery
             </h1>
             <p className="text-xl md:text-2xl text-white/90 max-w-3xl mx-auto">
-              Explore photos from our events, meetings, and networking sessions
+              Explore memorable moments from our events, meetings, and networking sessions
             </p>
           </div>
         </section>
@@ -49,56 +50,59 @@ export default function Gallery() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             {isLoading ? (
               <div className="text-center py-12">
+                <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
                 <p className="text-muted-foreground">Loading gallery...</p>
               </div>
             ) : images && images.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {images.map((image) => (
-                  <Card 
-                    key={image.id} 
-                    className="border-2 hover:border-primary/30 transition-all hover-elevate cursor-pointer overflow-hidden" 
-                    onClick={() => setSelectedImage(image)}
-                    data-testid={`card-gallery-${image.id}`}
-                  >
-                    <div className="aspect-video relative overflow-hidden">
-                      <img
-                        src={image.imageUrl}
-                        alt={image.title}
-                        className="w-full h-full object-cover"
-                        data-testid={`img-gallery-${image.id}`}
-                      />
-                    </div>
-                    <CardContent className="p-4">
-                      <h3 className="font-semibold mb-2 line-clamp-1" data-testid={`text-gallery-title-${image.id}`}>
-                        {image.title}
-                      </h3>
-                      
-                      {image.description && (
-                        <p className="text-sm text-muted-foreground mb-3 line-clamp-2" data-testid={`text-gallery-description-${image.id}`}>
-                          {image.description}
-                        </p>
-                      )}
-                      
-                      <div className="flex flex-wrap items-center gap-2">
-                        {image.category && (
-                          <Badge variant="secondary" data-testid={`badge-gallery-category-${image.id}`}>
-                            {image.category}
-                          </Badge>
-                        )}
-                        {image.eventDate && (
-                          <div className="flex items-center text-xs text-muted-foreground" data-testid={`text-gallery-date-${image.id}`}>
-                            <Calendar className="w-3 h-3 mr-1" />
-                            {format(new Date(image.eventDate), "MMM d, yyyy")}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {images.map((image, index) => {
+                  // Create varied heights for masonry effect
+                  const heights = ["aspect-square", "aspect-[4/5]", "aspect-[3/4]", "aspect-video"];
+                  const heightClass = heights[index % heights.length];
+                  
+                  return (
+                    <Card 
+                      key={image.id} 
+                      className="group border-2 hover:border-primary/50 transition-all cursor-pointer hover-elevate overflow-visible" 
+                      onClick={() => setSelectedImage(image)}
+                      data-testid={`card-gallery-${image.id}`}
+                    >
+                      <div className={`${heightClass} relative overflow-hidden`}>
+                        <img
+                          src={image.imageUrl}
+                          alt={image.title}
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                          data-testid={`img-gallery-${image.id}`}
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                          <div className="absolute bottom-0 left-0 right-0 p-4 text-white transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
+                            <h3 className="font-semibold text-lg mb-1 line-clamp-2" data-testid={`text-gallery-title-${image.id}`}>
+                              {image.title}
+                            </h3>
+                            <div className="flex flex-wrap items-center gap-2">
+                              {image.category && (
+                                <Badge variant="secondary" className="text-xs" data-testid={`badge-gallery-category-${image.id}`}>
+                                  {image.category}
+                                </Badge>
+                              )}
+                              {image.eventDate && (
+                                <span className="text-xs flex items-center gap-1" data-testid={`text-gallery-date-${image.id}`}>
+                                  <Calendar className="w-3 h-3" />
+                                  {format(new Date(image.eventDate), "MMM d, yyyy")}
+                                </span>
+                              )}
+                            </div>
                           </div>
-                        )}
+                        </div>
                       </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                    </Card>
+                  );
+                })}
               </div>
             ) : (
               <div className="text-center py-12">
-                <p className="text-muted-foreground">No gallery images to display at this time.</p>
+                <Images className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+                <p className="text-muted-foreground text-lg">No gallery images to display at this time.</p>
               </div>
             )}
           </div>
@@ -107,36 +111,74 @@ export default function Gallery() {
       <Footer />
 
       <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
-        <DialogContent className="max-w-4xl p-0" data-testid="dialog-gallery-image">
+        <DialogContent className="max-w-5xl max-h-[90vh] p-0 overflow-hidden" data-testid="dialog-gallery-image">
           {selectedImage && (
-            <div className="relative">
-              <img
-                src={selectedImage.imageUrl}
-                alt={selectedImage.title}
-                className="w-full h-auto rounded-md"
-                data-testid="img-gallery-full"
-              />
-              <div className="p-6">
-                <h2 className="text-2xl font-bold mb-2" data-testid="text-gallery-full-title">
-                  {selectedImage.title}
-                </h2>
-                {selectedImage.description && (
-                  <p className="text-muted-foreground mb-4" data-testid="text-gallery-full-description">
-                    {selectedImage.description}
-                  </p>
-                )}
-                <div className="flex flex-wrap items-center gap-2">
-                  {selectedImage.category && (
-                    <Badge variant="secondary" data-testid="badge-gallery-full-category">
-                      {selectedImage.category}
-                    </Badge>
-                  )}
-                  {selectedImage.eventDate && (
-                    <div className="flex items-center text-sm text-muted-foreground" data-testid="text-gallery-full-date">
-                      <Calendar className="w-4 h-4 mr-1" />
-                      {format(new Date(selectedImage.eventDate), "MMMM d, yyyy")}
+            <div className="grid md:grid-cols-2 gap-0">
+              <div className="relative bg-black/5 dark:bg-black/20 flex items-center justify-center p-4 md:p-8">
+                <img
+                  src={selectedImage.imageUrl}
+                  alt={selectedImage.title}
+                  className="w-full h-auto max-h-[70vh] object-contain rounded-md"
+                  data-testid="img-gallery-full"
+                />
+              </div>
+              
+              <div className="p-6 md:p-8 flex flex-col">
+                <DialogHeader className="mb-6">
+                  <DialogTitle className="text-2xl md:text-3xl font-display font-bold" data-testid="text-gallery-full-title">
+                    {selectedImage.title}
+                  </DialogTitle>
+                </DialogHeader>
+
+                <div className="space-y-6 flex-1">
+                  {selectedImage.description && (
+                    <div>
+                      <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+                        Description
+                      </h4>
+                      <p className="text-base leading-relaxed" data-testid="text-gallery-full-description">
+                        {selectedImage.description}
+                      </p>
                     </div>
                   )}
+
+                  <div className="space-y-4">
+                    {selectedImage.category && (
+                      <div className="flex items-start gap-3">
+                        <Tag className="w-5 h-5 text-muted-foreground mt-0.5" />
+                        <div>
+                          <h4 className="text-sm font-semibold text-muted-foreground mb-1">Category</h4>
+                          <Badge variant="secondary" className="text-sm" data-testid="badge-gallery-full-category">
+                            {selectedImage.category}
+                          </Badge>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {selectedImage.eventDate && (
+                      <div className="flex items-start gap-3">
+                        <Calendar className="w-5 h-5 text-muted-foreground mt-0.5" />
+                        <div>
+                          <h4 className="text-sm font-semibold text-muted-foreground mb-1">Event Date</h4>
+                          <p className="text-base" data-testid="text-gallery-full-date">
+                            {format(new Date(selectedImage.eventDate), "EEEE, MMMM d, yyyy")}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="mt-6 pt-6 border-t">
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => setSelectedImage(null)}
+                    data-testid="button-close-gallery"
+                  >
+                    <X className="w-4 h-4 mr-2" />
+                    Close
+                  </Button>
                 </div>
               </div>
             </div>
