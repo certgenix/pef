@@ -192,7 +192,7 @@ export const galleryImages = pgTable("gallery_images", {
   id: varchar("id", { length: 128 }).primaryKey().default(sql`gen_random_uuid()`),
   title: text("title").notNull(),
   description: text("description"),
-  imageUrls: text("image_urls").array().notNull(),
+  imageUrl: text("image_url").notNull(),
   category: varchar("category", { length: 100 }),
   eventDate: timestamp("event_date"),
   visible: boolean("visible").default(true).notNull(),
@@ -269,9 +269,7 @@ export const selectVideoSchema = createSelectSchema(videos);
 export const insertLeaderSchema = createInsertSchema(leaders).omit({ id: true, createdAt: true, updatedAt: true });
 export const selectLeaderSchema = createSelectSchema(leaders);
 
-export const insertGalleryImageSchema = createInsertSchema(galleryImages).omit({ id: true, createdAt: true, updatedAt: true }).extend({
-  imageUrls: z.array(z.string().url()).min(1, "At least one image URL is required"),
-});
+export const insertGalleryImageSchema = createInsertSchema(galleryImages).omit({ id: true, createdAt: true, updatedAt: true });
 export const selectGalleryImageSchema = createSelectSchema(galleryImages);
 
 export const insertMembershipTierSchema = createInsertSchema(membershipTiers).omit({ id: true, createdAt: true, updatedAt: true });
