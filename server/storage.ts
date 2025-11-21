@@ -918,51 +918,176 @@ export class FirestoreStorage implements IStorage {
   }
 
   async createLeader(leader: InsertLeader): Promise<Leader> {
-    const [newLeader] = await pgDb.insert(leaders).values(leader).returning();
-    return newLeader;
+    const leaderData = {
+      name: leader.name,
+      title: leader.title,
+      bio: leader.bio ?? null,
+      imageUrl: leader.imageUrl ?? null,
+      linkedinUrl: leader.linkedinUrl ?? null,
+      order: leader.order ?? null,
+      visible: leader.visible ?? true,
+      createdAt: Timestamp.now(),
+      updatedAt: Timestamp.now(),
+    };
+    
+    const docRef = await addDoc(collection(db, "leaders"), leaderData);
+    
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      return normalizeDocData<Leader>({ id: docSnap.id, ...docSnap.data() });
+    }
+    
+    return {
+      id: docRef.id,
+      ...normalizeDocData(leaderData),
+    };
   }
 
   async getAllLeaders(): Promise<Leader[]> {
-    const result = await pgDb.select().from(leaders).where(eq(leaders.visible, true)).orderBy(leaders.order, leaders.createdAt);
-    return result;
+    const leadersSnapshot = await getDocs(collection(db, "leaders"));
+    const leadersList: Leader[] = [];
+    
+    for (const leaderDoc of leadersSnapshot.docs) {
+      const leaderData = leaderDoc.data();
+      if (leaderData.visible === true || leaderData.visible === undefined) {
+        leadersList.push(normalizeDocData<Leader>({
+          id: leaderDoc.id,
+          ...leaderData,
+        }));
+      }
+    }
+    
+    return leadersList.sort((a, b) => {
+      if (a.order !== b.order) {
+        return (a.order || 0) - (b.order || 0);
+      }
+      const dateA = a.createdAt;
+      const dateB = b.createdAt;
+      return dateB.getTime() - dateA.getTime();
+    });
   }
 
   async getLeaderById(id: string): Promise<Leader | undefined> {
-    const [leader] = await pgDb.select().from(leaders).where(eq(leaders.id, id));
-    return leader;
+    const docRef = doc(db, "leaders", id);
+    const docSnap = await getDoc(docRef);
+    
+    if (docSnap.exists()) {
+      return normalizeDocData<Leader>({ id: docSnap.id, ...docSnap.data() });
+    }
+    return undefined;
   }
 
   async updateLeader(id: string, data: Partial<InsertLeader>): Promise<Leader | undefined> {
-    const [updated] = await pgDb.update(leaders).set({ ...data, updatedAt: new Date() }).where(eq(leaders.id, id)).returning();
-    return updated;
+    const docRef = doc(db, "leaders", id);
+    
+    const updateData: any = {
+      updatedAt: Timestamp.now(),
+    };
+    
+    if (data.name !== undefined) updateData.name = data.name;
+    if (data.title !== undefined) updateData.title = data.title;
+    if (data.bio !== undefined) updateData.bio = data.bio;
+    if (data.imageUrl !== undefined) updateData.imageUrl = data.imageUrl;
+    if (data.linkedinUrl !== undefined) updateData.linkedinUrl = data.linkedinUrl;
+    if (data.order !== undefined) updateData.order = data.order;
+    if (data.visible !== undefined) updateData.visible = data.visible;
+    
+    await updateDoc(docRef, updateData);
+    
+    const updatedDoc = await getDoc(docRef);
+    if (updatedDoc.exists()) {
+      return normalizeDocData<Leader>({ id: updatedDoc.id, ...updatedDoc.data() });
+    }
+    return undefined;
   }
 
   async deleteLeader(id: string): Promise<void> {
-    await pgDb.delete(leaders).where(eq(leaders.id, id));
+    const docRef = doc(db, "leaders", id);
+    await deleteDoc(docRef);
   }
 
   async createGalleryImage(image: InsertGalleryImage): Promise<GalleryImage> {
-    const [newImage] = await pgDb.insert(galleryImages).values(image).returning();
-    return newImage;
+    const imageData = {
+      title: image.title,
+      description: image.description ?? null,
+      imageUrl: image.imageUrl,
+      category: image.category ?? null,
+      eventDate: image.eventDate ?? null,
+      visible: image.visible ?? true,
+      createdAt: Timestamp.now(),
+      updatedAt: Timestamp.now(),
+    };
+    
+    const docRef = await addDoc(collection(db, "gallery"), imageData);
+    
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      return normalizeDocData<GalleryImage>({ id: docSnap.id, ...docSnap.data() });
+    }
+    
+    return {
+      id: docRef.id,
+      ...normalizeDocData(imageData),
+    };
   }
 
   async getAllGalleryImages(): Promise<GalleryImage[]> {
-    const result = await pgDb.select().from(galleryImages).where(eq(galleryImages.visible, true)).orderBy(desc(galleryImages.eventDate || galleryImages.createdAt));
-    return result;
+    const gallerySnapshot = await getDocs(collection(db, "gallery"));
+    const galleryList: GalleryImage[] = [];
+    
+    for (const galleryDoc of gallerySnapshot.docs) {
+      const galleryData = galleryDoc.data();
+      if (galleryData.visible === true || galleryData.visible === undefined) {
+        galleryList.push(normalizeDocData<GalleryImage>({
+          id: galleryDoc.id,
+          ...galleryData,
+        }));
+      }
+    }
+    
+    return galleryList.sort((a, b) => {
+      const dateA = a.eventDate || a.createdAt;
+      const dateB = b.eventDate || b.createdAt;
+      return dateB.getTime() - dateA.getTime();
+    });
   }
 
   async getGalleryImageById(id: string): Promise<GalleryImage | undefined> {
-    const [image] = await pgDb.select().from(galleryImages).where(eq(galleryImages.id, id));
-    return image;
+    const docRef = doc(db, "gallery", id);
+    const docSnap = await getDoc(docRef);
+    
+    if (docSnap.exists()) {
+      return normalizeDocData<GalleryImage>({ id: docSnap.id, ...docSnap.data() });
+    }
+    return undefined;
   }
 
   async updateGalleryImage(id: string, data: Partial<InsertGalleryImage>): Promise<GalleryImage | undefined> {
-    const [updated] = await pgDb.update(galleryImages).set({ ...data, updatedAt: new Date() }).where(eq(galleryImages.id, id)).returning();
-    return updated;
+    const docRef = doc(db, "gallery", id);
+    
+    const updateData: any = {
+      updatedAt: Timestamp.now(),
+    };
+    
+    if (data.title !== undefined) updateData.title = data.title;
+    if (data.description !== undefined) updateData.description = data.description;
+    if (data.imageUrl !== undefined) updateData.imageUrl = data.imageUrl;
+    if (data.category !== undefined) updateData.category = data.category;
+    if (data.eventDate !== undefined) updateData.eventDate = data.eventDate;
+    if (data.visible !== undefined) updateData.visible = data.visible;
+    
+    await updateDoc(docRef, updateData);
+    
+    const updatedDoc = await getDoc(docRef);
+    if (updatedDoc.exists()) {
+      return normalizeDocData<GalleryImage>({ id: updatedDoc.id, ...updatedDoc.data() });
+    }
+    return undefined;
   }
 
   async deleteGalleryImage(id: string): Promise<void> {
-    await pgDb.delete(galleryImages).where(eq(galleryImages.id, id));
+    const docRef = doc(db, "gallery", id);
+    await deleteDoc(docRef);
   }
 
   async createMembershipTier(tier: InsertMembershipTier): Promise<MembershipTier> {
