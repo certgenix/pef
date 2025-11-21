@@ -21,7 +21,6 @@ import type { GalleryImage, InsertGalleryImage } from "@shared/schema";
 import { insertGalleryImageSchema } from "@shared/schema";
 import { format } from "date-fns";
 import { z } from "zod";
-import { ImageUpload } from "@/components/ImageUpload";
 
 // Form schema with string eventDate that transforms to Date | null
 const galleryImageFormSchema = insertGalleryImageSchema.extend({
@@ -123,17 +122,30 @@ export default function AdminGallery() {
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {images.map((image) => (
-              <Card key={image.id} data-testid={`card-image-${image.id}`}>
-                <CardContent className="p-0">
-                  <div className="aspect-video relative overflow-hidden">
-                    <img
-                      src={image.imageUrl}
-                      alt={image.title}
-                      className="w-full h-full object-cover"
-                      data-testid={`img-gallery-${image.id}`}
-                    />
-                  </div>
+            {images.map((image) => {
+              // Parse comma-separated URLs and get the first one for the thumbnail
+              const imageUrls = image.imageUrl.split(',').map(url => url.trim()).filter(url => url.length > 0);
+              const thumbnailUrl = imageUrls[0] || image.imageUrl;
+              
+              return (
+                <Card key={image.id} data-testid={`card-image-${image.id}`}>
+                  <CardContent className="p-0">
+                    <div className="aspect-video relative overflow-hidden">
+                      <img
+                        src={thumbnailUrl}
+                        alt={image.title}
+                        className="w-full h-full object-cover"
+                        data-testid={`img-gallery-${image.id}`}
+                      />
+                      {imageUrls.length > 1 && (
+                        <div 
+                          className="absolute top-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded-md"
+                          data-testid={`badge-gallery-thumbnail-count-${image.id}`}
+                        >
+                          {imageUrls.length} images
+                        </div>
+                      )}
+                    </div>
                   
                   <div className="p-4 space-y-3">
                     <div>
@@ -180,7 +192,8 @@ export default function AdminGallery() {
                   </div>
                 </CardContent>
               </Card>
-            ))}
+              );
+            })}
           </div>
         )}
       </main>
@@ -226,9 +239,12 @@ function GalleryImageFormDialog({
   // Reset form when image changes
   useEffect(() => {
     if (image) {
+      // Convert comma-separated URLs to newline-separated for editing
+      const imageUrls = image.imageUrl.split(',').map(url => url.trim()).join('\n');
+      
       form.reset({
         title: image.title,
-        imageUrl: image.imageUrl,
+        imageUrl: imageUrls,
         description: image.description ?? "",
         category: image.category ?? "",
         eventDate: image.eventDate ? format(new Date(image.eventDate), "yyyy-MM-dd") : "",
@@ -272,7 +288,17 @@ function GalleryImageFormDialog({
   });
 
   const onSubmit = (values: GalleryImageFormValues) => {
-    const parsed = galleryImageFormSchema.parse(values);
+    // Convert newline-separated URLs to comma-separated
+    const imageUrls = values.imageUrl
+      .split('\n')
+      .map(url => url.trim())
+      .filter(url => url.length > 0)
+      .join(',');
+    
+    const parsed = galleryImageFormSchema.parse({
+      ...values,
+      imageUrl: imageUrls,
+    });
     saveMutation.mutate(parsed);
   };
 
@@ -327,14 +353,18 @@ function GalleryImageFormDialog({
               name="imageUrl"
               render={({ field }) => (
                 <FormItem>
+                  <FormLabel>Image URLs *</FormLabel>
                   <FormControl>
-                    <ImageUpload
-                      value={field.value}
-                      onChange={field.onChange}
-                      label="Image *"
-                      description="Upload an image or paste a URL"
+                    <Textarea
+                      {...field}
+                      placeholder="Paste image URLs here (one per line for multiple images)&#10;https://example.com/image1.jpg&#10;https://example.com/image2.jpg"
+                      rows={5}
+                      data-testid="input-image-urls"
                     />
                   </FormControl>
+                  <p className="text-sm text-muted-foreground">
+                    Add one or more image URLs (one per line). Multiple images will be displayed as a slideshow.
+                  </p>
                   <FormMessage />
                 </FormItem>
               )}

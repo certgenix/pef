@@ -9,6 +9,8 @@ import { Images, Calendar, X, Tag } from "lucide-react";
 import type { GalleryImage } from "@shared/schema";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
+import { AutoplayCarousel } from "@/components/AutoplayCarousel";
+import { NavigableCarousel } from "@/components/NavigableCarousel";
 
 export default function Gallery() {
   const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null);
@@ -56,6 +58,8 @@ export default function Gallery() {
             ) : images && images.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {images.map((image) => {
+                  const imageUrls = image.imageUrl.split(',').map(url => url.trim()).filter(url => url.length > 0);
+                  
                   return (
                     <Card 
                       key={image.id} 
@@ -64,11 +68,10 @@ export default function Gallery() {
                       data-testid={`card-gallery-${image.id}`}
                     >
                       <div className="aspect-[3/2] relative overflow-hidden rounded-md">
-                        <img
-                          src={image.imageUrl}
+                        <AutoplayCarousel
+                          images={imageUrls}
                           alt={image.title}
                           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                          data-testid={`img-gallery-${image.id}`}
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                           <div className="absolute bottom-0 left-0 right-0 p-4 text-white transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
@@ -109,78 +112,91 @@ export default function Gallery() {
       <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
         <DialogContent className="max-w-5xl max-h-[90vh] p-0 overflow-y-auto" data-testid="dialog-gallery-image">
           {selectedImage && (
-            <div className="grid md:grid-cols-2 gap-0 min-h-0">
-              <div className="relative bg-black/5 dark:bg-black/20 flex items-center justify-center p-4 md:p-8">
-                <img
-                  src={selectedImage.imageUrl}
-                  alt={selectedImage.title}
-                  className="w-full h-auto max-h-[70vh] object-contain rounded-md"
-                  data-testid="img-gallery-full"
-                />
-              </div>
-              
-              <div className="p-6 md:p-8 flex flex-col overflow-y-auto">
-                <DialogHeader className="mb-6">
-                  <DialogTitle className="text-2xl md:text-3xl font-display font-bold" data-testid="text-gallery-full-title">
-                    {selectedImage.title}
-                  </DialogTitle>
-                </DialogHeader>
-
-                <div className="space-y-6 flex-1">
-                  {selectedImage.description && (
-                    <div>
-                      <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">
-                        Description
-                      </h4>
-                      <p className="text-base leading-relaxed" data-testid="text-gallery-full-description">
-                        {selectedImage.description}
-                      </p>
-                    </div>
-                  )}
-
-                  <div className="space-y-4">
-                    {selectedImage.category && (
-                      <div className="flex items-start gap-3">
-                        <Tag className="w-5 h-5 text-muted-foreground mt-0.5" />
-                        <div>
-                          <h4 className="text-sm font-semibold text-muted-foreground mb-1">Category</h4>
-                          <Badge variant="secondary" className="text-sm" data-testid="badge-gallery-full-category">
-                            {selectedImage.category}
-                          </Badge>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {selectedImage.eventDate && (
-                      <div className="flex items-start gap-3">
-                        <Calendar className="w-5 h-5 text-muted-foreground mt-0.5" />
-                        <div>
-                          <h4 className="text-sm font-semibold text-muted-foreground mb-1">Event Date</h4>
-                          <p className="text-base" data-testid="text-gallery-full-date">
-                            {format(new Date(selectedImage.eventDate), "EEEE, MMMM d, yyyy")}
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="mt-6 pt-6 border-t">
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => setSelectedImage(null)}
-                    data-testid="button-close-gallery"
-                  >
-                    <X className="w-4 h-4 mr-2" />
-                    Close
-                  </Button>
-                </div>
-              </div>
-            </div>
+            <GalleryDialogContent selectedImage={selectedImage} onClose={() => setSelectedImage(null)} />
           )}
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+function GalleryDialogContent({ 
+  selectedImage, 
+  onClose 
+}: { 
+  selectedImage: GalleryImage; 
+  onClose: () => void;
+}) {
+  const imageUrls = selectedImage.imageUrl.split(',').map(url => url.trim()).filter(url => url.length > 0);
+  
+  return (
+    <div className="grid md:grid-cols-2 gap-0 min-h-0">
+      <div className="relative bg-black/5 dark:bg-black/20 flex items-center justify-center p-4 md:p-8">
+        <NavigableCarousel
+          images={imageUrls}
+          alt={selectedImage.title}
+          className="w-full h-auto max-h-[70vh] object-contain rounded-md"
+        />
+      </div>
+      
+      <div className="p-6 md:p-8 flex flex-col overflow-y-auto">
+        <DialogHeader className="mb-6">
+          <DialogTitle className="text-2xl md:text-3xl font-display font-bold" data-testid="text-gallery-full-title">
+            {selectedImage.title}
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-6 flex-1">
+          {selectedImage.description && (
+            <div>
+              <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+                Description
+              </h4>
+              <p className="text-base leading-relaxed" data-testid="text-gallery-full-description">
+                {selectedImage.description}
+              </p>
+            </div>
+          )}
+
+          <div className="space-y-4">
+            {selectedImage.category && (
+              <div className="flex items-start gap-3">
+                <Tag className="w-5 h-5 text-muted-foreground mt-0.5" />
+                <div>
+                  <h4 className="text-sm font-semibold text-muted-foreground mb-1">Category</h4>
+                  <Badge variant="secondary" className="text-sm" data-testid="badge-gallery-full-category">
+                    {selectedImage.category}
+                  </Badge>
+                </div>
+              </div>
+            )}
+            
+            {selectedImage.eventDate && (
+              <div className="flex items-start gap-3">
+                <Calendar className="w-5 h-5 text-muted-foreground mt-0.5" />
+                <div>
+                  <h4 className="text-sm font-semibold text-muted-foreground mb-1">Event Date</h4>
+                  <p className="text-base" data-testid="text-gallery-full-date">
+                    {format(new Date(selectedImage.eventDate), "EEEE, MMMM d, yyyy")}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="mt-6 pt-6 border-t">
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={onClose}
+            data-testid="button-close-gallery"
+          >
+            <X className="w-4 h-4 mr-2" />
+            Close
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }
