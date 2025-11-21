@@ -25,10 +25,13 @@ import { ImageUpload } from "@/components/ImageUpload";
 // Form schema with string eventDate that transforms to Date | null
 const galleryImageFormSchema = insertGalleryImageSchema.extend({
   eventDate: z
-    .string()
-    .trim()
-    .refine((val) => !val || !Number.isNaN(Date.parse(val)), "Invalid date")
-    .transform((val) => (val ? new Date(val) : null)),
+    .union([z.string(), z.null()])
+    .transform((val) => {
+      if (!val || val === "") return null;
+      const date = new Date(val);
+      if (Number.isNaN(date.getTime())) return null;
+      return date;
+    }),
 });
 
 type GalleryImageFormValues = z.input<typeof galleryImageFormSchema>;
