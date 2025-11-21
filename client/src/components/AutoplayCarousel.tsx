@@ -36,6 +36,11 @@ export function AutoplayCarousel({
     return () => clearInterval(autoplay);
   }, [emblaApi, scrollNext, interval, images.length]);
 
+  // Guard against empty arrays
+  if (!images || images.length === 0) {
+    return null;
+  }
+
   // If only one image, don't use carousel
   if (images.length === 1) {
     return (
@@ -48,12 +53,12 @@ export function AutoplayCarousel({
   }
 
   return (
-    <div className="overflow-hidden" ref={emblaRef}>
-      <div className="flex">
+    <div className="absolute inset-0 overflow-hidden" ref={emblaRef}>
+      <div className="flex h-full">
         {images.map((image, index) => (
           <div
             key={index}
-            className="flex-[0_0_100%] min-w-0"
+            className="flex-[0_0_100%] min-w-0 h-full"
           >
             <img
               src={image}
