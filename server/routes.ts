@@ -8,6 +8,8 @@ import { db } from "./firebase-admin";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { linkedInService } from "./linkedin-service";
 import crypto from "crypto";
+import multer from "multer";
+import { Client as ObjectStorageClient } from "@replit/object-storage";
 
 const AUTO_APPROVE_JOBS = true;
 
@@ -1845,6 +1847,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting membership application:", error);
       return res.status(500).json({ error: "Failed to delete membership application" });
+    }
+  });
+
+  const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+      fileSize: 5 * 1024 * 1024,
+    },
+    fileFilter: (_req, file, cb) => {
+      if (file.mimetype.startsWith('image/')) {
+        cb(null, true);
+      } else {
+        cb(new Error('Only image files are allowed'));
+      }
+    },
+  });
+
+  app.post("/api/upload", upload.single('file'), async (req, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const token = authHeader.substring(7);
+      let uid: string;
+
+      if (!process.env.FIREBASE_ADMIN_SERVICE_ACCOUNT) {
+        try {
+          const decodedToken = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+          uid = decodedToken.user_id;
+        } catch (decodeError) {
+          return res.status(401).json({ error: "Invalid token format" });
+        }
+      } else {
+        return res.status(500).json({ error: "Firebase Admin SDK not implemented yet" });
+      }
+
+      const userWithRoles = await storage.getUserWithRoles(uid);
+      if (!userWithRoles || !userWithRoles.roles?.admin) {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({ error: "No file uploaded" });
+      }
+
+      const objectStorage = new ObjectStorageClient();
+      const timestamp = Date.now();
+      const fileExtension = req.file.originalname.split('.').pop();
+      const fileName = `${timestamp}-${crypto.randomBytes(8).toString('hex')}.${fileExtension}`;
+      const filePath = `images/${fileName}`;
+
+      await objectStorage.uploadFromBytes(filePath, req.file.buffer);
+      const publicUrl = await objectStorage.getDownloadUrl(filePath);
+
+      return res.json({ 
+        success: true, 
+        url: publicUrl,
+        fileName: fileName
+      });
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      return res.status(500).json({ 
+        error: "Failed to upload file",
+        message: error instanceof Error ? error.message : "Unknown error"
+      });
     }
   });
 
