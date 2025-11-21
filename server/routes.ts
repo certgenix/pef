@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { z } from "zod";
 import { insertUserProfileSchema, insertUserRolesSchema, insertOpportunitySchema, insertApplicationSchema, jobDetailsSchema, insertVideoSchema, insertLeaderSchema, insertGalleryImageSchema, insertMembershipTierSchema, insertMembershipApplicationSchema } from "@shared/schema";
 import { Resend } from "resend";
+import { verifyIdToken } from "./firebase-admin";
 import { db } from "./firebase-admin";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { linkedInService } from "./linkedin-service";
@@ -1917,6 +1918,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let uid: string;
 
       if (!process.env.FIREBASE_ADMIN_SERVICE_ACCOUNT) {
+        console.warn("WARNING: Firebase Admin SDK not configured. Upload endpoint using INSECURE client-side JWT decoding.");
         try {
           const decodedToken = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
           uid = decodedToken.user_id;
@@ -1924,7 +1926,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(401).json({ error: "Invalid token format" });
         }
       } else {
-        return res.status(500).json({ error: "Firebase Admin SDK not implemented yet" });
+        const decoded = await verifyIdToken(token);
+        if (!decoded) {
+          return res.status(401).json({ error: "Invalid token" });
+        }
+        uid = decoded.uid;
       }
 
       const userWithRoles = await storage.getUserWithRoles(uid);

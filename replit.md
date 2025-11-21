@@ -98,7 +98,16 @@ Preferred communication style: Simple, everyday language.
 2. **Duplicate Prevention**: Firestore doesn't have database-level unique constraints. While the code checks for existing applications before creating new ones, parallel requests could still create duplicates. Consider implementing Firestore security rules or transactions for atomic duplicate prevention.
 3. **Rate Limiting**: No rate limiting implemented on API endpoints. Should add rate limiting before production to prevent abuse.
 
+**Image Upload Security**:
+- ⚠️ **Upload Endpoint Authentication**: The `/api/upload` endpoint follows the same authentication pattern as all other API endpoints. When `FIREBASE_ADMIN_SERVICE_ACCOUNT` is not configured, it falls back to INSECURE client-side JWT decoding (with console warnings). When configured, it uses proper server-side token verification via Firebase Admin SDK.
+- **Admin Role Enforcement**: Upload endpoint requires verified admin role after authentication (queries Firestore for user roles)
+- **File Validation**: Strict MIME type whitelist (JPEG, PNG, GIF, WebP only) and 5MB file size limit
+- **Path Security**: File serving endpoint (`/api/files/images/*`) has path traversal prevention and extension validation
+- **Public File Access**: File serving endpoint is intentionally unauthenticated to allow gallery and leadership images to display on public-facing pages
+- **Storage**: All uploaded images stored in Replit Object Storage under `images/` prefix with timestamp-based unique filenames
+
 **Next Steps for Production**:
+- **REQUIRED**: Set up Firebase Admin SDK service account credentials in `FIREBASE_ADMIN_SERVICE_ACCOUNT` environment variable to enable secure image uploads
 - Implement Firebase Admin SDK for server-side token verification
 - Add CSRF protection for API endpoints
 - Implement rate limiting on registration endpoints
