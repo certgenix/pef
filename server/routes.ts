@@ -1443,6 +1443,110 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/gallery/bulk", async (req, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const token = authHeader.substring(7);
+      let uid: string;
+
+      if (!process.env.FIREBASE_ADMIN_SERVICE_ACCOUNT) {
+        try {
+          const decodedToken = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+          uid = decodedToken.user_id;
+        } catch (decodeError) {
+          return res.status(401).json({ error: "Invalid token format" });
+        }
+      } else {
+        return res.status(500).json({ error: "Firebase Admin SDK not implemented yet" });
+      }
+
+      const userWithRoles = await storage.getUserWithRoles(uid);
+      if (!userWithRoles || !userWithRoles.roles?.admin) {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      const { urls, category, eventDate } = req.body;
+      
+      if (!urls || !Array.isArray(urls) || urls.length === 0) {
+        return res.status(400).json({ error: "URLs array is required" });
+      }
+
+      const createdImages = [];
+      const errors = [];
+
+      for (let i = 0; i < urls.length; i++) {
+        const url = urls[i];
+        try {
+          const filename = url.split('/').pop()?.split('?')[0] || `Image ${i + 1}`;
+          const title = filename.replace(/\.(jpg|jpeg|png|gif|webp)$/i, '').replace(/[-_]/g, ' ');
+          
+          // Validate and parse event date if provided
+          let parsedDate: Date | undefined = undefined;
+          if (eventDate) {
+            const dateObj = new Date(eventDate);
+            if (!isNaN(dateObj.getTime())) {
+              parsedDate = dateObj;
+            } else {
+              errors.push({ url, error: 'Invalid event date format' });
+              continue;
+            }
+          }
+          
+          const imageData = {
+            title: title.charAt(0).toUpperCase() + title.slice(1),
+            imageUrl: url,
+            category: category || undefined,
+            eventDate: parsedDate,
+            visible: true,
+          };
+
+          // Validate against schema
+          const validationResult = insertGalleryImageSchema.safeParse(imageData);
+          if (!validationResult.success) {
+            errors.push({ 
+              url, 
+              error: `Validation failed: ${validationResult.error.issues.map(i => i.message).join(', ')}` 
+            });
+            continue;
+          }
+
+          const image = await storage.createGalleryImage(validationResult.data);
+          createdImages.push(image);
+        } catch (error) {
+          console.error(`Error creating image from URL ${url}:`, error);
+          errors.push({ url, error: error instanceof Error ? error.message : 'Unknown error' });
+        }
+      }
+
+      // Return error if all failed
+      if (createdImages.length === 0 && errors.length > 0) {
+        return res.status(400).json({ 
+          success: false,
+          error: "Failed to create any images",
+          count: 0,
+          errors
+        });
+      }
+
+      // Return 207 (Multi-Status) for partial success, 201 for full success
+      const statusCode = errors.length > 0 ? 207 : 201;
+      return res.status(statusCode).json({ 
+        success: true,
+        partial: errors.length > 0,
+        count: createdImages.length,
+        created: createdImages,
+        errors: errors.length > 0 ? errors : undefined,
+      });
+    } catch (error) {
+      console.error("Error in bulk gallery upload:", error);
+      return res.status(500).json({ error: "Failed to process bulk upload" });
+    }
+  });
+
   app.patch("/api/gallery/:id", async (req, res) => {
     try {
       const authHeader = req.headers.authorization;
