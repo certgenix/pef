@@ -66,44 +66,48 @@ export default function Leadership() {
                 {leaders.map((leader) => (
                   <Card 
                     key={leader.id} 
-                    className="group border-2 hover:border-primary/50 transition-all hover-elevate cursor-pointer overflow-visible" 
+                    className="group hover:border-primary/50 transition-all hover-elevate cursor-pointer overflow-visible shadow-sm" 
                     onClick={() => setSelectedLeader(leader)}
                     data-testid={`card-leader-${leader.id}`}
                   >
-                    <CardContent className="p-0">
-                      <div className="relative h-64 bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center overflow-hidden">
-                        <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                        <Avatar className="w-40 h-40 border-4 border-background shadow-xl relative z-10 transition-transform duration-500 group-hover:scale-110" data-testid={`avatar-leader-${leader.id}`}>
-                          {leader.imageUrl && (
-                            <AvatarImage src={leader.imageUrl} alt={leader.name} />
-                          )}
-                          <AvatarFallback className="text-3xl bg-primary/10 text-primary">
-                            {getInitials(leader.name)}
-                          </AvatarFallback>
-                        </Avatar>
-                      </div>
-                      
-                      <div className="p-6 text-center">
-                        <h3 className="text-xl font-display font-bold mb-1" data-testid={`text-leader-name-${leader.id}`}>
-                          {leader.name}
-                        </h3>
-                        <div className="flex items-center justify-center gap-2 mb-4">
-                          <Briefcase className="w-4 h-4 text-primary" />
-                          <p className="text-sm text-primary font-semibold" data-testid={`text-leader-title-${leader.id}`}>
-                            {leader.title}
-                          </p>
+                    <CardContent className="p-8">
+                      <div className="flex flex-col items-center text-center">
+                        <div className="mb-6 relative">
+                          <div className="absolute inset-0 bg-primary/10 rounded-full blur-2xl group-hover:bg-primary/20 transition-colors" />
+                          <Avatar className="w-32 h-32 border-4 border-card shadow-lg relative transition-transform duration-300 group-hover:scale-105" data-testid={`avatar-leader-${leader.id}`}>
+                            {leader.imageUrl && (
+                              <AvatarImage src={leader.imageUrl} alt={leader.name} />
+                            )}
+                            <AvatarFallback className="text-3xl bg-primary/10 text-primary font-semibold">
+                              {getInitials(leader.name)}
+                            </AvatarFallback>
+                          </Avatar>
                         </div>
                         
-                        {leader.bio && (
-                          <p className="text-sm text-muted-foreground mb-4 line-clamp-3" data-testid={`text-leader-bio-${leader.id}`}>
-                            {leader.bio}
-                          </p>
-                        )}
+                        <div className="space-y-3 flex-1 w-full">
+                          <div>
+                            <h3 className="text-2xl font-display font-bold mb-2" data-testid={`text-leader-name-${leader.id}`}>
+                              {leader.name}
+                            </h3>
+                            <div className="flex items-center justify-center gap-2">
+                              <Briefcase className="w-4 h-4 text-primary" />
+                              <p className="text-sm text-primary font-semibold" data-testid={`text-leader-title-${leader.id}`}>
+                                {leader.title}
+                              </p>
+                            </div>
+                          </div>
+                          
+                          {leader.bio && (
+                            <p className="text-sm text-muted-foreground line-clamp-3 leading-relaxed" data-testid={`text-leader-bio-${leader.id}`}>
+                              {leader.bio}
+                            </p>
+                          )}
+                        </div>
                         
                         <Button
                           variant="outline"
                           size="sm"
-                          className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors"
+                          className="w-full mt-6 group-hover:bg-primary group-hover:text-primary-foreground transition-colors"
                           onClick={(e) => {
                             e.stopPropagation();
                             setSelectedLeader(leader);

@@ -54,24 +54,20 @@ export default function Gallery() {
                 <p className="text-muted-foreground">Loading gallery...</p>
               </div>
             ) : images && images.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {images.map((image, index) => {
-                  // Create varied heights for masonry effect
-                  const heights = ["aspect-square", "aspect-[4/5]", "aspect-[3/4]", "aspect-video"];
-                  const heightClass = heights[index % heights.length];
-                  
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {images.map((image) => {
                   return (
                     <Card 
                       key={image.id} 
-                      className="group border-2 hover:border-primary/50 transition-all cursor-pointer hover-elevate overflow-visible" 
+                      className="group hover:border-primary/50 transition-all cursor-pointer hover-elevate overflow-visible" 
                       onClick={() => setSelectedImage(image)}
                       data-testid={`card-gallery-${image.id}`}
                     >
-                      <div className={`${heightClass} relative overflow-hidden`}>
+                      <div className="aspect-[3/2] relative overflow-hidden rounded-md">
                         <img
                           src={image.imageUrl}
                           alt={image.title}
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                           data-testid={`img-gallery-${image.id}`}
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
