@@ -87,6 +87,7 @@ export default function AdminDashboard() {
   const [videoDialogOpen, setVideoDialogOpen] = useState(false);
   const [editingVideo, setEditingVideo] = useState<VideoType | null>(null);
   const [deleteVideoId, setDeleteVideoId] = useState<string | null>(null);
+  const [selectedTab, setSelectedTab] = useState<'all' | 'media'>('all');
 
   const { data: videos = [], refetch: refetchVideos } = useQuery<VideoType[]>({
     queryKey: ['/api/videos'],
@@ -226,7 +227,7 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
           <Card className="hover-elevate cursor-pointer" onClick={() => setLocation("/admin/leadership")} data-testid="card-manage-leadership">
             <CardContent className="p-6">
               <Users className="w-8 h-8 text-primary mb-2" />
@@ -250,8 +251,33 @@ export default function AdminDashboard() {
           </Card>
         </div>
 
-        <Tabs defaultValue="all" className="space-y-6">
-          <TabsList>
+        <Tabs value={selectedTab} onValueChange={(value) => setSelectedTab(value as 'all' | 'media')} className="space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+            <Card 
+              className={`hover-elevate cursor-pointer ${selectedTab === 'all' ? 'ring-2 ring-primary' : ''}`}
+              onClick={() => setSelectedTab('all')} 
+              data-testid="card-view-users"
+            >
+              <CardContent className="p-6">
+                <Users className="w-8 h-8 text-primary mb-2" />
+                <h3 className="font-bold mb-1">All Users ({users.length})</h3>
+                <p className="text-sm text-muted-foreground">View and manage all users</p>
+              </CardContent>
+            </Card>
+            <Card 
+              className={`hover-elevate cursor-pointer ${selectedTab === 'media' ? 'ring-2 ring-primary' : ''}`}
+              onClick={() => setSelectedTab('media')} 
+              data-testid="card-view-media"
+            >
+              <CardContent className="p-6">
+                <Video className="w-8 h-8 text-primary mb-2" />
+                <h3 className="font-bold mb-1">Media ({videos.length})</h3>
+                <p className="text-sm text-muted-foreground">Manage video content</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          <TabsList className="hidden">
             <TabsTrigger value="all" data-testid="tab-all">
               <Users className="w-4 h-4 mr-2" />
               All Users ({users.length})
