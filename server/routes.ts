@@ -1856,12 +1856,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
       fileSize: 5 * 1024 * 1024,
     },
     fileFilter: (_req, file, cb) => {
-      if (file.mimetype.startsWith('image/')) {
+      const allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+      if (allowedMimes.includes(file.mimetype)) {
         cb(null, true);
       } else {
-        cb(new Error('Only image files are allowed'));
+        cb(new Error('Only JPEG, PNG, GIF, and WebP images are allowed'));
       }
     },
+  });
+
+  app.get("/api/files/images/*", async (req, res) => {
+    try {
+      const filePath = (req.params as any)[0] as string;
+      
+      if (filePath.includes('..') || filePath.startsWith('/')) {
+        return res.status(400).json({ error: "Invalid file path" });
+      }
+      
+      const fullPath = `images/${filePath}`;
+      const objectStorage = new ObjectStorageClient();
+      
+      const result = await objectStorage.downloadAsBytes(fullPath);
+      if (!result.ok) {
+        return res.status(404).json({ error: "File not found" });
+      }
+
+      const ext = filePath.split('.').pop()?.toLowerCase();
+      const allowedTypes = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+      
+      if (!ext || !allowedTypes.includes(ext)) {
+        return res.status(400).json({ error: "Unsupported file type" });
+      }
+
+      const contentTypes: Record<string, string> = {
+        'jpg': 'image/jpeg',
+        'jpeg': 'image/jpeg',
+        'png': 'image/png',
+        'gif': 'image/gif',
+        'webp': 'image/webp',
+      };
+
+      res.setHeader('Content-Type', contentTypes[ext]);
+      res.setHeader('Cache-Control', 'public, max-age=31536000');
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.end(result.value);
+    } catch (error) {
+      console.error("Error serving file:", error);
+      return res.status(500).json({ error: "Failed to serve file" });
+    }
   });
 
   app.post("/api/upload", upload.single('file'), async (req, res) => {
@@ -1894,14 +1936,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "No file uploaded" });
       }
 
+      const mimeToExt: Record<string, string> = {
+        'image/jpeg': 'jpg',
+        'image/png': 'png',
+        'image/gif': 'gif',
+        'image/webp': 'webp',
+      };
+
+      const fileExtension = mimeToExt[req.file.mimetype] || 'jpg';
       const objectStorage = new ObjectStorageClient();
       const timestamp = Date.now();
-      const fileExtension = req.file.originalname.split('.').pop();
       const fileName = `${timestamp}-${crypto.randomBytes(8).toString('hex')}.${fileExtension}`;
       const filePath = `images/${fileName}`;
 
-      await objectStorage.uploadFromBytes(filePath, req.file.buffer);
-      const publicUrl = await objectStorage.getDownloadUrl(filePath);
+      const uploadResult = await objectStorage.uploadFromBytes(filePath, req.file.buffer);
+      if (!uploadResult.ok) {
+        throw new Error(uploadResult.error?.message || "Upload failed");
+      }
+
+      const publicUrl = `/api/files/images/${fileName}`;
 
       return res.json({ 
         success: true, 

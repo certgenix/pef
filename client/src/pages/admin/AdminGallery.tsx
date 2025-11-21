@@ -20,6 +20,7 @@ import type { GalleryImage, InsertGalleryImage } from "@shared/schema";
 import { insertGalleryImageSchema } from "@shared/schema";
 import { format } from "date-fns";
 import { z } from "zod";
+import { ImageUpload } from "@/components/ImageUpload";
 
 // Form schema with string eventDate that transforms to Date | null
 const galleryImageFormSchema = insertGalleryImageSchema.extend({
@@ -266,8 +267,9 @@ function GalleryImageFormDialog({
     },
   });
 
-  const onSubmit = (values: z.output<typeof galleryImageFormSchema>) => {
-    saveMutation.mutate(values);
+  const onSubmit = (values: GalleryImageFormValues) => {
+    const parsed = galleryImageFormSchema.parse(values);
+    saveMutation.mutate(parsed);
   };
 
   return (
@@ -321,9 +323,13 @@ function GalleryImageFormDialog({
               name="imageUrl"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Image URL *</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="https://example.com/image.jpg" data-testid="input-image-url" />
+                    <ImageUpload
+                      value={field.value}
+                      onChange={field.onChange}
+                      label="Image *"
+                      description="Upload an image or paste a URL"
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

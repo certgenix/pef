@@ -19,6 +19,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import type { Leader, InsertLeader } from "@shared/schema";
 import { insertLeaderSchema } from "@shared/schema";
+import { ImageUpload } from "@/components/ImageUpload";
 
 export default function AdminLeadership() {
   const { currentUser, userData } = useAuth();
@@ -325,13 +326,12 @@ function LeaderFormDialog({
               name="imageUrl"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Image URL</FormLabel>
                   <FormControl>
-                    <Input
-                      {...field}
+                    <ImageUpload
                       value={field.value || ""}
-                      placeholder="https://example.com/image.jpg"
-                      data-testid="input-leader-image"
+                      onChange={field.onChange}
+                      label="Profile Image"
+                      description="Upload a profile photo or paste a URL"
                     />
                   </FormControl>
                   <FormMessage />
