@@ -13,7 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { Images, Plus, Pencil, Trash2, ArrowLeft, Upload } from "lucide-react";
+import { Images, Plus, Pencil, Trash2, ArrowLeft } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -42,7 +42,6 @@ export default function AdminGallery() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [bulkUploadOpen, setBulkUploadOpen] = useState(false);
   const [editingImage, setEditingImage] = useState<GalleryImage | null>(null);
   const [deleteImageId, setDeleteImageId] = useState<string | null>(null);
 
@@ -103,16 +102,10 @@ export default function AdminGallery() {
               </div>
               <p className="text-muted-foreground">Add, edit, and manage event gallery images</p>
             </div>
-            <div className="flex gap-2">
-              <Button onClick={() => handleOpenDialog()} data-testid="button-add-image">
-                <Plus className="w-4 h-4 mr-2" />
-                Add Image
-              </Button>
-              <Button onClick={() => setBulkUploadOpen(true)} variant="secondary" data-testid="button-bulk-upload">
-                <Upload className="w-4 h-4 mr-2" />
-                Bulk Upload
-              </Button>
-            </div>
+            <Button onClick={() => handleOpenDialog()} data-testid="button-add-image">
+              <Plus className="w-4 h-4 mr-2" />
+              Add Image
+            </Button>
           </div>
         </div>
 
@@ -202,11 +195,6 @@ export default function AdminGallery() {
       <DeleteImageDialog
         imageId={deleteImageId}
         onClose={() => setDeleteImageId(null)}
-      />
-
-      <BulkUploadDialog
-        open={bulkUploadOpen}
-        onClose={() => setBulkUploadOpen(false)}
       />
     </div>
   );
@@ -493,205 +481,6 @@ function DeleteImageDialog({
             {deleteMutation.isPending ? "Deleting..." : "Delete"}
           </Button>
         </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function BulkUploadDialog({
-  open,
-  onClose,
-}: {
-  open: boolean;
-  onClose: () => void;
-}) {
-  const { toast } = useToast();
-  const [urls, setUrls] = useState("");
-  const [category, setCategory] = useState("");
-  const [eventDate, setEventDate] = useState("");
-  const [uploadErrors, setUploadErrors] = useState<Array<{ url: string; error: string }>>([]);
-  
-  const bulkUploadMutation = useMutation({
-    mutationFn: async (data: { urls: string[]; category?: string; eventDate?: string }) => {
-      return await apiRequest("POST", "/api/gallery/bulk", data);
-    },
-    onSuccess: (response: any) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/gallery"] });
-      const count = response.count || 0;
-      const errorCount = response.errors?.length || 0;
-      
-      // Store errors for display
-      if (response.errors && response.errors.length > 0) {
-        setUploadErrors(response.errors);
-      }
-      
-      if (count > 0) {
-        // Some or all succeeded
-        toast({
-          title: errorCount > 0 ? "Partial Success" : "Success",
-          description: errorCount > 0 
-            ? `${count} image${count !== 1 ? 's' : ''} added. ${errorCount} failed - see details below.`
-            : `${count} image${count !== 1 ? 's' : ''} added successfully`,
-        });
-        
-        // Only close and clear if fully successful
-        if (errorCount === 0) {
-          setUrls("");
-          setCategory("");
-          setEventDate("");
-          setUploadErrors([]);
-          onClose();
-        }
-      } else if (errorCount > 0) {
-        // All failed
-        toast({
-          title: "Upload Failed",
-          description: `All ${errorCount} image${errorCount !== 1 ? 's' : ''} failed. See details below.`,
-          variant: "destructive",
-        });
-      }
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to upload images",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Clear previous errors
-    setUploadErrors([]);
-    
-    const urlList = urls
-      .split('\n')
-      .map(url => url.trim())
-      .filter(url => url.length > 0);
-    
-    if (urlList.length === 0) {
-      toast({
-        title: "No URLs provided",
-        description: "Please enter at least one image URL",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const invalidUrls = urlList.filter(url => {
-      try {
-        new URL(url);
-        return false;
-      } catch {
-        return true;
-      }
-    });
-
-    if (invalidUrls.length > 0) {
-      toast({
-        title: "Invalid URLs",
-        description: `${invalidUrls.length} URL${invalidUrls.length !== 1 ? 's are' : ' is'} invalid. Please check and try again.`,
-        variant: "destructive",
-      });
-      return;
-    }
-
-    bulkUploadMutation.mutate({
-      urls: urlList,
-      category: category.trim() || undefined,
-      eventDate: eventDate.trim() || undefined,
-    });
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Bulk Upload Gallery Images</DialogTitle>
-          <DialogDescription>
-            Paste multiple image URLs (one per line) to add them all at once
-          </DialogDescription>
-        </DialogHeader>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {uploadErrors.length > 0 && (
-            <div className="bg-destructive/10 border border-destructive/30 rounded-md p-4">
-              <h4 className="font-semibold text-destructive mb-2">Failed Uploads ({uploadErrors.length}):</h4>
-              <div className="space-y-1 max-h-40 overflow-y-auto">
-                {uploadErrors.map((err, index) => (
-                  <div key={index} className="text-sm">
-                    <span className="font-mono text-xs break-all">{err.url}</span>
-                    <p className="text-destructive text-xs ml-2">→ {err.error}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div>
-            <Label htmlFor="bulk-urls">Image URLs (one per line) *</Label>
-            <Textarea
-              id="bulk-urls"
-              value={urls}
-              onChange={(e) => setUrls(e.target.value)}
-              placeholder="https://example.com/image1.jpg&#10;https://example.com/image2.jpg&#10;https://example.com/image3.jpg"
-              rows={10}
-              className="font-mono text-sm"
-              data-testid="textarea-bulk-urls"
-            />
-            <p className="text-sm text-muted-foreground mt-1">
-              Each URL will create a separate gallery image with a default title
-            </p>
-          </div>
-
-          <div>
-            <Label htmlFor="bulk-category">Default Category (optional)</Label>
-            <Input
-              id="bulk-category"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              placeholder="Conference, Workshop, etc."
-              data-testid="input-bulk-category"
-            />
-            <p className="text-sm text-muted-foreground mt-1">
-              This category will be applied to all uploaded images
-            </p>
-          </div>
-
-          <div>
-            <Label htmlFor="bulk-event-date">Default Event Date (optional)</Label>
-            <Input
-              type="date"
-              id="bulk-event-date"
-              value={eventDate}
-              onChange={(e) => setEventDate(e.target.value)}
-              data-testid="input-bulk-event-date"
-            />
-            <p className="text-sm text-muted-foreground mt-1">
-              This date will be applied to all uploaded images
-            </p>
-          </div>
-
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              data-testid="button-cancel-bulk-upload"
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={bulkUploadMutation.isPending}
-              data-testid="button-submit-bulk-upload"
-            >
-              {bulkUploadMutation.isPending ? "Uploading..." : "Upload All"}
-            </Button>
-          </DialogFooter>
-        </form>
       </DialogContent>
     </Dialog>
   );
