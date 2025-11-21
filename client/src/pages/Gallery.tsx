@@ -107,9 +107,9 @@ export default function Gallery() {
       <Footer />
 
       <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
-        <DialogContent className="max-w-5xl max-h-[90vh] p-0 overflow-hidden" data-testid="dialog-gallery-image">
+        <DialogContent className="max-w-5xl max-h-[90vh] p-0 overflow-y-auto" data-testid="dialog-gallery-image">
           {selectedImage && (
-            <div className="grid md:grid-cols-2 gap-0">
+            <div className="grid md:grid-cols-2 gap-0 min-h-0">
               <div className="relative bg-black/5 dark:bg-black/20 flex items-center justify-center p-4 md:p-8">
                 <img
                   src={selectedImage.imageUrl}
@@ -119,7 +119,7 @@ export default function Gallery() {
                 />
               </div>
               
-              <div className="p-6 md:p-8 flex flex-col">
+              <div className="p-6 md:p-8 flex flex-col overflow-y-auto">
                 <DialogHeader className="mb-6">
                   <DialogTitle className="text-2xl md:text-3xl font-display font-bold" data-testid="text-gallery-full-title">
                     {selectedImage.title}
