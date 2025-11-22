@@ -115,6 +115,105 @@ export default function AdminDashboard() {
 
   const loading = usersLoading || statsLoading;
 
+  // Bulk operations for users
+  const bulkApproveUsersMutation = useMutation({
+    mutationFn: async (userIds: string[]) => {
+      await Promise.all(
+        userIds.map((userId) =>
+          apiRequest("POST", `/api/admin/users/${userId}/status`, { status: "approved" })
+        )
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+      setSelectedUsers(new Set());
+      toast({
+        title: "Success",
+        description: `${selectedUsers.size} user(s) approved successfully`,
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to approve selected users",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const bulkRejectUsersMutation = useMutation({
+    mutationFn: async (userIds: string[]) => {
+      await Promise.all(
+        userIds.map((userId) =>
+          apiRequest("POST", `/api/admin/users/${userId}/status`, { status: "rejected" })
+        )
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+      setSelectedUsers(new Set());
+      toast({
+        title: "Success",
+        description: `${selectedUsers.size} user(s) rejected successfully`,
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to reject selected users",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Bulk operations for videos
+  const bulkUpdateVideosMutation = useMutation({
+    mutationFn: async ({ videoIds, visible }: { videoIds: string[]; visible: boolean }) => {
+      await Promise.all(
+        videoIds.map((videoId) =>
+          apiRequest("PATCH", `/api/videos/${videoId}`, { visible })
+        )
+      );
+    },
+    onSuccess: (_, { visible }) => {
+      refetchVideos();
+      setSelectedVideos(new Set());
+      toast({
+        title: "Success",
+        description: `${selectedVideos.size} video(s) ${visible ? "shown" : "hidden"} successfully`,
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update selected videos",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleBulkApprove = () => {
+    if (selectedUsers.size === 0) return;
+    bulkApproveUsersMutation.mutate(Array.from(selectedUsers));
+  };
+
+  const handleBulkReject = () => {
+    if (selectedUsers.size === 0) return;
+    bulkRejectUsersMutation.mutate(Array.from(selectedUsers));
+  };
+
+  const handleBulkShow = () => {
+    if (selectedVideos.size === 0) return;
+    bulkUpdateVideosMutation.mutate({ videoIds: Array.from(selectedVideos), visible: true });
+  };
+
+  const handleBulkHide = () => {
+    if (selectedVideos.size === 0) return;
+    bulkUpdateVideosMutation.mutate({ videoIds: Array.from(selectedVideos), visible: false });
+  };
+
   useEffect(() => {
     if (!currentUser) {
       setLocation("/login");
@@ -277,105 +376,6 @@ export default function AdminDashboard() {
     } else {
       setSelectedVideos(new Set());
     }
-  };
-
-  // Bulk operations for users
-  const bulkApproveUsersMutation = useMutation({
-    mutationFn: async (userIds: string[]) => {
-      await Promise.all(
-        userIds.map((userId) =>
-          apiRequest("POST", `/api/admin/users/${userId}/status`, { status: "approved" })
-        )
-      );
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
-      setSelectedUsers(new Set());
-      toast({
-        title: "Success",
-        description: `${selectedUsers.size} user(s) approved successfully`,
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to approve selected users",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const bulkRejectUsersMutation = useMutation({
-    mutationFn: async (userIds: string[]) => {
-      await Promise.all(
-        userIds.map((userId) =>
-          apiRequest("POST", `/api/admin/users/${userId}/status`, { status: "rejected" })
-        )
-      );
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
-      setSelectedUsers(new Set());
-      toast({
-        title: "Success",
-        description: `${selectedUsers.size} user(s) rejected successfully`,
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to reject selected users",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Bulk operations for videos
-  const bulkUpdateVideosMutation = useMutation({
-    mutationFn: async ({ videoIds, visible }: { videoIds: string[]; visible: boolean }) => {
-      await Promise.all(
-        videoIds.map((videoId) =>
-          apiRequest("PATCH", `/api/videos/${videoId}`, { visible })
-        )
-      );
-    },
-    onSuccess: (_, { visible }) => {
-      refetchVideos();
-      setSelectedVideos(new Set());
-      toast({
-        title: "Success",
-        description: `${selectedVideos.size} video(s) ${visible ? "shown" : "hidden"} successfully`,
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to update selected videos",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const handleBulkApprove = () => {
-    if (selectedUsers.size === 0) return;
-    bulkApproveUsersMutation.mutate(Array.from(selectedUsers));
-  };
-
-  const handleBulkReject = () => {
-    if (selectedUsers.size === 0) return;
-    bulkRejectUsersMutation.mutate(Array.from(selectedUsers));
-  };
-
-  const handleBulkShow = () => {
-    if (selectedVideos.size === 0) return;
-    bulkUpdateVideosMutation.mutate({ videoIds: Array.from(selectedVideos), visible: true });
-  };
-
-  const handleBulkHide = () => {
-    if (selectedVideos.size === 0) return;
-    bulkUpdateVideosMutation.mutate({ videoIds: Array.from(selectedVideos), visible: false });
   };
 
   return (
