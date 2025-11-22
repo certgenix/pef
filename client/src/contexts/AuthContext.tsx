@@ -23,6 +23,7 @@ import {
 import { auth, db } from "@/lib/firebase";
 import { User, UserRoles } from "../../../shared/types";
 import { checkEmailExists } from "@/lib/emailValidation";
+import { toFirestoreRoles } from "@shared/roleUtils";
 
 interface ProfileData {
   phone?: string | null;
@@ -127,13 +128,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               websiteUrl: user.links?.website || null,
               portfolioUrl: user.links?.portfolio || null,
             },
-            roles: {
-              isProfessional: user.roles?.professional || false,
-              isJobSeeker: user.roles?.jobSeeker || false,
-              isEmployer: user.roles?.employer || false,
-              isBusinessOwner: user.roles?.businessOwner || false,
-              isInvestor: user.roles?.investor || false,
-            },
+            roles: toFirestoreRoles(user.roles || {}),
           }),
         });
 
@@ -299,13 +294,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         websiteUrl: profileData?.websiteUrl || null,
         portfolioUrl: profileData?.portfolioUrl || null,
       },
-      roles: {
-        isProfessional: roles.professional || false,
-        isJobSeeker: roles.jobSeeker || false,
-        isEmployer: roles.employer || false,
-        isBusinessOwner: roles.businessOwner || false,
-        isInvestor: roles.investor || false,
-      },
+      roles: toFirestoreRoles(roles),
       professionalData: {},
       jobSeekerData: {},
       employerData: {},
@@ -403,15 +392,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         profile: {
           fullName: user.displayName || "Google User",
         },
-        roles: {
-          isProfessional: false,
-          isJobSeeker: false,
-          isEmployer: false,
-          isBusinessOwner: false,
-          isInvestor: false,
-          isAdmin: isAdminEmail,
+        roles: toFirestoreRoles({
+          professional: false,
+          jobSeeker: false,
+          employer: false,
+          businessOwner: false,
+          investor: false,
           admin: isAdminEmail,
-        },
+        }),
         professionalData: {},
         jobSeekerData: {},
         employerData: {},

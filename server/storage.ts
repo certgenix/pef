@@ -48,6 +48,7 @@ import {
   type InsertMembershipApplication,
   insertMembershipApplicationSchema,
 } from "@shared/schema";
+import { toFirestoreRoles } from "@shared/roleUtils";
 
 // Helper function to convert Firestore Timestamps to Date objects
 function normalizeDate(value: any): Date {
@@ -266,14 +267,7 @@ export class FirestoreStorage implements IStorage {
           websiteUrl: data.profile.websiteUrl || null,
           portfolioUrl: data.profile.portfolioUrl || null,
         },
-        roles: {
-          isProfessional: data.roles.professional || false,
-          isJobSeeker: data.roles.jobSeeker || false,
-          isEmployer: data.roles.employer || false,
-          isBusinessOwner: data.roles.businessOwner || false,
-          isInvestor: data.roles.investor || false,
-          isAdmin: data.roles.admin || false,
-        },
+        roles: toFirestoreRoles(data.roles),
         professionalData: existingUserData.professionalData || {},
         jobSeekerData: existingUserData.jobSeekerData || {},
         employerData: existingUserData.employerData || {},

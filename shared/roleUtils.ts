@@ -56,10 +56,9 @@ export const ROLE_DEFINITIONS = {
 export function hasRole(userRoles: UserRoles | null, role: RoleType): boolean {
   if (!userRoles) return false;
   
-  if (userRoles.isAdmin) return true;
+  if (userRoles.admin) return true;
   
-  const roleKey = ROLE_DEFINITIONS[role].key;
-  return userRoles[roleKey] === true;
+  return userRoles[role] === true;
 }
 
 export function hasAnyRole(userRoles: UserRoles | null, roles: RoleType[]): boolean {
@@ -75,12 +74,12 @@ export function getUserRoles(userRoles: UserRoles | null): RoleType[] {
   
   const activeRoles: RoleType[] = [];
   
-  if (userRoles.isProfessional) activeRoles.push("professional");
-  if (userRoles.isJobSeeker) activeRoles.push("jobSeeker");
-  if (userRoles.isEmployer) activeRoles.push("employer");
-  if (userRoles.isBusinessOwner) activeRoles.push("businessOwner");
-  if (userRoles.isInvestor) activeRoles.push("investor");
-  if (userRoles.isAdmin) activeRoles.push("admin");
+  if (userRoles.professional) activeRoles.push("professional");
+  if (userRoles.jobSeeker) activeRoles.push("jobSeeker");
+  if (userRoles.employer) activeRoles.push("employer");
+  if (userRoles.businessOwner) activeRoles.push("businessOwner");
+  if (userRoles.investor) activeRoles.push("investor");
+  if (userRoles.admin) activeRoles.push("admin");
   
   return activeRoles;
 }
@@ -92,7 +91,7 @@ export function getUserRoleLabels(userRoles: UserRoles | null): string[] {
 export function canAccessFeature(userRoles: UserRoles | null, permission: string): boolean {
   if (!userRoles) return false;
   
-  if (userRoles.isAdmin) return true;
+  if (userRoles.admin) return true;
   
   const activeRoles = getUserRoles(userRoles);
   
@@ -111,12 +110,12 @@ export function formatRoleList(userRoles: UserRoles | null): string {
 
 export function createRolesObject(selectedRoles: RoleType[]): Omit<UserRoles, "id" | "userId" | "createdAt"> {
   return {
-    isProfessional: selectedRoles.includes("professional"),
-    isJobSeeker: selectedRoles.includes("jobSeeker"),
-    isEmployer: selectedRoles.includes("employer"),
-    isBusinessOwner: selectedRoles.includes("businessOwner"),
-    isInvestor: selectedRoles.includes("investor"),
-    isAdmin: selectedRoles.includes("admin"),
+    professional: selectedRoles.includes("professional"),
+    jobSeeker: selectedRoles.includes("jobSeeker"),
+    employer: selectedRoles.includes("employer"),
+    businessOwner: selectedRoles.includes("businessOwner"),
+    investor: selectedRoles.includes("investor"),
+    admin: selectedRoles.includes("admin"),
   };
 }
 
@@ -131,4 +130,48 @@ export function getRoleRequiredProfiles(roles: RoleType[]): string[] {
   if (roles.includes("admin")) profiles.push("admin");
   
   return profiles;
+}
+
+export interface UnprefixedRoles {
+  professional?: boolean;
+  jobSeeker?: boolean;
+  employer?: boolean;
+  businessOwner?: boolean;
+  investor?: boolean;
+  admin?: boolean;
+}
+
+export interface PrefixedRoles {
+  isProfessional: boolean;
+  isJobSeeker: boolean;
+  isEmployer: boolean;
+  isBusinessOwner: boolean;
+  isInvestor: boolean;
+  isAdmin: boolean;
+}
+
+export function toFirestoreRoles(roles: UnprefixedRoles, preserveAdmin?: boolean): PrefixedRoles {
+  return {
+    isProfessional: roles.professional || false,
+    isJobSeeker: roles.jobSeeker || false,
+    isEmployer: roles.employer || false,
+    isBusinessOwner: roles.businessOwner || false,
+    isInvestor: roles.investor || false,
+    isAdmin: preserveAdmin ? (roles.admin || false) : (roles.admin || false),
+  };
+}
+
+export function fromFirestoreRoles(firestoreRoles: PrefixedRoles): UnprefixedRoles {
+  return {
+    professional: firestoreRoles.isProfessional,
+    jobSeeker: firestoreRoles.isJobSeeker,
+    employer: firestoreRoles.isEmployer,
+    businessOwner: firestoreRoles.isBusinessOwner,
+    investor: firestoreRoles.isInvestor,
+    admin: firestoreRoles.isAdmin,
+  };
+}
+
+export function transformRolesToPrefixed(roles: UnprefixedRoles): PrefixedRoles {
+  return toFirestoreRoles(roles);
 }

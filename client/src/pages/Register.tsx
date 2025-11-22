@@ -15,6 +15,7 @@ import { Briefcase, Search, Building2, Handshake, TrendingUp, ArrowRight, ArrowL
 import { SiLinkedin } from "react-icons/si";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { checkEmailExists } from "@/lib/emailValidation";
+import { transformRolesToPrefixed } from "@shared/roleUtils";
 
 const roles = [
   {
@@ -261,7 +262,7 @@ export default function Register() {
         linkedinUrl: basicInfo.linkedinUrl?.trim() || "",
         websiteUrl: basicInfo.websiteUrl?.trim() || "",
         portfolioUrl: basicInfo.portfolioUrl?.trim() || "",
-        roles: selectedRoles,
+        roles: transformRolesToPrefixed(selectedRoles),
         status: "pending",
         createdAt: Timestamp.now(),
       };
