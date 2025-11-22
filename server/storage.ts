@@ -105,6 +105,7 @@ export interface IStorage {
   getOpportunityById(id: string): Promise<Opportunity | undefined>;
   getOpportunitiesByUserId(userId: string): Promise<Opportunity[]>;
   getPublicOpportunities(type?: string): Promise<Opportunity[]>;
+  getAllOpportunities(): Promise<Opportunity[]>;
   updateOpportunity(id: string, data: Partial<InsertOpportunity>): Promise<Opportunity | undefined>;
   deleteOpportunity(id: string): Promise<void>;
   
@@ -541,6 +542,13 @@ export class FirestoreStorage implements IStorage {
     });
     
     return opportunities;
+  }
+
+  async getAllOpportunities(): Promise<Opportunity[]> {
+    const querySnapshot = await getDocs(collection(db, "opportunities"));
+    return querySnapshot.docs.map(doc => 
+      normalizeDocData<Opportunity>({ id: doc.id, ...doc.data() })
+    );
   }
 
   async updateOpportunity(id: string, data: Partial<InsertOpportunity>): Promise<Opportunity | undefined> {

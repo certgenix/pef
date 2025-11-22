@@ -1,0 +1,648 @@
+import { useState, useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useLocation } from "wouter";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from "@/hooks/use-toast";
+import { Briefcase, Plus, Pencil, Trash2, ArrowLeft, Search, CheckCircle2, XCircle, Clock } from "lucide-react";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import type { Opportunity, InsertOpportunity } from "@shared/schema";
+import { insertOpportunitySchema } from "@shared/schema";
+import { format } from "date-fns";
+
+export default function AdminOpportunities() {
+  const { currentUser, userData } = useAuth();
+  const [, setLocation] = useLocation();
+  const { toast } = useToast();
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingOpportunity, setEditingOpportunity] = useState<Opportunity | null>(null);
+  const [deleteOpportunityId, setDeleteOpportunityId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedType, setSelectedType] = useState<string>("all");
+  const [selectedStatus, setSelectedStatus] = useState<string>("all");
+
+  const { data: opportunities = [], isLoading } = useQuery<Opportunity[]>({
+    queryKey: ["/api/admin/opportunities"],
+  });
+
+  const handleOpenDialog = (opportunity?: Opportunity) => {
+    if (opportunity) {
+      setEditingOpportunity(opportunity);
+    } else {
+      setEditingOpportunity(null);
+    }
+    setDialogOpen(true);
+  };
+
+  const handleCloseDialog = () => {
+    setDialogOpen(false);
+    setEditingOpportunity(null);
+  };
+
+  if (!currentUser || !userData?.roles?.admin) {
+    setLocation("/login");
+    return null;
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading opportunities data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const getApprovalStatusBadge = (status: string) => {
+    switch (status) {
+      case "approved":
+        return <Badge variant="default" className="bg-green-600 text-white"><CheckCircle2 className="w-3 h-3 mr-1" />Approved</Badge>;
+      case "rejected":
+        return <Badge variant="destructive"><XCircle className="w-3 h-3 mr-1" />Rejected</Badge>;
+      default:
+        return <Badge variant="secondary"><Clock className="w-3 h-3 mr-1" />Pending</Badge>;
+    }
+  };
+
+  const getTypeBadge = (type: string) => {
+    const colors = {
+      job: "bg-blue-600 text-white",
+      investment: "bg-purple-600 text-white",
+      partnership: "bg-orange-600 text-white",
+      collaboration: "bg-green-600 text-white"
+    };
+    return <Badge className={colors[type as keyof typeof colors] || ""}>{type}</Badge>;
+  };
+
+  const filteredOpportunities = opportunities.filter(opp => {
+    const matchesSearch = opp.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         opp.description.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesType = selectedType === "all" || opp.type === selectedType;
+    const matchesStatus = selectedStatus === "all" || opp.approvalStatus === selectedStatus;
+    return matchesSearch && matchesType && matchesStatus;
+  });
+
+  return (
+    <div className="min-h-screen">
+      <Header />
+      <main className="pt-24 md:pt-28 pb-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <div className="mb-8">
+          <Button
+            variant="ghost"
+            onClick={() => setLocation("/admin")}
+            className="mb-4"
+            data-testid="button-back-to-admin"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Admin Dashboard
+          </Button>
+          
+          <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <Briefcase className="w-8 h-8 text-primary" />
+                <h1 className="text-3xl font-bold">Opportunities Management</h1>
+              </div>
+              <p className="text-muted-foreground">Review, approve, and manage opportunities</p>
+            </div>
+            <Button onClick={() => handleOpenDialog()} data-testid="button-add-opportunity">
+              <Plus className="w-4 h-4 mr-2" />
+              Add Opportunity
+            </Button>
+          </div>
+
+          <div className="flex flex-wrap gap-4 mb-6">
+            <div className="flex-1 min-w-[200px]">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search opportunities..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                  data-testid="input-search-opportunities"
+                />
+              </div>
+            </div>
+            <Select value={selectedType} onValueChange={setSelectedType}>
+              <SelectTrigger className="w-[180px]" data-testid="select-type-filter">
+                <SelectValue placeholder="Filter by type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="job">Job</SelectItem>
+                <SelectItem value="investment">Investment</SelectItem>
+                <SelectItem value="partnership">Partnership</SelectItem>
+                <SelectItem value="collaboration">Collaboration</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+              <SelectTrigger className="w-[180px]" data-testid="select-status-filter">
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="approved">Approved</SelectItem>
+                <SelectItem value="rejected">Rejected</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {filteredOpportunities.length === 0 ? (
+          <Card>
+            <CardContent className="py-12 text-center">
+              <Briefcase className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+              <p className="text-muted-foreground mb-2">
+                {searchQuery || selectedType !== "all" || selectedStatus !== "all" 
+                  ? "No opportunities found matching your filters" 
+                  : "No opportunities yet"}
+              </p>
+              {!searchQuery && selectedType === "all" && selectedStatus === "all" && (
+                <Button onClick={() => handleOpenDialog()} className="mt-4" data-testid="button-add-first-opportunity">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Opportunity
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 gap-4">
+            {filteredOpportunities.map((opportunity) => (
+              <Card key={opportunity.id} data-testid={`card-opportunity-${opportunity.id}`}>
+                <CardContent className="p-6">
+                  <div className="flex flex-wrap gap-4 items-start justify-between">
+                    <div className="flex-1 min-w-[200px]">
+                      <div className="flex flex-wrap gap-2 items-center mb-2">
+                        {getTypeBadge(opportunity.type)}
+                        {getApprovalStatusBadge(opportunity.approvalStatus)}
+                        <Badge variant={opportunity.status === "open" ? "default" : "secondary"}>
+                          {opportunity.status}
+                        </Badge>
+                      </div>
+                      <h3 className="text-xl font-semibold mb-2" data-testid={`title-opportunity-${opportunity.id}`}>
+                        {opportunity.title}
+                      </h3>
+                      <p className="text-muted-foreground mb-2 line-clamp-2">
+                        {opportunity.description}
+                      </p>
+                      <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                        {opportunity.sector && (
+                          <span className="flex items-center gap-1">
+                            <span className="font-medium">Sector:</span> {opportunity.sector}
+                          </span>
+                        )}
+                        {opportunity.country && (
+                          <span className="flex items-center gap-1">
+                            <span className="font-medium">Location:</span> {opportunity.city ? `${opportunity.city}, ` : ""}{opportunity.country}
+                          </span>
+                        )}
+                        {opportunity.budgetOrSalary && (
+                          <span className="flex items-center gap-1">
+                            <span className="font-medium">Budget/Salary:</span> {opportunity.budgetOrSalary}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Posted {format(new Date(opportunity.createdAt), "MMM d, yyyy")}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleOpenDialog(opportunity)}
+                        data-testid={`button-edit-opportunity-${opportunity.id}`}
+                      >
+                        <Pencil className="w-4 h-4 mr-2" />
+                        Edit
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => setDeleteOpportunityId(opportunity.id)}
+                        data-testid={`button-delete-opportunity-${opportunity.id}`}
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Delete
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </main>
+      <Footer />
+
+      <OpportunityFormDialog
+        open={dialogOpen}
+        onClose={handleCloseDialog}
+        opportunity={editingOpportunity}
+      />
+
+      <DeleteOpportunityDialog
+        opportunityId={deleteOpportunityId}
+        onClose={() => setDeleteOpportunityId(null)}
+      />
+    </div>
+  );
+}
+
+interface OpportunityFormDialogProps {
+  open: boolean;
+  onClose: () => void;
+  opportunity: Opportunity | null;
+}
+
+function OpportunityFormDialog({ open, onClose, opportunity }: OpportunityFormDialogProps) {
+  const { toast } = useToast();
+  const { currentUser } = useAuth();
+
+  const form = useForm<InsertOpportunity>({
+    resolver: zodResolver(insertOpportunitySchema),
+    defaultValues: {
+      userId: currentUser?.uid || "",
+      type: "job",
+      title: "",
+      description: "",
+      sector: "",
+      country: "",
+      city: "",
+      budgetOrSalary: "",
+      contactPreference: "",
+      details: null,
+      status: "open",
+      approvalStatus: "approved",
+    },
+  });
+
+  useEffect(() => {
+    if (opportunity) {
+      form.reset({
+        userId: opportunity.userId,
+        type: opportunity.type,
+        title: opportunity.title,
+        description: opportunity.description,
+        sector: opportunity.sector || "",
+        country: opportunity.country || "",
+        city: opportunity.city || "",
+        budgetOrSalary: opportunity.budgetOrSalary || "",
+        contactPreference: opportunity.contactPreference || "",
+        details: opportunity.details,
+        status: opportunity.status,
+        approvalStatus: opportunity.approvalStatus,
+      });
+    } else {
+      form.reset({
+        userId: currentUser?.uid || "",
+        type: "job",
+        title: "",
+        description: "",
+        sector: "",
+        country: "",
+        city: "",
+        budgetOrSalary: "",
+        contactPreference: "",
+        details: null,
+        status: "open",
+        approvalStatus: "approved",
+      });
+    }
+  }, [opportunity, currentUser?.uid, form]);
+
+  const saveMutation = useMutation({
+    mutationFn: async (data: InsertOpportunity) => {
+      if (opportunity) {
+        return apiRequest("PATCH", `/api/admin/opportunities/${opportunity.id}`, data);
+      } else {
+        return apiRequest("POST", "/api/admin/opportunities", data);
+      }
+    },
+    onSuccess: () => {
+      toast({
+        title: opportunity ? "Opportunity updated" : "Opportunity created",
+        description: opportunity 
+          ? "The opportunity has been successfully updated." 
+          : "The new opportunity has been created.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/opportunities"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/opportunities"] });
+      onClose();
+      form.reset();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save opportunity",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSubmit = form.handleSubmit((data) => {
+    saveMutation.mutate({
+      ...data,
+      userId: currentUser?.uid || "",
+    });
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-2xl" data-testid="dialog-opportunity-form">
+        <DialogHeader>
+          <DialogTitle>{opportunity ? "Edit Opportunity" : "Add New Opportunity"}</DialogTitle>
+          <DialogDescription>
+            {opportunity 
+              ? "Update the opportunity details below." 
+              : "Fill in the details to create a new opportunity."}
+          </DialogDescription>
+        </DialogHeader>
+
+        <Form {...form}>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="type"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Opportunity Type</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger data-testid="select-opportunity-type">
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="job">Job</SelectItem>
+                      <SelectItem value="investment">Investment</SelectItem>
+                      <SelectItem value="partnership">Partnership</SelectItem>
+                      <SelectItem value="collaboration">Collaboration</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="title"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Title</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Opportunity title" data-testid="input-opportunity-title" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Description</FormLabel>
+                  <FormControl>
+                    <Textarea 
+                      {...field} 
+                      placeholder="Describe the opportunity" 
+                      rows={4}
+                      data-testid="textarea-opportunity-description"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="sector"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Sector (Optional)</FormLabel>
+                    <FormControl>
+                      <Input {...field} value={field.value || ""} placeholder="e.g., Technology, Finance" data-testid="input-opportunity-sector" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="budgetOrSalary"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Budget/Salary (Optional)</FormLabel>
+                    <FormControl>
+                      <Input {...field} value={field.value || ""} placeholder="e.g., $50,000 - $80,000" data-testid="input-opportunity-budget" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="country"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Country (Optional)</FormLabel>
+                    <FormControl>
+                      <Input {...field} value={field.value || ""} placeholder="Country" data-testid="input-opportunity-country" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="city"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>City (Optional)</FormLabel>
+                    <FormControl>
+                      <Input {...field} value={field.value || ""} placeholder="City" data-testid="input-opportunity-city" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <FormField
+              control={form.control}
+              name="contactPreference"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Contact Preference (Optional)</FormLabel>
+                  <FormControl>
+                    <Input {...field} value={field.value || ""} placeholder="Email, phone, etc." data-testid="input-opportunity-contact" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Status</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger data-testid="select-opportunity-status">
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="open">Open</SelectItem>
+                        <SelectItem value="closed">Closed</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="approvalStatus"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Approval Status</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger data-testid="select-opportunity-approval">
+                          <SelectValue placeholder="Select approval status" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="approved">Approved</SelectItem>
+                        <SelectItem value="rejected">Rejected</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
+                disabled={saveMutation.isPending}
+                data-testid="button-cancel-opportunity"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={saveMutation.isPending}
+                data-testid="button-save-opportunity"
+              >
+                {saveMutation.isPending ? "Saving..." : (opportunity ? "Update" : "Create")}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+interface DeleteOpportunityDialogProps {
+  opportunityId: string | null;
+  onClose: () => void;
+}
+
+function DeleteOpportunityDialog({ opportunityId, onClose }: DeleteOpportunityDialogProps) {
+  const { toast } = useToast();
+
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      if (!opportunityId) return;
+      return apiRequest("DELETE", `/api/admin/opportunities/${opportunityId}`);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Opportunity deleted",
+        description: "The opportunity has been permanently removed.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/opportunities"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/opportunities"] });
+      onClose();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete opportunity",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleDelete = () => {
+    deleteMutation.mutate();
+  };
+
+  return (
+    <Dialog open={!!opportunityId} onOpenChange={onClose}>
+      <DialogContent data-testid="dialog-delete-opportunity">
+        <DialogHeader>
+          <DialogTitle>Delete Opportunity</DialogTitle>
+          <DialogDescription>
+            Are you sure you want to delete this opportunity? This action cannot be undone.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={onClose}
+            disabled={deleteMutation.isPending}
+            data-testid="button-cancel-delete"
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={handleDelete}
+            disabled={deleteMutation.isPending}
+            data-testid="button-confirm-delete"
+          >
+            {deleteMutation.isPending ? "Deleting..." : "Delete"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}

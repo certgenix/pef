@@ -447,6 +447,152 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/admin/opportunities", async (req, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const token = authHeader.substring(7);
+      let uid: string;
+
+      if (!process.env.FIREBASE_ADMIN_SERVICE_ACCOUNT) {
+        const decodedToken = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+        uid = decodedToken.user_id;
+      } else {
+        return res.status(500).json({ error: "Firebase Admin SDK not configured yet" });
+      }
+
+      const userWithRoles = await storage.getUserWithRoles(uid);
+      if (!userWithRoles || !userWithRoles.roles?.admin) {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      const opportunities = await storage.getAllOpportunities();
+      return res.json(opportunities);
+    } catch (error) {
+      console.error("Admin opportunities fetch error:", error);
+      return res.status(500).json({ error: "Failed to fetch opportunities" });
+    }
+  });
+
+  app.post("/api/admin/opportunities", async (req, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const token = authHeader.substring(7);
+      let uid: string;
+
+      if (!process.env.FIREBASE_ADMIN_SERVICE_ACCOUNT) {
+        const decodedToken = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+        uid = decodedToken.user_id;
+      } else {
+        return res.status(500).json({ error: "Firebase Admin SDK not configured yet" });
+      }
+
+      const userWithRoles = await storage.getUserWithRoles(uid);
+      if (!userWithRoles || !userWithRoles.roles?.admin) {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      const validationResult = insertOpportunitySchema.safeParse(req.body);
+
+      if (!validationResult.success) {
+        return res.status(400).json({
+          error: "Invalid request data",
+          details: validationResult.error.issues
+        });
+      }
+
+      const opportunity = await storage.createOpportunity(validationResult.data);
+      return res.json(opportunity);
+    } catch (error) {
+      console.error("Admin opportunity creation error:", error);
+      return res.status(500).json({ error: "Failed to create opportunity" });
+    }
+  });
+
+  app.patch("/api/admin/opportunities/:id", async (req, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const token = authHeader.substring(7);
+      let uid: string;
+
+      if (!process.env.FIREBASE_ADMIN_SERVICE_ACCOUNT) {
+        const decodedToken = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+        uid = decodedToken.user_id;
+      } else {
+        return res.status(500).json({ error: "Firebase Admin SDK not configured yet" });
+      }
+
+      const userWithRoles = await storage.getUserWithRoles(uid);
+      if (!userWithRoles || !userWithRoles.roles?.admin) {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      const { id } = req.params;
+      const opportunity = await storage.getOpportunityById(id);
+
+      if (!opportunity) {
+        return res.status(404).json({ error: "Opportunity not found" });
+      }
+
+      const updateData = { ...req.body };
+      delete updateData.id;
+
+      const updated = await storage.updateOpportunity(id, updateData);
+      return res.json(updated);
+    } catch (error) {
+      console.error("Admin opportunity update error:", error);
+      return res.status(500).json({ error: "Failed to update opportunity" });
+    }
+  });
+
+  app.delete("/api/admin/opportunities/:id", async (req, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const token = authHeader.substring(7);
+      let uid: string;
+
+      if (!process.env.FIREBASE_ADMIN_SERVICE_ACCOUNT) {
+        const decodedToken = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+        uid = decodedToken.user_id;
+      } else {
+        return res.status(500).json({ error: "Firebase Admin SDK not configured yet" });
+      }
+
+      const userWithRoles = await storage.getUserWithRoles(uid);
+      if (!userWithRoles || !userWithRoles.roles?.admin) {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      const { id } = req.params;
+      const opportunity = await storage.getOpportunityById(id);
+
+      if (!opportunity) {
+        return res.status(404).json({ error: "Opportunity not found" });
+      }
+
+      await storage.deleteOpportunity(id);
+      return res.json({ success: true });
+    } catch (error) {
+      console.error("Admin opportunity deletion error:", error);
+      return res.status(500).json({ error: "Failed to delete opportunity" });
+    }
+  });
+
   app.post("/api/applications", async (req, res) => {
     try {
       const authHeader = req.headers.authorization;
