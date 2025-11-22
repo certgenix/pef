@@ -636,11 +636,18 @@ function OpportunityFormDialog({ open, onClose, opportunity }: OpportunityFormDi
 
   useEffect(() => {
     if (opportunity) {
+      console.log("Loading opportunity into form:", { 
+        id: opportunity.id, 
+        type: opportunity.type, 
+        userId: opportunity.userId,
+        currentUserId: currentUser?.uid 
+      });
+      
       const details = opportunity.details as any;
       
       // Build base form data
       const baseData = {
-        userId: opportunity.userId,
+        userId: opportunity.userId || currentUser?.uid || "",
         type: opportunity.type,
         title: opportunity.title,
         description: opportunity.description,
@@ -666,36 +673,36 @@ function OpportunityFormDialog({ open, onClose, opportunity }: OpportunityFormDi
           investmentAmount: "",
           investmentType: "",
           partnershipType: "",
-        });
+        } as any);
       } else if (opportunity.type === "investment") {
         form.reset({
           ...baseData,
           investmentAmount: details?.investmentAmount || "",
           investmentType: details?.investmentType || "",
-          employmentType: undefined as any,
+          employmentType: "full-time",
           experienceRequired: "",
           skills: "",
           benefits: "",
           applicationEmail: "",
           partnershipType: "",
-        });
+        } as any);
       } else if (opportunity.type === "partnership") {
         form.reset({
           ...baseData,
           partnershipType: details?.partnershipType || "",
-          employmentType: undefined as any,
+          employmentType: "full-time",
           experienceRequired: "",
           skills: "",
           benefits: "",
           applicationEmail: "",
           investmentAmount: "",
           investmentType: "",
-        });
+        } as any);
       } else {
         // collaboration or other types
         form.reset({
           ...baseData,
-          employmentType: undefined as any,
+          employmentType: "full-time",
           experienceRequired: "",
           skills: "",
           benefits: "",
@@ -703,7 +710,7 @@ function OpportunityFormDialog({ open, onClose, opportunity }: OpportunityFormDi
           investmentAmount: "",
           investmentType: "",
           partnershipType: "",
-        });
+        } as any);
       }
     } else {
       form.reset({
