@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Briefcase, TrendingUp, Handshake, Building2, MapPin, Calendar, Mail } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
 import type { Opportunity, JobDetails } from "@shared/schema";
 
 const opportunityTypes = [
@@ -36,6 +37,8 @@ const opportunityTypes = [
 ];
 
 export default function Opportunities() {
+  const { toast } = useToast();
+  
   const { data: opportunities = [], isLoading } = useQuery<Opportunity[]>({
     queryKey: ["/api/opportunities"],
     queryFn: async () => {
@@ -276,9 +279,30 @@ export default function Opportunities() {
                                     </p>
                                     <Button 
                                       size="sm" 
-                                      variant="outline"
                                       className="w-full"
-                                      disabled
+                                      onClick={async () => {
+                                        try {
+                                          if (navigator.clipboard?.writeText) {
+                                            await navigator.clipboard.writeText(opportunity.contactPreference || "");
+                                            toast({
+                                              title: "Contact Copied!",
+                                              description: "Contact information has been copied to your clipboard.",
+                                            });
+                                          } else {
+                                            toast({
+                                              title: "Contact Information",
+                                              description: opportunity.contactPreference || "",
+                                              duration: 5000,
+                                            });
+                                          }
+                                        } catch (error) {
+                                          toast({
+                                            title: "Contact Information",
+                                            description: opportunity.contactPreference || "",
+                                            duration: 5000,
+                                          });
+                                        }
+                                      }}
                                       data-testid={`button-contact-${idx}`}
                                     >
                                       <Mail className="w-4 h-4 mr-2" />
