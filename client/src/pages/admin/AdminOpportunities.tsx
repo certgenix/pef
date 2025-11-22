@@ -445,7 +445,7 @@ function OpportunityFormDialog({ open, onClose, opportunity }: OpportunityFormDi
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl" data-testid="dialog-opportunity-form">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" data-testid="dialog-opportunity-form">
         <DialogHeader>
           <DialogTitle>{opportunity ? "Edit Opportunity" : "Add New Opportunity"}</DialogTitle>
           <DialogDescription>
@@ -513,6 +513,141 @@ function OpportunityFormDialog({ open, onClose, opportunity }: OpportunityFormDi
                 </FormItem>
               )}
             />
+
+            {/* Job-specific fields */}
+            {form.watch("type") === "job" && (
+              <>
+                <FormField
+                  control={form.control}
+                  name="employmentType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Employment Type</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-employment-type">
+                            <SelectValue placeholder="Select employment type" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="full-time">Full-time</SelectItem>
+                          <SelectItem value="part-time">Part-time</SelectItem>
+                          <SelectItem value="remote">Remote</SelectItem>
+                          <SelectItem value="contract">Contract</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="experienceRequired"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Experience Required (Optional)</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="e.g. 5+ years in software development" data-testid="input-experience-required" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="skills"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Required Skills (Optional, comma-separated)</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="e.g. React, TypeScript, Node.js" data-testid="input-skills" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="benefits"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Benefits (Optional, comma-separated)</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="e.g. Health insurance, 401k, Remote work" data-testid="input-benefits" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="applicationEmail"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Application Email</FormLabel>
+                      <FormControl>
+                        <Input {...field} type="email" placeholder="e.g. careers@company.com" data-testid="input-application-email" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </>
+            )}
+
+            {/* Investment-specific fields */}
+            {form.watch("type") === "investment" && (
+              <>
+                <FormField
+                  control={form.control}
+                  name="investmentAmount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Investment Amount Sought (Optional)</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="e.g. $500,000 - $1,000,000" data-testid="input-investment-amount" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="investmentType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Investment Type (Optional)</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="e.g. Equity, Debt, Convertible Note" data-testid="input-investment-type" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </>
+            )}
+
+            {/* Partnership-specific fields */}
+            {form.watch("type") === "partnership" && (
+              <FormField
+                control={form.control}
+                name="partnershipType"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Partnership Type (Optional)</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="e.g. Strategic, Financial, Technology" data-testid="input-partnership-type" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
