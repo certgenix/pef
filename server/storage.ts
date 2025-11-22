@@ -363,12 +363,12 @@ export class FirestoreStorage implements IStorage {
     // Update nested roles field in user document (consolidated structure)
     const userRef = doc(db, "users", insertRoles.userId);
     await updateDoc(userRef, {
-      "roles.professional": insertRoles.professional || false,
-      "roles.jobSeeker": insertRoles.jobSeeker || false,
-      "roles.employer": insertRoles.employer || false,
-      "roles.businessOwner": insertRoles.businessOwner || false,
-      "roles.investor": insertRoles.investor || false,
-      "roles.admin": insertRoles.admin || false,
+      "roles.isProfessional": insertRoles.professional || false,
+      "roles.isJobSeeker": insertRoles.jobSeeker || false,
+      "roles.isEmployer": insertRoles.employer || false,
+      "roles.isBusinessOwner": insertRoles.businessOwner || false,
+      "roles.isInvestor": insertRoles.investor || false,
+      "roles.isAdmin": insertRoles.admin || false,
     });
     
     const roles: UserRoles = {
@@ -390,19 +390,19 @@ export class FirestoreStorage implements IStorage {
     // Update nested roles field in user document (consolidated structure)
     const userRef = doc(db, "users", userId);
     await updateDoc(userRef, {
-      "roles.professional": roles.professional || false,
-      "roles.jobSeeker": roles.jobSeeker || false,
-      "roles.employer": roles.employer || false,
-      "roles.businessOwner": roles.businessOwner || false,
-      "roles.investor": roles.investor || false,
-      "roles.admin": roles.admin || false,
-      // Clean up legacy 'is*' field names if they exist
-      "roles.isProfessional": deleteField(),
-      "roles.isJobSeeker": deleteField(),
-      "roles.isEmployer": deleteField(),
-      "roles.isBusinessOwner": deleteField(),
-      "roles.isInvestor": deleteField(),
-      "roles.isAdmin": deleteField(),
+      "roles.isProfessional": roles.professional || false,
+      "roles.isJobSeeker": roles.jobSeeker || false,
+      "roles.isEmployer": roles.employer || false,
+      "roles.isBusinessOwner": roles.businessOwner || false,
+      "roles.isInvestor": roles.investor || false,
+      "roles.isAdmin": roles.admin || false,
+      // Clean up legacy non-prefixed field names if they exist
+      "roles.professional": deleteField(),
+      "roles.jobSeeker": deleteField(),
+      "roles.employer": deleteField(),
+      "roles.businessOwner": deleteField(),
+      "roles.investor": deleteField(),
+      "roles.admin": deleteField(),
     });
   }
 
