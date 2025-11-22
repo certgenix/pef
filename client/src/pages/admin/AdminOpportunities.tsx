@@ -318,7 +318,7 @@ function OpportunityFormDialog({ open, onClose, opportunity }: OpportunityFormDi
         city: opportunity.city || "",
         budgetOrSalary: opportunity.budgetOrSalary || "",
         contactPreference: opportunity.contactPreference || "",
-        details: opportunity.details,
+        details: opportunity.details as Record<string, unknown> | null,
         status: opportunity.status,
         approvalStatus: opportunity.approvalStatus,
       });
