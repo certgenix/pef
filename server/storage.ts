@@ -109,6 +109,9 @@ export interface IStorage {
   getAllOpportunities(): Promise<Opportunity[]>;
   updateOpportunity(id: string, data: Partial<InsertOpportunity>): Promise<Opportunity | undefined>;
   deleteOpportunity(id: string): Promise<void>;
+  bulkUpdateOpportunityApprovalStatus(opportunityIds: string[], status: "pending" | "approved" | "rejected"): Promise<void>;
+  bulkUpdateOpportunityStatus(opportunityIds: string[], status: "open" | "closed"): Promise<void>;
+  bulkDeleteOpportunities(opportunityIds: string[]): Promise<void>;
   
   createApplication(application: InsertApplication): Promise<Application>;
   getApplicationsByUser(userId: string): Promise<Array<Application & { opportunity: Opportunity }>>;
@@ -558,6 +561,48 @@ export class FirestoreStorage implements IStorage {
   async deleteOpportunity(id: string): Promise<void> {
     const docRef = doc(db, "opportunities", id);
     await deleteDoc(docRef);
+  }
+
+  async bulkUpdateOpportunityApprovalStatus(opportunityIds: string[], status: "pending" | "approved" | "rejected"): Promise<void> {
+    const { writeBatch } = await import("firebase/firestore");
+    const batch = writeBatch(db);
+    
+    for (const id of opportunityIds) {
+      const docRef = doc(db, "opportunities", id);
+      batch.update(docRef, {
+        approvalStatus: status,
+        updatedAt: new Date(),
+      });
+    }
+    
+    await batch.commit();
+  }
+
+  async bulkUpdateOpportunityStatus(opportunityIds: string[], status: "open" | "closed"): Promise<void> {
+    const { writeBatch } = await import("firebase/firestore");
+    const batch = writeBatch(db);
+    
+    for (const id of opportunityIds) {
+      const docRef = doc(db, "opportunities", id);
+      batch.update(docRef, {
+        status: status,
+        updatedAt: new Date(),
+      });
+    }
+    
+    await batch.commit();
+  }
+
+  async bulkDeleteOpportunities(opportunityIds: string[]): Promise<void> {
+    const { writeBatch } = await import("firebase/firestore");
+    const batch = writeBatch(db);
+    
+    for (const id of opportunityIds) {
+      const docRef = doc(db, "opportunities", id);
+      batch.delete(docRef);
+    }
+    
+    await batch.commit();
   }
 
   async createApplication(insertApplication: InsertApplication): Promise<Application> {

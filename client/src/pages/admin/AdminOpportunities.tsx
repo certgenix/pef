@@ -15,7 +15,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Briefcase, Plus, Pencil, Trash2, ArrowLeft, Search, CheckCircle2, XCircle, Clock } from "lucide-react";
+import { Briefcase, Plus, Pencil, Trash2, ArrowLeft, Search, CheckCircle2, XCircle, Clock, Eye, EyeOff } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -33,6 +34,7 @@ export default function AdminOpportunities() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState<string>("all");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
+  const [selectedOpportunities, setSelectedOpportunities] = useState<Set<string>>(new Set());
 
   const { data: opportunities = [], isLoading } = useQuery<Opportunity[]>({
     queryKey: ["/api/admin/opportunities"],
@@ -55,6 +57,139 @@ export default function AdminOpportunities() {
       return;
     }
   }, [currentUser, userData, setLocation, toast]);
+
+  // Bulk operations for opportunities
+  const bulkApproveOpportunitiesMutation = useMutation({
+    mutationFn: async (opportunityIds: string[]) => {
+      return apiRequest("POST", "/api/admin/opportunities/bulk-approve", { opportunityIds });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/opportunities"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/opportunities"] });
+      setSelectedOpportunities(new Set());
+      toast({
+        title: "Success",
+        description: `${selectedOpportunities.size} opportunity(ies) approved successfully`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to approve selected opportunities",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const bulkRejectOpportunitiesMutation = useMutation({
+    mutationFn: async (opportunityIds: string[]) => {
+      return apiRequest("POST", "/api/admin/opportunities/bulk-reject", { opportunityIds });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/opportunities"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/opportunities"] });
+      setSelectedOpportunities(new Set());
+      toast({
+        title: "Success",
+        description: `${selectedOpportunities.size} opportunity(ies) rejected successfully`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to reject selected opportunities",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const bulkDeleteOpportunitiesMutation = useMutation({
+    mutationFn: async (opportunityIds: string[]) => {
+      return apiRequest("POST", "/api/admin/opportunities/bulk-delete", { opportunityIds });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/opportunities"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/opportunities"] });
+      setSelectedOpportunities(new Set());
+      toast({
+        title: "Success",
+        description: `${selectedOpportunities.size} opportunity(ies) deleted successfully`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete selected opportunities",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const bulkUpdateStatusMutation = useMutation({
+    mutationFn: async ({ opportunityIds, status }: { opportunityIds: string[]; status: "open" | "closed" }) => {
+      return apiRequest("POST", "/api/admin/opportunities/bulk-status", { opportunityIds, status });
+    },
+    onSuccess: (_, { status }) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/opportunities"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/opportunities"] });
+      setSelectedOpportunities(new Set());
+      toast({
+        title: "Success",
+        description: `${selectedOpportunities.size} opportunity(ies) ${status === "open" ? "opened" : "closed"} successfully`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update selected opportunities",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleBulkApprove = () => {
+    if (selectedOpportunities.size === 0) return;
+    bulkApproveOpportunitiesMutation.mutate(Array.from(selectedOpportunities));
+  };
+
+  const handleBulkReject = () => {
+    if (selectedOpportunities.size === 0) return;
+    bulkRejectOpportunitiesMutation.mutate(Array.from(selectedOpportunities));
+  };
+
+  const handleBulkDelete = () => {
+    if (selectedOpportunities.size === 0) return;
+    if (!confirm(`Are you sure you want to delete ${selectedOpportunities.size} opportunity(ies)? This action cannot be undone.`)) return;
+    bulkDeleteOpportunitiesMutation.mutate(Array.from(selectedOpportunities));
+  };
+
+  const handleBulkOpen = () => {
+    if (selectedOpportunities.size === 0) return;
+    bulkUpdateStatusMutation.mutate({ opportunityIds: Array.from(selectedOpportunities), status: "open" });
+  };
+
+  const handleBulkClose = () => {
+    if (selectedOpportunities.size === 0) return;
+    bulkUpdateStatusMutation.mutate({ opportunityIds: Array.from(selectedOpportunities), status: "closed" });
+  };
+
+  const handleSelectOpportunity = (opportunityId: string) => {
+    const newSelected = new Set(selectedOpportunities);
+    if (newSelected.has(opportunityId)) {
+      newSelected.delete(opportunityId);
+    } else {
+      newSelected.add(opportunityId);
+    }
+    setSelectedOpportunities(newSelected);
+  };
+
+  const handleSelectAllOpportunities = (selectAll: boolean) => {
+    if (selectAll) {
+      setSelectedOpportunities(new Set(filteredOpportunities.map(opp => opp.id)));
+    } else {
+      setSelectedOpportunities(new Set());
+    }
+  };
 
   const handleOpenDialog = (opportunity?: Opportunity) => {
     if (opportunity) {
@@ -176,6 +311,74 @@ export default function AdminOpportunities() {
               </SelectContent>
             </Select>
           </div>
+
+          {filteredOpportunities.length > 0 && (
+            <div className="flex items-center gap-4 mb-4">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  checked={filteredOpportunities.length > 0 && filteredOpportunities.every(o => selectedOpportunities.has(o.id))}
+                  onCheckedChange={(checked) => handleSelectAllOpportunities(checked as boolean)}
+                  data-testid="checkbox-select-all-opportunities"
+                />
+                <span className="text-sm text-muted-foreground">
+                  Select All ({filteredOpportunities.length})
+                </span>
+              </div>
+              
+              {selectedOpportunities.size > 0 && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge variant="secondary" data-testid="badge-selected-count">
+                    {selectedOpportunities.size} selected
+                  </Badge>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleBulkApprove}
+                    data-testid="button-bulk-approve"
+                  >
+                    <CheckCircle2 className="w-4 h-4 mr-1" />
+                    Approve
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleBulkReject}
+                    data-testid="button-bulk-reject"
+                  >
+                    <XCircle className="w-4 h-4 mr-1" />
+                    Reject
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleBulkOpen}
+                    data-testid="button-bulk-open"
+                  >
+                    <Eye className="w-4 h-4 mr-1" />
+                    Open
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleBulkClose}
+                    data-testid="button-bulk-close"
+                  >
+                    <EyeOff className="w-4 h-4 mr-1" />
+                    Close
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={handleBulkDelete}
+                    data-testid="button-bulk-delete"
+                  >
+                    <Trash2 className="w-4 h-4 mr-1" />
+                    Delete
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {filteredOpportunities.length === 0 ? (
@@ -200,15 +403,23 @@ export default function AdminOpportunities() {
             {filteredOpportunities.map((opportunity) => (
               <Card key={opportunity.id} data-testid={`card-opportunity-${opportunity.id}`}>
                 <CardContent className="p-6">
-                  <div className="flex flex-wrap gap-4 items-start justify-between">
-                    <div className="flex-1 min-w-[200px]">
-                      <div className="flex flex-wrap gap-2 items-center mb-2">
-                        {getTypeBadge(opportunity.type)}
-                        {getApprovalStatusBadge(opportunity.approvalStatus)}
-                        <Badge variant={opportunity.status === "open" ? "default" : "secondary"}>
-                          {opportunity.status}
-                        </Badge>
-                      </div>
+                  <div className="flex gap-4 items-start">
+                    <div className="pt-1">
+                      <Checkbox
+                        checked={selectedOpportunities.has(opportunity.id)}
+                        onCheckedChange={() => handleSelectOpportunity(opportunity.id)}
+                        data-testid={`checkbox-opportunity-${opportunity.id}`}
+                      />
+                    </div>
+                    <div className="flex-1 flex flex-wrap gap-4 items-start justify-between min-w-0">
+                      <div className="flex-1 min-w-[200px]">
+                        <div className="flex flex-wrap gap-2 items-center mb-2">
+                          {getTypeBadge(opportunity.type)}
+                          {getApprovalStatusBadge(opportunity.approvalStatus)}
+                          <Badge variant={opportunity.status === "open" ? "default" : "secondary"}>
+                            {opportunity.status}
+                          </Badge>
+                        </div>
                       <h3 className="text-xl font-semibold mb-2" data-testid={`title-opportunity-${opportunity.id}`}>
                         {opportunity.title}
                       </h3>
@@ -255,6 +466,7 @@ export default function AdminOpportunities() {
                         <Trash2 className="w-4 h-4 mr-2" />
                         Delete
                       </Button>
+                    </div>
                     </div>
                   </div>
                 </CardContent>
@@ -307,7 +519,10 @@ const adminOpportunitySchema = z.discriminatedUnion("type", [
     experienceRequired: z.string().optional(),
     skills: z.string().optional(),
     benefits: z.string().optional(),
-    applicationEmail: z.string().trim().email("Please enter a valid email address").min(1, "Application email is required for job postings"),
+    applicationEmail: z.string().trim().optional().refine(
+      (val) => !val || z.string().email().safeParse(val).success,
+      { message: "Please enter a valid email address" }
+    ),
     // Other type fields (optional for form compatibility)
     investmentAmount: z.string().optional(),
     investmentType: z.string().optional(),
@@ -327,8 +542,8 @@ const adminOpportunitySchema = z.discriminatedUnion("type", [
     status: z.enum(["open", "closed"]),
     approvalStatus: z.enum(["pending", "approved", "rejected"]),
     type: z.literal("investment"),
-    investmentAmount: z.string().trim().min(1, "Investment amount is required for investment opportunities"),
-    investmentType: z.string().trim().min(1, "Investment type is required for investment opportunities"),
+    investmentAmount: z.string().optional(),
+    investmentType: z.string().optional(),
     // Other type fields (optional for form compatibility)
     employmentType: z.enum(["full-time", "part-time", "remote", "contract"]).optional(),
     experienceRequired: z.string().optional(),
@@ -351,7 +566,7 @@ const adminOpportunitySchema = z.discriminatedUnion("type", [
     status: z.enum(["open", "closed"]),
     approvalStatus: z.enum(["pending", "approved", "rejected"]),
     type: z.literal("partnership"),
-    partnershipType: z.string().trim().min(1, "Partnership type is required for partnership opportunities"),
+    partnershipType: z.string().optional(),
     // Other type fields (optional for form compatibility)
     employmentType: z.enum(["full-time", "part-time", "remote", "contract"]).optional(),
     experienceRequired: z.string().optional(),

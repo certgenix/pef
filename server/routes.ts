@@ -622,6 +622,150 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Bulk operations for opportunities
+  app.post("/api/admin/opportunities/bulk-approve", async (req, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const token = authHeader.substring(7);
+      let uid: string;
+
+      if (!process.env.FIREBASE_ADMIN_SERVICE_ACCOUNT) {
+        const decodedToken = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+        uid = decodedToken.user_id;
+      } else {
+        return res.status(500).json({ error: "Firebase Admin SDK not configured yet" });
+      }
+
+      const userWithRoles = await storage.getUserWithRoles(uid);
+      if (!userWithRoles || !userWithRoles.roles?.admin) {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      const { opportunityIds } = req.body;
+      if (!Array.isArray(opportunityIds) || opportunityIds.length === 0) {
+        return res.status(400).json({ error: "Invalid opportunity IDs" });
+      }
+
+      await storage.bulkUpdateOpportunityApprovalStatus(opportunityIds, "approved");
+      return res.json({ success: true });
+    } catch (error) {
+      console.error("Bulk approve error:", error);
+      return res.status(500).json({ error: "Failed to approve opportunities" });
+    }
+  });
+
+  app.post("/api/admin/opportunities/bulk-reject", async (req, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const token = authHeader.substring(7);
+      let uid: string;
+
+      if (!process.env.FIREBASE_ADMIN_SERVICE_ACCOUNT) {
+        const decodedToken = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+        uid = decodedToken.user_id;
+      } else {
+        return res.status(500).json({ error: "Firebase Admin SDK not configured yet" });
+      }
+
+      const userWithRoles = await storage.getUserWithRoles(uid);
+      if (!userWithRoles || !userWithRoles.roles?.admin) {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      const { opportunityIds } = req.body;
+      if (!Array.isArray(opportunityIds) || opportunityIds.length === 0) {
+        return res.status(400).json({ error: "Invalid opportunity IDs" });
+      }
+
+      await storage.bulkUpdateOpportunityApprovalStatus(opportunityIds, "rejected");
+      return res.json({ success: true });
+    } catch (error) {
+      console.error("Bulk reject error:", error);
+      return res.status(500).json({ error: "Failed to reject opportunities" });
+    }
+  });
+
+  app.post("/api/admin/opportunities/bulk-delete", async (req, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const token = authHeader.substring(7);
+      let uid: string;
+
+      if (!process.env.FIREBASE_ADMIN_SERVICE_ACCOUNT) {
+        const decodedToken = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+        uid = decodedToken.user_id;
+      } else {
+        return res.status(500).json({ error: "Firebase Admin SDK not configured yet" });
+      }
+
+      const userWithRoles = await storage.getUserWithRoles(uid);
+      if (!userWithRoles || !userWithRoles.roles?.admin) {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      const { opportunityIds } = req.body;
+      if (!Array.isArray(opportunityIds) || opportunityIds.length === 0) {
+        return res.status(400).json({ error: "Invalid opportunity IDs" });
+      }
+
+      await storage.bulkDeleteOpportunities(opportunityIds);
+      return res.json({ success: true });
+    } catch (error) {
+      console.error("Bulk delete error:", error);
+      return res.status(500).json({ error: "Failed to delete opportunities" });
+    }
+  });
+
+  app.post("/api/admin/opportunities/bulk-status", async (req, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const token = authHeader.substring(7);
+      let uid: string;
+
+      if (!process.env.FIREBASE_ADMIN_SERVICE_ACCOUNT) {
+        const decodedToken = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+        uid = decodedToken.user_id;
+      } else {
+        return res.status(500).json({ error: "Firebase Admin SDK not configured yet" });
+      }
+
+      const userWithRoles = await storage.getUserWithRoles(uid);
+      if (!userWithRoles || !userWithRoles.roles?.admin) {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      const { opportunityIds, status } = req.body;
+      if (!Array.isArray(opportunityIds) || opportunityIds.length === 0) {
+        return res.status(400).json({ error: "Invalid opportunity IDs" });
+      }
+      if (!status || !["open", "closed"].includes(status)) {
+        return res.status(400).json({ error: "Invalid status" });
+      }
+
+      await storage.bulkUpdateOpportunityStatus(opportunityIds, status);
+      return res.json({ success: true });
+    } catch (error) {
+      console.error("Bulk status update error:", error);
+      return res.status(500).json({ error: "Failed to update opportunity status" });
+    }
+  });
+
   app.post("/api/applications", async (req, res) => {
     try {
       const authHeader = req.headers.authorization;
