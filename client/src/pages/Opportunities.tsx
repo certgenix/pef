@@ -226,24 +226,33 @@ export default function Opportunities() {
                           </Badge>
                         )}
                         
-                        {opportunity.type === "job" && details.applicationEmail && (
-                          <div className="pt-3 border-t">
-                            <Button 
-                              size="sm" 
-                              className="w-full"
-                              onClick={() => window.location.href = `mailto:${details.applicationEmail}`}
-                              data-testid={`button-apply-${idx}`}
-                            >
-                              <Mail className="w-4 h-4 mr-2" />
-                              Apply Now
-                            </Button>
-                          </div>
-                        )}
-                        
-                        {opportunity.type !== "job" && opportunity.contactPreference && (
-                          <div className="pt-3 border-t">
-                            {(() => {
-                              const emailMatch = opportunity.contactPreference.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+                        <div className="pt-3 border-t">
+                          {opportunity.type === "job" ? (
+                            details.applicationEmail ? (
+                              <Button 
+                                size="sm" 
+                                className="w-full"
+                                onClick={() => window.location.href = `mailto:${details.applicationEmail}`}
+                                data-testid={`button-apply-${idx}`}
+                              >
+                                <Mail className="w-4 h-4 mr-2" />
+                                Apply Now
+                              </Button>
+                            ) : (
+                              <Button 
+                                size="sm" 
+                                variant="secondary"
+                                className="w-full"
+                                disabled
+                                data-testid={`button-apply-${idx}`}
+                              >
+                                <Mail className="w-4 h-4 mr-2" />
+                                Contact Information Required
+                              </Button>
+                            )
+                          ) : (
+                            (() => {
+                              const emailMatch = opportunity.contactPreference?.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
                               const contactEmail = emailMatch ? emailMatch[0] : null;
                               
                               if (contactEmail) {
@@ -259,16 +268,41 @@ export default function Opportunities() {
                                     Contact Now
                                   </Button>
                                 );
+                              } else if (opportunity.contactPreference) {
+                                return (
+                                  <div className="space-y-2">
+                                    <p className="text-xs text-muted-foreground">
+                                      <span className="font-medium">Contact:</span> {opportunity.contactPreference}
+                                    </p>
+                                    <Button 
+                                      size="sm" 
+                                      variant="outline"
+                                      className="w-full"
+                                      disabled
+                                      data-testid={`button-contact-${idx}`}
+                                    >
+                                      <Mail className="w-4 h-4 mr-2" />
+                                      Inquire Now
+                                    </Button>
+                                  </div>
+                                );
                               } else {
                                 return (
-                                  <p className="text-xs text-muted-foreground">
-                                    <span className="font-medium">Contact:</span> {opportunity.contactPreference}
-                                  </p>
+                                  <Button 
+                                    size="sm" 
+                                    variant="secondary"
+                                    className="w-full"
+                                    disabled
+                                    data-testid={`button-contact-${idx}`}
+                                  >
+                                    <Mail className="w-4 h-4 mr-2" />
+                                    Contact Information Required
+                                  </Button>
                                 );
                               }
-                            })()}
-                          </div>
-                        )}
+                            })()
+                          )}
+                        </div>
                         
                         {opportunity.type === "job" && details.skills && Array.isArray(details.skills) && details.skills.length > 0 && (
                           <div>

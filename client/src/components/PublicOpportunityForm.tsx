@@ -427,17 +427,23 @@ export default function PublicOpportunityForm() {
             </div>
           )}
 
-          <div className="space-y-2">
-            <Label htmlFor="contactPreference">Additional Contact Information</Label>
-            <Textarea
-              id="contactPreference"
-              value={formData.contactPreference}
-              onChange={(e) => handleChange("contactPreference", e.target.value)}
-              placeholder="Phone number, website, or other contact details..."
-              rows={2}
-              data-testid="textarea-contact"
-            />
-          </div>
+          {formData.type !== "job" && (
+            <div className="space-y-2">
+              <Label htmlFor="contactPreference">Contact Information *</Label>
+              <Textarea
+                id="contactPreference"
+                value={formData.contactPreference}
+                onChange={(e) => handleChange("contactPreference", e.target.value)}
+                placeholder="Email (required): contact@example.com or phone/website..."
+                rows={2}
+                required
+                data-testid="textarea-contact"
+              />
+              <p className="text-xs text-muted-foreground">
+                Include an email address for the "Contact Now" button to work
+              </p>
+            </div>
+          )}
 
           <div className="flex flex-wrap gap-3 justify-end pt-4">
             <Button
