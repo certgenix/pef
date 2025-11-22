@@ -85,12 +85,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const mergedUserData: User = {
         ...existingUserData,
         roles: {
-          professional: backendRoles?.isProfessional || false,
-          jobSeeker: backendRoles?.isJobSeeker || false,
-          employer: backendRoles?.isEmployer || false,
-          businessOwner: backendRoles?.isBusinessOwner || false,
-          investor: backendRoles?.isInvestor || false,
-          admin: backendRoles?.isAdmin ?? backendRoles?.admin ?? existingUserData.roles?.admin ?? false,
+          professional: backendRoles?.professional || false,
+          jobSeeker: backendRoles?.jobSeeker || false,
+          employer: backendRoles?.employer || false,
+          businessOwner: backendRoles?.businessOwner || false,
+          investor: backendRoles?.investor || false,
+          admin: backendRoles?.admin || false,
         },
       };
 
@@ -128,7 +128,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               websiteUrl: user.links?.website || null,
               portfolioUrl: user.links?.portfolio || null,
             },
-            roles: toFirestoreRoles(user.roles || {}),
+            roles: user.roles || {},
           }),
         });
 
