@@ -92,6 +92,13 @@ Preferred communication style: Simple, everyday language.
   - Single-use session tokens with automatic 10-minute expiration
   - Allowlisted redirect URLs to prevent open redirect attacks
   - Endpoints: `/api/auth/linkedin`, `/api/auth/linkedin/callback`, `/api/auth/linkedin/profile`
+- **Admin Panel Enhancements** (November 2025):
+  - Role filter dropdown to filter users by their roles (professional, job seeker, employer, business owner, investor, admin)
+  - Status tabs (All, Pending, Approved, Rejected) to organize users by approval status
+  - Approve and reject buttons in user management dialog for streamlined user approval workflow
+  - Real-time status updates with automatic cache invalidation using TanStack Query
+  - Combined filtering: role filter + status tabs + search query work together
+  - Backend endpoint: `POST /api/admin/users/:userId/status` with Firebase auth token validation
 
 **CRITICAL Security Issues - MUST FIX BEFORE PRODUCTION**:
 1. ⚠️ **Firebase ID Token Verification**: Backend currently decodes ID tokens WITHOUT signature verification when `FIREBASE_ADMIN_SERVICE_ACCOUNT` is not configured. This is a severe security vulnerability. Must set up Firebase Admin SDK credentials before production deployment.
