@@ -545,8 +545,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Opportunity not found" });
       }
 
-      const updateData = { ...req.body };
-      delete updateData.id;
+      const allowedFields: Array<keyof InsertOpportunity> = [
+        'type', 'title', 'description', 'sector', 'country', 'city',
+        'budgetOrSalary', 'contactPreference', 'details', 'status', 'approvalStatus'
+      ];
+
+      const updateData: Partial<InsertOpportunity> = {};
+      for (const field of allowedFields) {
+        if (field in req.body) {
+          updateData[field] = req.body[field];
+        }
+      }
 
       const updated = await storage.updateOpportunity(id, updateData);
       return res.json(updated);

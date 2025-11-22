@@ -35,7 +35,25 @@ export default function AdminOpportunities() {
 
   const { data: opportunities = [], isLoading } = useQuery<Opportunity[]>({
     queryKey: ["/api/admin/opportunities"],
+    enabled: !!currentUser && !!userData?.roles?.admin,
   });
+
+  useEffect(() => {
+    if (!currentUser) {
+      setLocation("/login");
+      return;
+    }
+
+    if (!userData?.roles?.admin) {
+      toast({
+        title: "Access Denied",
+        description: "You don't have permission to access this page",
+        variant: "destructive",
+      });
+      setLocation("/");
+      return;
+    }
+  }, [currentUser, userData, setLocation, toast]);
 
   const handleOpenDialog = (opportunity?: Opportunity) => {
     if (opportunity) {
@@ -50,11 +68,6 @@ export default function AdminOpportunities() {
     setDialogOpen(false);
     setEditingOpportunity(null);
   };
-
-  if (!currentUser || !userData?.roles?.admin) {
-    setLocation("/login");
-    return null;
-  }
 
   if (isLoading) {
     return (
