@@ -36,7 +36,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import YouTubeEmbed from "@/components/YouTubeEmbed";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import type { Video as VideoType } from "@shared/schema";
+import type { Video as VideoType, Opportunity } from "@shared/schema";
 
 interface UserData {
   uid: string;
@@ -94,6 +94,11 @@ export default function AdminDashboard() {
 
   const { data: videos = [], refetch: refetchVideos } = useQuery<VideoType[]>({
     queryKey: ['/api/videos'],
+  });
+
+  const { data: opportunities = [], isLoading: opportunitiesLoading } = useQuery<Opportunity[]>({
+    queryKey: ['/api/opportunities'],
+    enabled: !!currentUser && !!userData?.roles?.admin,
   });
 
   const { data: users = [], isLoading: usersLoading } = useQuery<UserData[]>({
@@ -251,12 +256,12 @@ export default function AdminDashboard() {
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Videos</CardTitle>
-                <Video className="w-4 h-4 text-muted-foreground" />
+                <CardTitle className="text-sm font-medium">Total Opportunities</CardTitle>
+                <Briefcase className="w-4 h-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{videos.length}</div>
-                <p className="text-xs text-muted-foreground">Published content</p>
+                <div className="text-2xl font-bold">{opportunities.length}</div>
+                <p className="text-xs text-muted-foreground">Available opportunities</p>
               </CardContent>
             </Card>
           </div>
