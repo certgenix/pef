@@ -4,6 +4,7 @@ import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -284,23 +285,51 @@ interface OpportunityFormDialogProps {
   opportunity: Opportunity | null;
 }
 
-// Extended form data for admin to include all fields from public form
-interface AdminOpportunityFormData extends InsertOpportunity {
-  employmentType?: "full-time" | "part-time" | "remote" | "contract";
-  experienceRequired?: string;
-  skills?: string;
-  benefits?: string;
-  applicationEmail?: string;
-  investmentAmount?: string;
-  investmentType?: string;
-  partnershipType?: string;
-}
+// Extended schema for admin form with all fields from public form
+const adminOpportunitySchema = insertOpportunitySchema.extend({
+  employmentType: z.enum(["full-time", "part-time", "remote", "contract"]).optional(),
+  experienceRequired: z.string().optional(),
+  skills: z.string().optional(),
+  benefits: z.string().optional(),
+  applicationEmail: z.string().optional(),
+  investmentAmount: z.string().optional(),
+  investmentType: z.string().optional(),
+  partnershipType: z.string().optional(),
+}).superRefine((data, ctx) => {
+  // For job opportunities, validate job-specific fields
+  if (data.type === "job") {
+    if (!data.applicationEmail || data.applicationEmail.trim() === "") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Application email is required for job postings",
+        path: ["applicationEmail"],
+      });
+    } else if (data.applicationEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.applicationEmail)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Please enter a valid email address",
+        path: ["applicationEmail"],
+      });
+    }
+    
+    if (!data.employmentType) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Employment type is required for job postings",
+        path: ["employmentType"],
+      });
+    }
+  }
+});
+
+type AdminOpportunityFormData = z.infer<typeof adminOpportunitySchema>;
 
 function OpportunityFormDialog({ open, onClose, opportunity }: OpportunityFormDialogProps) {
   const { toast } = useToast();
   const { currentUser } = useAuth();
 
   const form = useForm<AdminOpportunityFormData>({
+    resolver: zodResolver(adminOpportunitySchema),
     defaultValues: {
       userId: currentUser?.uid || "",
       type: "job",
