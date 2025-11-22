@@ -242,9 +242,31 @@ export default function Opportunities() {
                         
                         {opportunity.type !== "job" && opportunity.contactPreference && (
                           <div className="pt-3 border-t">
-                            <p className="text-xs text-muted-foreground">
-                              <span className="font-medium">Contact:</span> {opportunity.contactPreference}
-                            </p>
+                            {(() => {
+                              const emailMatch = opportunity.contactPreference.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+                              const contactEmail = emailMatch ? emailMatch[0] : null;
+                              
+                              if (contactEmail) {
+                                const subject = encodeURIComponent(`Inquiry: ${opportunity.title}`);
+                                return (
+                                  <Button 
+                                    size="sm" 
+                                    className="w-full"
+                                    onClick={() => window.location.href = `mailto:${contactEmail}?subject=${subject}`}
+                                    data-testid={`button-contact-${idx}`}
+                                  >
+                                    <Mail className="w-4 h-4 mr-2" />
+                                    Contact Now
+                                  </Button>
+                                );
+                              } else {
+                                return (
+                                  <p className="text-xs text-muted-foreground">
+                                    <span className="font-medium">Contact:</span> {opportunity.contactPreference}
+                                  </p>
+                                );
+                              }
+                            })()}
                           </div>
                         )}
                         
