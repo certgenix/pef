@@ -91,6 +91,8 @@ export default function AdminDashboard() {
   const [selectedTab, setSelectedTab] = useState<'all' | 'media'>('all');
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [statusTab, setStatusTab] = useState<string>("all");
+  const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
+  const [selectedVideos, setSelectedVideos] = useState<Set<string>>(new Set());
 
   const { data: videos = [], refetch: refetchVideos } = useQuery<VideoType[]>({
     queryKey: ['/api/videos'],
@@ -228,6 +230,153 @@ export default function AdminDashboard() {
   const pendingUsers = users.filter((u) => u.status === "pending");
   const approvedUsers = users.filter((u) => u.status === "approved");
   const rejectedUsers = users.filter((u) => u.status === "rejected");
+
+  // User selection handlers
+  const handleSelectUser = (userId: string) => {
+    setSelectedUsers((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(userId)) {
+        newSet.delete(userId);
+      } else {
+        newSet.add(userId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleSelectAllUsers = (userList: UserData[], selectAll: boolean) => {
+    setSelectedUsers((prev) => {
+      const newSet = new Set(prev);
+      userList.forEach((user) => {
+        if (selectAll) {
+          newSet.add(user.uid);
+        } else {
+          newSet.delete(user.uid);
+        }
+      });
+      return newSet;
+    });
+  };
+
+  // Video selection handlers
+  const handleSelectVideo = (videoId: string) => {
+    setSelectedVideos((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(videoId)) {
+        newSet.delete(videoId);
+      } else {
+        newSet.add(videoId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleSelectAllVideos = (selectAll: boolean) => {
+    if (selectAll) {
+      setSelectedVideos(new Set(videos.map((v) => v.id)));
+    } else {
+      setSelectedVideos(new Set());
+    }
+  };
+
+  // Bulk operations for users
+  const bulkApproveUsersMutation = useMutation({
+    mutationFn: async (userIds: string[]) => {
+      await Promise.all(
+        userIds.map((userId) =>
+          apiRequest("POST", `/api/admin/users/${userId}/status`, { status: "approved" })
+        )
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+      setSelectedUsers(new Set());
+      toast({
+        title: "Success",
+        description: `${selectedUsers.size} user(s) approved successfully`,
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to approve selected users",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const bulkRejectUsersMutation = useMutation({
+    mutationFn: async (userIds: string[]) => {
+      await Promise.all(
+        userIds.map((userId) =>
+          apiRequest("POST", `/api/admin/users/${userId}/status`, { status: "rejected" })
+        )
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+      setSelectedUsers(new Set());
+      toast({
+        title: "Success",
+        description: `${selectedUsers.size} user(s) rejected successfully`,
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to reject selected users",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Bulk operations for videos
+  const bulkUpdateVideosMutation = useMutation({
+    mutationFn: async ({ videoIds, visible }: { videoIds: string[]; visible: boolean }) => {
+      await Promise.all(
+        videoIds.map((videoId) =>
+          apiRequest("PATCH", `/api/videos/${videoId}`, { visible })
+        )
+      );
+    },
+    onSuccess: (_, { visible }) => {
+      refetchVideos();
+      setSelectedVideos(new Set());
+      toast({
+        title: "Success",
+        description: `${selectedVideos.size} video(s) ${visible ? "shown" : "hidden"} successfully`,
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update selected videos",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleBulkApprove = () => {
+    if (selectedUsers.size === 0) return;
+    bulkApproveUsersMutation.mutate(Array.from(selectedUsers));
+  };
+
+  const handleBulkReject = () => {
+    if (selectedUsers.size === 0) return;
+    bulkRejectUsersMutation.mutate(Array.from(selectedUsers));
+  };
+
+  const handleBulkShow = () => {
+    if (selectedVideos.size === 0) return;
+    bulkUpdateVideosMutation.mutate({ videoIds: Array.from(selectedVideos), visible: true });
+  };
+
+  const handleBulkHide = () => {
+    if (selectedVideos.size === 0) return;
+    bulkUpdateVideosMutation.mutate({ videoIds: Array.from(selectedVideos), visible: false });
+  };
 
   return (
     <div className="min-h-screen">
@@ -394,20 +543,50 @@ export default function AdminDashboard() {
             </div>
             
             <Tabs value={statusTab} onValueChange={setStatusTab} className="space-y-4">
-              <TabsList data-testid="tabs-user-status">
-                <TabsTrigger value="all" data-testid="tab-all-users">
-                  All ({users.length})
-                </TabsTrigger>
-                <TabsTrigger value="pending" data-testid="tab-pending-users">
-                  Pending ({pendingUsers.length})
-                </TabsTrigger>
-                <TabsTrigger value="approved" data-testid="tab-approved-users">
-                  Approved ({approvedUsers.length})
-                </TabsTrigger>
-                <TabsTrigger value="rejected" data-testid="tab-rejected-users">
-                  Rejected ({rejectedUsers.length})
-                </TabsTrigger>
-              </TabsList>
+              <div className="flex items-center justify-between gap-4">
+                <TabsList data-testid="tabs-user-status">
+                  <TabsTrigger value="all" data-testid="tab-all-users">
+                    All ({users.length})
+                  </TabsTrigger>
+                  <TabsTrigger value="pending" data-testid="tab-pending-users">
+                    Pending ({pendingUsers.length})
+                  </TabsTrigger>
+                  <TabsTrigger value="approved" data-testid="tab-approved-users">
+                    Approved ({approvedUsers.length})
+                  </TabsTrigger>
+                  <TabsTrigger value="rejected" data-testid="tab-rejected-users">
+                    Rejected ({rejectedUsers.length})
+                  </TabsTrigger>
+                </TabsList>
+                
+                {selectedUsers.size > 0 && (
+                  <div className="flex gap-2">
+                    <span className="text-sm text-muted-foreground self-center">
+                      {selectedUsers.size} selected
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="default"
+                      onClick={handleBulkApprove}
+                      disabled={bulkApproveUsersMutation.isPending}
+                      data-testid="button-bulk-approve"
+                    >
+                      <CheckCircle2 className="w-4 h-4 mr-1" />
+                      {bulkApproveUsersMutation.isPending ? "Approving..." : "Approve Selected"}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={handleBulkReject}
+                      disabled={bulkRejectUsersMutation.isPending}
+                      data-testid="button-bulk-reject"
+                    >
+                      <XCircle className="w-4 h-4 mr-1" />
+                      {bulkRejectUsersMutation.isPending ? "Rejecting..." : "Reject Selected"}
+                    </Button>
+                  </div>
+                )}
+              </div>
 
               <TabsContent value="all">
                 {filterUsers(users).length === 0 ? (
@@ -422,6 +601,9 @@ export default function AdminDashboard() {
                   <UsersTable
                     users={filterUsers(users)}
                     onUserClick={setSelectedUser}
+                    selectedUsers={selectedUsers}
+                    onSelectUser={handleSelectUser}
+                    onSelectAll={(selectAll) => handleSelectAllUsers(filterUsers(users), selectAll)}
                   />
                 )}
               </TabsContent>
@@ -440,6 +622,9 @@ export default function AdminDashboard() {
                   <UsersTable
                     users={filterUsers(pendingUsers)}
                     onUserClick={setSelectedUser}
+                    selectedUsers={selectedUsers}
+                    onSelectUser={handleSelectUser}
+                    onSelectAll={(selectAll) => handleSelectAllUsers(filterUsers(pendingUsers), selectAll)}
                   />
                 )}
               </TabsContent>
@@ -458,6 +643,9 @@ export default function AdminDashboard() {
                   <UsersTable
                     users={filterUsers(approvedUsers)}
                     onUserClick={setSelectedUser}
+                    selectedUsers={selectedUsers}
+                    onSelectUser={handleSelectUser}
+                    onSelectAll={(selectAll) => handleSelectAllUsers(filterUsers(approvedUsers), selectAll)}
                   />
                 )}
               </TabsContent>
@@ -476,6 +664,9 @@ export default function AdminDashboard() {
                   <UsersTable
                     users={filterUsers(rejectedUsers)}
                     onUserClick={setSelectedUser}
+                    selectedUsers={selectedUsers}
+                    onSelectUser={handleSelectUser}
+                    onSelectAll={(selectAll) => handleSelectAllUsers(filterUsers(rejectedUsers), selectAll)}
                   />
                 )}
               </TabsContent>
@@ -483,12 +674,54 @@ export default function AdminDashboard() {
           </TabsContent>
 
           <TabsContent value="media" className="space-y-4">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-bold">Video Management</h2>
-              <Button onClick={() => handleOpenVideoDialog()} data-testid="button-add-video">
-                <Plus className="w-4 h-4 mr-2" />
-                Add Video
-              </Button>
+            <div className="flex justify-between items-center mb-4 flex-wrap gap-4">
+              <div className="flex items-center gap-4">
+                <h2 className="text-2xl font-bold">Video Management</h2>
+                {videos.length > 0 && (
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      checked={selectedVideos.size === videos.length && videos.length > 0}
+                      onCheckedChange={handleSelectAllVideos}
+                      data-testid="checkbox-select-all-videos"
+                      aria-label="Select all videos"
+                    />
+                    <span className="text-sm text-muted-foreground">Select All</span>
+                  </div>
+                )}
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                {selectedVideos.size > 0 && (
+                  <>
+                    <span className="text-sm text-muted-foreground self-center">
+                      {selectedVideos.size} selected
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="default"
+                      onClick={handleBulkShow}
+                      disabled={bulkUpdateVideosMutation.isPending}
+                      data-testid="button-bulk-show"
+                    >
+                      <CheckCircle2 className="w-4 h-4 mr-1" />
+                      {bulkUpdateVideosMutation.isPending ? "Updating..." : "Show Selected"}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={handleBulkHide}
+                      disabled={bulkUpdateVideosMutation.isPending}
+                      data-testid="button-bulk-hide"
+                    >
+                      <XCircle className="w-4 h-4 mr-1" />
+                      {bulkUpdateVideosMutation.isPending ? "Updating..." : "Hide Selected"}
+                    </Button>
+                  </>
+                )}
+                <Button onClick={() => handleOpenVideoDialog()} data-testid="button-add-video">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Video
+                </Button>
+              </div>
             </div>
 
             {videos.length === 0 ? (
@@ -506,6 +739,15 @@ export default function AdminDashboard() {
                     <CardContent className="p-0">
                       <div className="relative">
                         <YouTubeEmbed videoId={video.youtubeId} title={video.title} />
+                        <div className="absolute top-2 left-2">
+                          <Checkbox
+                            checked={selectedVideos.has(video.id)}
+                            onCheckedChange={() => handleSelectVideo(video.id)}
+                            data-testid={`checkbox-video-${video.id}`}
+                            aria-label={`Select ${video.title}`}
+                            className="bg-white/90 backdrop-blur-sm"
+                          />
+                        </div>
                         {video.featured && (
                           <Badge 
                             className="absolute top-2 right-2 bg-orange-500"
@@ -591,10 +833,19 @@ export default function AdminDashboard() {
 function UsersTable({
   users,
   onUserClick,
+  selectedUsers,
+  onSelectUser,
+  onSelectAll,
 }: {
   users: UserData[];
   onUserClick: (user: UserData) => void;
+  selectedUsers: Set<string>;
+  onSelectUser: (userId: string) => void;
+  onSelectAll: (selectAll: boolean) => void;
 }) {
+  const allSelected = users.length > 0 && users.every((u) => selectedUsers.has(u.uid));
+  const someSelected = users.some((u) => selectedUsers.has(u.uid)) && !allSelected;
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "approved":
@@ -614,6 +865,14 @@ function UsersTable({
         <table className="w-full">
           <thead>
             <tr className="border-b">
+              <th className="p-4 w-12">
+                <Checkbox
+                  checked={allSelected}
+                  onCheckedChange={(checked) => onSelectAll(checked === true)}
+                  data-testid="checkbox-select-all-users"
+                  aria-label="Select all users"
+                />
+              </th>
               <th className="text-left p-4 font-medium text-sm text-muted-foreground">Name</th>
               <th className="text-left p-4 font-medium text-sm text-muted-foreground">Email</th>
               <th className="text-left p-4 font-medium text-sm text-muted-foreground">Status</th>
@@ -624,11 +883,18 @@ function UsersTable({
             {users.map((user) => (
               <tr
                 key={user.uid}
-                onClick={() => onUserClick(user)}
-                className="border-b last:border-0 hover-elevate cursor-pointer"
+                className="border-b last:border-0 hover-elevate"
                 data-testid={`row-user-${user.uid}`}
               >
-                <td className="p-4">
+                <td className="p-4" onClick={(e) => e.stopPropagation()}>
+                  <Checkbox
+                    checked={selectedUsers.has(user.uid)}
+                    onCheckedChange={() => onSelectUser(user.uid)}
+                    data-testid={`checkbox-user-${user.uid}`}
+                    aria-label={`Select ${user.name}`}
+                  />
+                </td>
+                <td className="p-4 cursor-pointer" onClick={() => onUserClick(user)}>
                   <div className="font-medium" data-testid={`text-user-name-${user.uid}`}>
                     {user.name}
                   </div>
