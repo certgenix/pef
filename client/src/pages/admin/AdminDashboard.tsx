@@ -242,6 +242,13 @@ export default function AdminDashboard() {
               <p className="text-sm text-muted-foreground">Manage event gallery images</p>
             </CardContent>
           </Card>
+          <Card className="hover-elevate cursor-pointer" onClick={() => setLocation("/admin/opportunities")} data-testid="card-manage-opportunities">
+            <CardContent className="p-6">
+              <Briefcase className="w-8 h-8 text-primary mb-2" />
+              <h3 className="font-bold mb-1">Opportunities</h3>
+              <p className="text-sm text-muted-foreground">Manage and approve opportunities</p>
+            </CardContent>
+          </Card>
           <Card className="hover-elevate cursor-pointer" onClick={() => setLocation("/admin/membership")} data-testid="card-manage-membership">
             <CardContent className="p-6">
               <Users className="w-8 h-8 text-primary mb-2" />
