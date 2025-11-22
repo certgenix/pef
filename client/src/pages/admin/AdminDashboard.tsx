@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import {
   Users,
@@ -88,6 +89,8 @@ export default function AdminDashboard() {
   const [editingVideo, setEditingVideo] = useState<VideoType | null>(null);
   const [deleteVideoId, setDeleteVideoId] = useState<string | null>(null);
   const [selectedTab, setSelectedTab] = useState<'all' | 'media'>('all');
+  const [roleFilter, setRoleFilter] = useState<string>("all");
+  const [statusTab, setStatusTab] = useState<string>("all");
 
   const { data: videos = [], refetch: refetchVideos } = useQuery<VideoType[]>({
     queryKey: ['/api/videos'],
@@ -180,14 +183,46 @@ export default function AdminDashboard() {
   }
 
   const filterUsers = (userList: UserData[]) => {
-    if (!searchQuery.trim()) return userList;
-    const query = searchQuery.toLowerCase();
-    return userList.filter(
-      (user) =>
-        (user.name || "").toLowerCase().includes(query) ||
-        (user.email || "").toLowerCase().includes(query)
-    );
+    let filtered = userList;
+    
+    // Filter by role
+    if (roleFilter !== "all") {
+      filtered = filtered.filter((user) => {
+        switch (roleFilter) {
+          case "professional":
+            return user.roles?.isProfessional;
+          case "jobSeeker":
+            return user.roles?.isJobSeeker;
+          case "employer":
+            return user.roles?.isEmployer;
+          case "businessOwner":
+            return user.roles?.isBusinessOwner;
+          case "investor":
+            return user.roles?.isInvestor;
+          case "admin":
+            return user.roles?.isAdmin;
+          default:
+            return true;
+        }
+      });
+    }
+    
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (user) =>
+          (user.name || "").toLowerCase().includes(query) ||
+          (user.email || "").toLowerCase().includes(query)
+      );
+    }
+    
+    return filtered;
   };
+  
+  const pendingUsers = users.filter((u) => u.status === "pending");
+  const approvedUsers = users.filter((u) => u.status === "approved");
+  const rejectedUsers = users.filter((u) => u.status === "rejected");
 
   return (
     <div className="min-h-screen">
@@ -222,6 +257,38 @@ export default function AdminDashboard() {
               <CardContent>
                 <div className="text-2xl font-bold">{videos.length}</div>
                 <p className="text-xs text-muted-foreground">Published content</p>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+        
+        {selectedTab === 'all' && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <Clock className="w-4 h-4 text-muted-foreground" />
+                  <div className="text-2xl font-bold">{pendingUsers.length}</div>
+                </div>
+                <p className="text-sm text-muted-foreground">Pending Approval</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <CheckCircle2 className="w-4 h-4 text-muted-foreground" />
+                  <div className="text-2xl font-bold">{approvedUsers.length}</div>
+                </div>
+                <p className="text-sm text-muted-foreground">Approved Users</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <XCircle className="w-4 h-4 text-muted-foreground" />
+                  <div className="text-2xl font-bold">{rejectedUsers.length}</div>
+                </div>
+                <p className="text-sm text-muted-foreground">Rejected Users</p>
               </CardContent>
             </Card>
           </div>
@@ -293,34 +360,121 @@ export default function AdminDashboard() {
             </TabsTrigger>
           </TabsList>
 
-          <div className="mb-4">
-            <div className="relative max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by name or email..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9"
-                data-testid="input-search-users"
-              />
-            </div>
-          </div>
-
           <TabsContent value="all" className="space-y-4">
-            {filterUsers(users).length === 0 ? (
-              <Card>
-                <CardContent className="py-12 text-center">
-                  <p className="text-muted-foreground">
-                    {searchQuery ? "No users found" : "No users yet"}
-                  </p>
-                </CardContent>
-              </Card>
-            ) : (
-              <UsersTable
-                users={filterUsers(users)}
-                onUserClick={setSelectedUser}
-              />
-            )}
+            <div className="flex flex-col sm:flex-row gap-4 mb-4">
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by name or email..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9"
+                  data-testid="input-search-users"
+                />
+              </div>
+              <Select value={roleFilter} onValueChange={setRoleFilter}>
+                <SelectTrigger className="w-full sm:w-[200px]" data-testid="select-role-filter">
+                  <SelectValue placeholder="Filter by role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Roles</SelectItem>
+                  <SelectItem value="professional">Professional</SelectItem>
+                  <SelectItem value="jobSeeker">Job Seeker</SelectItem>
+                  <SelectItem value="employer">Employer</SelectItem>
+                  <SelectItem value="businessOwner">Business Owner</SelectItem>
+                  <SelectItem value="investor">Investor</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <Tabs value={statusTab} onValueChange={setStatusTab} className="space-y-4">
+              <TabsList data-testid="tabs-user-status">
+                <TabsTrigger value="all" data-testid="tab-all-users">
+                  All ({users.length})
+                </TabsTrigger>
+                <TabsTrigger value="pending" data-testid="tab-pending-users">
+                  Pending ({pendingUsers.length})
+                </TabsTrigger>
+                <TabsTrigger value="approved" data-testid="tab-approved-users">
+                  Approved ({approvedUsers.length})
+                </TabsTrigger>
+                <TabsTrigger value="rejected" data-testid="tab-rejected-users">
+                  Rejected ({rejectedUsers.length})
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="all">
+                {filterUsers(users).length === 0 ? (
+                  <Card>
+                    <CardContent className="py-12 text-center">
+                      <p className="text-muted-foreground">
+                        {searchQuery || roleFilter !== "all" ? "No users found" : "No users yet"}
+                      </p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <UsersTable
+                    users={filterUsers(users)}
+                    onUserClick={setSelectedUser}
+                  />
+                )}
+              </TabsContent>
+              
+              <TabsContent value="pending">
+                {filterUsers(pendingUsers).length === 0 ? (
+                  <Card>
+                    <CardContent className="py-12 text-center">
+                      <Clock className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                      <p className="text-muted-foreground">
+                        {searchQuery || roleFilter !== "all" ? "No users found" : "No pending users"}
+                      </p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <UsersTable
+                    users={filterUsers(pendingUsers)}
+                    onUserClick={setSelectedUser}
+                  />
+                )}
+              </TabsContent>
+              
+              <TabsContent value="approved">
+                {filterUsers(approvedUsers).length === 0 ? (
+                  <Card>
+                    <CardContent className="py-12 text-center">
+                      <CheckCircle2 className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                      <p className="text-muted-foreground">
+                        {searchQuery || roleFilter !== "all" ? "No users found" : "No approved users"}
+                      </p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <UsersTable
+                    users={filterUsers(approvedUsers)}
+                    onUserClick={setSelectedUser}
+                  />
+                )}
+              </TabsContent>
+              
+              <TabsContent value="rejected">
+                {filterUsers(rejectedUsers).length === 0 ? (
+                  <Card>
+                    <CardContent className="py-12 text-center">
+                      <XCircle className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                      <p className="text-muted-foreground">
+                        {searchQuery || roleFilter !== "all" ? "No users found" : "No rejected users"}
+                      </p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <UsersTable
+                    users={filterUsers(rejectedUsers)}
+                    onUserClick={setSelectedUser}
+                  />
+                )}
+              </TabsContent>
+            </Tabs>
           </TabsContent>
 
           <TabsContent value="media" className="space-y-4">
@@ -536,6 +690,7 @@ function UserManagementDialog({
   onClose: () => void;
   onUpdateRoles: (roles: any) => void;
 }) {
+  const { toast } = useToast();
   const [roles, setRoles] = useState({
     professional: user.roles?.isProfessional || false,
     jobSeeker: user.roles?.isJobSeeker || false,
@@ -543,6 +698,34 @@ function UserManagementDialog({
     businessOwner: user.roles?.isBusinessOwner || false,
     investor: user.roles?.isInvestor || false,
     admin: user.roles?.isAdmin || false,
+  });
+
+  const updateStatusMutation = useMutation({
+    mutationFn: async (status: "approved" | "rejected") => {
+      const response = await apiRequest(
+        "POST",
+        `/api/admin/users/${user.uid}/status`,
+        { status }
+      );
+      return await response.json();
+    },
+    onSuccess: (_, status) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+      toast({
+        title: "Success",
+        description: `User ${status === "approved" ? "approved" : "rejected"} successfully`,
+      });
+      onClose();
+    },
+    onError: (error: any) => {
+      const message = error?.message || "Failed to update user status";
+      toast({
+        title: "Error",
+        description: message,
+        variant: "destructive",
+      });
+    },
   });
 
   return (
@@ -673,13 +856,61 @@ function UserManagementDialog({
           </div>
         </div>
 
-        <DialogFooter className="flex gap-2">
-          <Button onClick={onClose} variant="outline" data-testid="button-cancel-user">
-            Cancel
-          </Button>
-          <Button onClick={() => onUpdateRoles(roles)} data-testid="button-save-roles">
-            Save Roles
-          </Button>
+        <DialogFooter className="flex flex-wrap gap-2">
+          <div className="flex-1 flex gap-2">
+            {user.status === "pending" && (
+              <>
+                <Button
+                  onClick={() => updateStatusMutation.mutate("approved")}
+                  disabled={updateStatusMutation.isPending}
+                  className="bg-green-600 hover:bg-green-700"
+                  data-testid="button-approve-user"
+                >
+                  <CheckCircle2 className="w-4 h-4 mr-2" />
+                  {updateStatusMutation.isPending ? "Approving..." : "Approve"}
+                </Button>
+                <Button
+                  onClick={() => updateStatusMutation.mutate("rejected")}
+                  disabled={updateStatusMutation.isPending}
+                  variant="destructive"
+                  data-testid="button-reject-user"
+                >
+                  <XCircle className="w-4 h-4 mr-2" />
+                  {updateStatusMutation.isPending ? "Rejecting..." : "Reject"}
+                </Button>
+              </>
+            )}
+            {user.status === "rejected" && (
+              <Button
+                onClick={() => updateStatusMutation.mutate("approved")}
+                disabled={updateStatusMutation.isPending}
+                className="bg-green-600 hover:bg-green-700"
+                data-testid="button-approve-user"
+              >
+                <CheckCircle2 className="w-4 h-4 mr-2" />
+                {updateStatusMutation.isPending ? "Approving..." : "Approve"}
+              </Button>
+            )}
+            {user.status === "approved" && (
+              <Button
+                onClick={() => updateStatusMutation.mutate("rejected")}
+                disabled={updateStatusMutation.isPending}
+                variant="destructive"
+                data-testid="button-reject-user"
+              >
+                <XCircle className="w-4 h-4 mr-2" />
+                {updateStatusMutation.isPending ? "Rejecting..." : "Reject"}
+              </Button>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <Button onClick={onClose} variant="outline" data-testid="button-cancel-user">
+              Cancel
+            </Button>
+            <Button onClick={() => onUpdateRoles(roles)} data-testid="button-save-roles">
+              Save Roles
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
