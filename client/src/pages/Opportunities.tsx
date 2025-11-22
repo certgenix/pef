@@ -39,7 +39,7 @@ export default function Opportunities() {
   const { data: opportunities = [], isLoading } = useQuery<Opportunity[]>({
     queryKey: ["/api/opportunities"],
     queryFn: async () => {
-      const response = await fetch("/api/opportunities?type=job");
+      const response = await fetch("/api/opportunities");
       if (!response.ok) throw new Error("Failed to fetch opportunities");
       return response.json();
     },
@@ -117,7 +117,7 @@ export default function Opportunities() {
             </div>
 
             <h3 className="text-2xl md:text-3xl font-display font-bold mb-8 text-center">
-              Available Job Opportunities
+              Available Opportunities
             </h3>
 
             {isLoading ? (
@@ -139,14 +139,31 @@ export default function Opportunities() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
                 {opportunities.map((opportunity, idx) => {
-                  const details = (opportunity.details as JobDetails | null) || {};
+                  const details = (opportunity.details as any) || {};
+                  
+                  const getOpportunityTypeDisplay = (type: string) => {
+                    switch (type) {
+                      case "job":
+                        return { label: "Job Opening", className: "bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100" };
+                      case "investment":
+                        return { label: "Investment", className: "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100" };
+                      case "partnership":
+                        return { label: "Sponsorship", className: "bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-100" };
+                      case "collaboration":
+                        return { label: "Collaboration", className: "bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-100" };
+                      default:
+                        return { label: "Opportunity", className: "bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100" };
+                    }
+                  };
+                  
+                  const typeDisplay = getOpportunityTypeDisplay(opportunity.type);
                   
                   return (
                     <Card key={opportunity.id} className="hover:border-primary/30 transition-all hover-elevate" data-testid={`card-opportunity-${idx}`}>
                       <CardHeader>
                         <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
-                          <Badge variant="secondary" className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100">
-                            Job Opening
+                          <Badge variant="secondary" className={typeDisplay.className}>
+                            {typeDisplay.label}
                           </Badge>
                           <Badge variant="secondary" className="text-xs">
                             {opportunity.status === "open" ? "Open" : "Closed"}
@@ -163,7 +180,7 @@ export default function Opportunities() {
                           {opportunity.description}
                         </p>
                         
-                        {details.employmentType && (
+                        {opportunity.type === "job" && details.employmentType && (
                           <Badge variant="outline" className="capitalize">
                             {details.employmentType}
                           </Badge>
@@ -171,15 +188,35 @@ export default function Opportunities() {
                         
                         {opportunity.budgetOrSalary && (
                           <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium">Salary:</span>
+                            <span className="text-sm font-medium">
+                              {opportunity.type === "job" 
+                                ? "Salary:" 
+                                : opportunity.type === "investment" 
+                                ? "Funding:" 
+                                : "Budget:"}
+                            </span>
                             <span className="text-sm text-muted-foreground">{opportunity.budgetOrSalary}</span>
                           </div>
                         )}
                         
-                        {details.experienceRequired && (
+                        {opportunity.type === "job" && details.experienceRequired && (
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-medium">Experience:</span>
                             <span className="text-sm text-muted-foreground">{details.experienceRequired}</span>
+                          </div>
+                        )}
+                        
+                        {opportunity.type === "investment" && details.investmentType && (
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium">Investment Type:</span>
+                            <span className="text-sm text-muted-foreground">{details.investmentType}</span>
+                          </div>
+                        )}
+                        
+                        {opportunity.type === "partnership" && details.partnershipType && (
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium">Partnership Type:</span>
+                            <span className="text-sm text-muted-foreground">{details.partnershipType}</span>
                           </div>
                         )}
                         
@@ -189,7 +226,7 @@ export default function Opportunities() {
                           </Badge>
                         )}
                         
-                        {details.applicationEmail && (
+                        {opportunity.type === "job" && details.applicationEmail && (
                           <div className="pt-3 border-t">
                             <Button 
                               size="sm" 
@@ -203,11 +240,19 @@ export default function Opportunities() {
                           </div>
                         )}
                         
-                        {details.skills && Array.isArray(details.skills) && details.skills.length > 0 && (
+                        {opportunity.type !== "job" && opportunity.contactPreference && (
+                          <div className="pt-3 border-t">
+                            <p className="text-xs text-muted-foreground">
+                              <span className="font-medium">Contact:</span> {opportunity.contactPreference}
+                            </p>
+                          </div>
+                        )}
+                        
+                        {opportunity.type === "job" && details.skills && Array.isArray(details.skills) && details.skills.length > 0 && (
                           <div>
                             <p className="text-xs font-medium mb-2">Required Skills:</p>
                             <div className="flex flex-wrap gap-1">
-                              {details.skills.slice(0, 4).map((skill, i) => (
+                              {details.skills.slice(0, 4).map((skill: string, i: number) => (
                                 <Badge key={i} variant="outline" className="text-xs">
                                   {skill}
                                 </Badge>
