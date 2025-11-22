@@ -71,11 +71,9 @@ export default function ForgotPassword() {
                     {loading ? "Sending..." : "Send Reset Link"}
                   </Button>
                   <div className="text-center">
-                    <Link href="/login">
-                      <a className="text-sm text-primary hover:underline flex items-center justify-center gap-1" data-testid="link-back-to-login">
-                        <ArrowLeft className="w-4 h-4" />
-                        Back to Login
-                      </a>
+                    <Link href="/login" className="text-sm text-primary hover:underline flex items-center justify-center gap-1" data-testid="link-back-to-login">
+                      <ArrowLeft className="w-4 h-4" />
+                      Back to Login
                     </Link>
                   </div>
                 </form>
@@ -93,10 +91,8 @@ export default function ForgotPassword() {
                     Send Another Email
                   </Button>
                   <div className="text-center">
-                    <Link href="/login">
-                      <a className="text-sm text-primary hover:underline" data-testid="link-login">
-                        Return to Login
-                      </a>
+                    <Link href="/login" className="text-sm text-primary hover:underline" data-testid="link-login">
+                      Return to Login
                     </Link>
                   </div>
                 </div>
