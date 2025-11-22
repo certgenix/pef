@@ -637,7 +637,9 @@ function OpportunityFormDialog({ open, onClose, opportunity }: OpportunityFormDi
   useEffect(() => {
     if (opportunity) {
       const details = opportunity.details as any;
-      form.reset({
+      
+      // Build base form data
+      const baseData = {
         userId: opportunity.userId,
         type: opportunity.type,
         title: opportunity.title,
@@ -650,16 +652,59 @@ function OpportunityFormDialog({ open, onClose, opportunity }: OpportunityFormDi
         details: opportunity.details as Record<string, unknown> | null,
         status: opportunity.status,
         approvalStatus: opportunity.approvalStatus,
-        // Extract type-specific fields from details
-        employmentType: details?.employmentType || "full-time",
-        experienceRequired: details?.experienceRequired || "",
-        skills: Array.isArray(details?.skills) ? details.skills.join(", ") : (details?.skills || ""),
-        benefits: Array.isArray(details?.benefits) ? details.benefits.join(", ") : (details?.benefits || ""),
-        applicationEmail: details?.applicationEmail || "",
-        investmentAmount: details?.investmentAmount || "",
-        investmentType: details?.investmentType || "",
-        partnershipType: details?.partnershipType || "",
-      });
+      };
+      
+      // Only set type-specific fields based on the opportunity type
+      if (opportunity.type === "job") {
+        form.reset({
+          ...baseData,
+          employmentType: details?.employmentType || "full-time",
+          experienceRequired: details?.experienceRequired || "",
+          skills: Array.isArray(details?.skills) ? details.skills.join(", ") : (details?.skills || ""),
+          benefits: Array.isArray(details?.benefits) ? details.benefits.join(", ") : (details?.benefits || ""),
+          applicationEmail: details?.applicationEmail || "",
+          investmentAmount: "",
+          investmentType: "",
+          partnershipType: "",
+        });
+      } else if (opportunity.type === "investment") {
+        form.reset({
+          ...baseData,
+          investmentAmount: details?.investmentAmount || "",
+          investmentType: details?.investmentType || "",
+          employmentType: undefined as any,
+          experienceRequired: "",
+          skills: "",
+          benefits: "",
+          applicationEmail: "",
+          partnershipType: "",
+        });
+      } else if (opportunity.type === "partnership") {
+        form.reset({
+          ...baseData,
+          partnershipType: details?.partnershipType || "",
+          employmentType: undefined as any,
+          experienceRequired: "",
+          skills: "",
+          benefits: "",
+          applicationEmail: "",
+          investmentAmount: "",
+          investmentType: "",
+        });
+      } else {
+        // collaboration or other types
+        form.reset({
+          ...baseData,
+          employmentType: undefined as any,
+          experienceRequired: "",
+          skills: "",
+          benefits: "",
+          applicationEmail: "",
+          investmentAmount: "",
+          investmentType: "",
+          partnershipType: "",
+        });
+      }
     } else {
       form.reset({
         userId: currentUser?.uid || "",
@@ -715,76 +760,97 @@ function OpportunityFormDialog({ open, onClose, opportunity }: OpportunityFormDi
     },
   });
 
-  const handleSubmit = form.handleSubmit((data) => {
-    // Start with existing details to preserve unknown fields (especially for collaboration)
-    const existingDetails = (opportunity?.details as Record<string, any>) || {};
-    const details: Record<string, any> = { ...existingDetails };
-    
-    // Package type-specific fields into details JSON
-    if (data.type === "job") {
-      details.employmentType = data.employmentType;
-      details.experienceRequired = data.experienceRequired;
-      details.skills = data.skills ? data.skills.split(",").map(s => s.trim()).filter(Boolean) : [];
-      details.benefits = data.benefits ? data.benefits.split(",").map(s => s.trim()).filter(Boolean) : [];
-      details.applicationEmail = data.applicationEmail;
+  const handleSubmit = form.handleSubmit(
+    (data) => {
+      console.log("✓ Form validation passed, submitting data:", data);
       
-      // Clean up fields from other types
-      delete details.investmentAmount;
-      delete details.investmentType;
-      delete details.partnershipType;
-    } else if (data.type === "investment") {
-      details.investmentAmount = data.investmentAmount;
-      details.investmentType = data.investmentType;
+      // Start with existing details to preserve unknown fields (especially for collaboration)
+      const existingDetails = (opportunity?.details as Record<string, any>) || {};
+      const details: Record<string, any> = { ...existingDetails };
       
-      // Clean up fields from other types
-      delete details.employmentType;
-      delete details.experienceRequired;
-      delete details.skills;
-      delete details.benefits;
-      delete details.applicationEmail;
-      delete details.partnershipType;
-    } else if (data.type === "partnership") {
-      details.partnershipType = data.partnershipType;
+      // Package type-specific fields into details JSON
+      if (data.type === "job") {
+        details.employmentType = data.employmentType;
+        details.experienceRequired = data.experienceRequired;
+        details.skills = data.skills ? data.skills.split(",").map(s => s.trim()).filter(Boolean) : [];
+        details.benefits = data.benefits ? data.benefits.split(",").map(s => s.trim()).filter(Boolean) : [];
+        details.applicationEmail = data.applicationEmail;
+        
+        // Clean up fields from other types
+        delete details.investmentAmount;
+        delete details.investmentType;
+        delete details.partnershipType;
+      } else if (data.type === "investment") {
+        details.investmentAmount = data.investmentAmount;
+        details.investmentType = data.investmentType;
+        
+        // Clean up fields from other types
+        delete details.employmentType;
+        delete details.experienceRequired;
+        delete details.skills;
+        delete details.benefits;
+        delete details.applicationEmail;
+        delete details.partnershipType;
+      } else if (data.type === "partnership") {
+        details.partnershipType = data.partnershipType;
+        
+        // Clean up fields from other types
+        delete details.employmentType;
+        delete details.experienceRequired;
+        delete details.skills;
+        delete details.benefits;
+        delete details.applicationEmail;
+        delete details.investmentAmount;
+        delete details.investmentType;
+      } else if (data.type === "collaboration") {
+        // For collaboration, preserve any existing unknown fields but clean up known type-specific fields
+        delete details.employmentType;
+        delete details.experienceRequired;
+        delete details.skills;
+        delete details.benefits;
+        delete details.applicationEmail;
+        delete details.investmentAmount;
+        delete details.investmentType;
+        delete details.partnershipType;
+      }
+
+      // Remove the extra fields from the main data object
+      const { 
+        employmentType, 
+        experienceRequired, 
+        skills, 
+        benefits, 
+        applicationEmail,
+        investmentAmount,
+        investmentType,
+        partnershipType,
+        ...opportunityData 
+      } = data;
+
+      const payload = {
+        ...opportunityData,
+        userId: currentUser?.uid || "",
+        details: Object.keys(details).length > 0 ? details : null,
+      };
       
-      // Clean up fields from other types
-      delete details.employmentType;
-      delete details.experienceRequired;
-      delete details.skills;
-      delete details.benefits;
-      delete details.applicationEmail;
-      delete details.investmentAmount;
-      delete details.investmentType;
-    } else if (data.type === "collaboration") {
-      // For collaboration, preserve any existing unknown fields but clean up known type-specific fields
-      delete details.employmentType;
-      delete details.experienceRequired;
-      delete details.skills;
-      delete details.benefits;
-      delete details.applicationEmail;
-      delete details.investmentAmount;
-      delete details.investmentType;
-      delete details.partnershipType;
+      console.log("Sending payload to server:", payload);
+      saveMutation.mutate(payload);
+    },
+    (errors) => {
+      console.error("✗ Form validation failed with errors:", errors);
+      
+      // Show a toast with validation errors
+      const errorMessages = Object.entries(errors)
+        .map(([field, error]: [string, any]) => `${field}: ${error.message}`)
+        .join("\n");
+      
+      toast({
+        title: "Validation Error",
+        description: errorMessages || "Please check the form for errors",
+        variant: "destructive",
+      });
     }
-
-    // Remove the extra fields from the main data object
-    const { 
-      employmentType, 
-      experienceRequired, 
-      skills, 
-      benefits, 
-      applicationEmail,
-      investmentAmount,
-      investmentType,
-      partnershipType,
-      ...opportunityData 
-    } = data;
-
-    saveMutation.mutate({
-      ...opportunityData,
-      userId: currentUser?.uid || "",
-      details: Object.keys(details).length > 0 ? details : null,
-    });
-  });
+  );
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
