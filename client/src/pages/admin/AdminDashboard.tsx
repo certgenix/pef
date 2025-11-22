@@ -256,33 +256,31 @@ export default function AdminDashboard() {
               <p className="text-sm text-muted-foreground">Review membership applications</p>
             </CardContent>
           </Card>
+          <Card 
+            className={`hover-elevate cursor-pointer ${selectedTab === 'all' ? 'ring-2 ring-primary' : ''}`}
+            onClick={() => setSelectedTab('all')} 
+            data-testid="card-view-users"
+          >
+            <CardContent className="p-6">
+              <Users className="w-8 h-8 text-primary mb-2" />
+              <h3 className="font-bold mb-1">All Users ({users.length})</h3>
+              <p className="text-sm text-muted-foreground">View and manage all users</p>
+            </CardContent>
+          </Card>
+          <Card 
+            className={`hover-elevate cursor-pointer ${selectedTab === 'media' ? 'ring-2 ring-primary' : ''}`}
+            onClick={() => setSelectedTab('media')} 
+            data-testid="card-view-media"
+          >
+            <CardContent className="p-6">
+              <Video className="w-8 h-8 text-primary mb-2" />
+              <h3 className="font-bold mb-1">Media ({videos.length})</h3>
+              <p className="text-sm text-muted-foreground">Manage video content</p>
+            </CardContent>
+          </Card>
         </div>
 
         <Tabs value={selectedTab} onValueChange={(value) => setSelectedTab(value as 'all' | 'media')} className="space-y-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-            <Card 
-              className={`hover-elevate cursor-pointer ${selectedTab === 'all' ? 'ring-2 ring-primary' : ''}`}
-              onClick={() => setSelectedTab('all')} 
-              data-testid="card-view-users"
-            >
-              <CardContent className="p-6">
-                <Users className="w-8 h-8 text-primary mb-2" />
-                <h3 className="font-bold mb-1">All Users ({users.length})</h3>
-                <p className="text-sm text-muted-foreground">View and manage all users</p>
-              </CardContent>
-            </Card>
-            <Card 
-              className={`hover-elevate cursor-pointer ${selectedTab === 'media' ? 'ring-2 ring-primary' : ''}`}
-              onClick={() => setSelectedTab('media')} 
-              data-testid="card-view-media"
-            >
-              <CardContent className="p-6">
-                <Video className="w-8 h-8 text-primary mb-2" />
-                <h3 className="font-bold mb-1">Media ({videos.length})</h3>
-                <p className="text-sm text-muted-foreground">Manage video content</p>
-              </CardContent>
-            </Card>
-          </div>
 
           <TabsList className="hidden">
             <TabsTrigger value="all" data-testid="tab-all">
