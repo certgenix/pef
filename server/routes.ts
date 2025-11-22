@@ -499,6 +499,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Admin access required" });
       }
 
+      console.log("📝 Admin creating opportunity - received data:", { 
+        type: req.body.type, 
+        title: req.body.title,
+        status: req.body.status,
+        approvalStatus: req.body.approvalStatus 
+      });
+
       const validationResult = insertOpportunitySchema.safeParse(req.body);
 
       if (!validationResult.success) {
@@ -508,7 +515,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      console.log("✅ Validated data:", {
+        type: validationResult.data.type,
+        title: validationResult.data.title,
+        status: validationResult.data.status,
+        approvalStatus: validationResult.data.approvalStatus
+      });
+
       const opportunity = await storage.createOpportunity(validationResult.data);
+      console.log("🎉 Created opportunity:", {
+        id: opportunity.id,
+        title: opportunity.title,
+        status: opportunity.status,
+        approvalStatus: opportunity.approvalStatus
+      });
       return res.json(opportunity);
     } catch (error) {
       console.error("Admin opportunity creation error:", error);
