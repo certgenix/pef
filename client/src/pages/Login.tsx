@@ -13,7 +13,7 @@ import { SiGoogle } from "react-icons/si";
 
 export default function Login() {
   const [, setLocation] = useLocation();
-  const { login, signInWithGoogle, currentUser, loading: authLoading } = useAuth();
+  const { login, signInWithGoogle, currentUser, userData, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -23,10 +23,14 @@ export default function Login() {
   });
 
   useEffect(() => {
-    if (!authLoading && currentUser) {
-      setLocation("/dashboard");
+    if (!authLoading && currentUser && userData) {
+      if (userData.needsRoleSelection) {
+        setLocation("/role-selection");
+      } else {
+        setLocation("/dashboard");
+      }
     }
-  }, [currentUser, authLoading, setLocation]);
+  }, [currentUser, userData, authLoading, setLocation]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,8 +62,8 @@ export default function Login() {
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
     try {
-      const result = await signInWithGoogle();
-      setLocation("/dashboard");
+      await signInWithGoogle();
+      // Redirect handled by useEffect based on needsRoleSelection
     } catch (error: any) {
       let errorMessage = "Failed to sign in with Google";
       if (error.code === "auth/popup-closed-by-user") {

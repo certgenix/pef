@@ -396,6 +396,9 @@ export class FirestoreStorage implements IStorage {
       "roles.isBusinessOwner": roles.businessOwner || false,
       "roles.isInvestor": roles.investor || false,
       "roles.isAdmin": roles.admin || false,
+      // Mark that role selection is complete
+      needsRoleSelection: false,
+      skipBackendSync: false,
       // Clean up legacy non-prefixed field names if they exist
       "roles.professional": deleteField(),
       "roles.jobSeeker": deleteField(),

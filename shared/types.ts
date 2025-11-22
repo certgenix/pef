@@ -73,6 +73,8 @@ export interface User {
   roles: UserRoles;
   status: UserStatus;
   profileCompleted?: boolean;
+  needsRoleSelection?: boolean;
+  skipBackendSync?: boolean;
   createdAt: Date;
   lastUpdated: Date;
   professionalData?: ProfessionalData;
