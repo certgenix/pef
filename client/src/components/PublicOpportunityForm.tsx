@@ -131,6 +131,21 @@ export default function PublicOpportunityForm() {
         toast({ title: "Valid application email is required for job postings", variant: "destructive" });
         return;
       }
+    } else {
+      if (!formData.contactPreference.trim()) {
+        toast({ title: "Contact information is required", variant: "destructive" });
+        return;
+      }
+      
+      const emailMatch = formData.contactPreference.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+      if (!emailMatch) {
+        toast({ 
+          title: "Email required in contact information", 
+          description: "Please include an email address so interested parties can reach you via the 'Contact Now' button",
+          variant: "destructive" 
+        });
+        return;
+      }
     }
     
     submitMutation.mutate(formData);
