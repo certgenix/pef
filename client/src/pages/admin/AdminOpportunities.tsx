@@ -284,12 +284,23 @@ interface OpportunityFormDialogProps {
   opportunity: Opportunity | null;
 }
 
+// Extended form data for admin to include all fields from public form
+interface AdminOpportunityFormData extends InsertOpportunity {
+  employmentType?: "full-time" | "part-time" | "remote" | "contract";
+  experienceRequired?: string;
+  skills?: string;
+  benefits?: string;
+  applicationEmail?: string;
+  investmentAmount?: string;
+  investmentType?: string;
+  partnershipType?: string;
+}
+
 function OpportunityFormDialog({ open, onClose, opportunity }: OpportunityFormDialogProps) {
   const { toast } = useToast();
   const { currentUser } = useAuth();
 
-  const form = useForm<InsertOpportunity>({
-    resolver: zodResolver(insertOpportunitySchema),
+  const form = useForm<AdminOpportunityFormData>({
     defaultValues: {
       userId: currentUser?.uid || "",
       type: "job",
@@ -303,11 +314,20 @@ function OpportunityFormDialog({ open, onClose, opportunity }: OpportunityFormDi
       details: null,
       status: "open",
       approvalStatus: "approved",
+      employmentType: "full-time",
+      experienceRequired: "",
+      skills: "",
+      benefits: "",
+      applicationEmail: "",
+      investmentAmount: "",
+      investmentType: "",
+      partnershipType: "",
     },
   });
 
   useEffect(() => {
     if (opportunity) {
+      const details = opportunity.details as any;
       form.reset({
         userId: opportunity.userId,
         type: opportunity.type,
@@ -321,6 +341,15 @@ function OpportunityFormDialog({ open, onClose, opportunity }: OpportunityFormDi
         details: opportunity.details as Record<string, unknown> | null,
         status: opportunity.status,
         approvalStatus: opportunity.approvalStatus,
+        // Extract type-specific fields from details
+        employmentType: details?.employmentType || "full-time",
+        experienceRequired: details?.experienceRequired || "",
+        skills: Array.isArray(details?.skills) ? details.skills.join(", ") : (details?.skills || ""),
+        benefits: Array.isArray(details?.benefits) ? details.benefits.join(", ") : (details?.benefits || ""),
+        applicationEmail: details?.applicationEmail || "",
+        investmentAmount: details?.investmentAmount || "",
+        investmentType: details?.investmentType || "",
+        partnershipType: details?.partnershipType || "",
       });
     } else {
       form.reset({
@@ -336,6 +365,14 @@ function OpportunityFormDialog({ open, onClose, opportunity }: OpportunityFormDi
         details: null,
         status: "open",
         approvalStatus: "approved",
+        employmentType: "full-time",
+        experienceRequired: "",
+        skills: "",
+        benefits: "",
+        applicationEmail: "",
+        investmentAmount: "",
+        investmentType: "",
+        partnershipType: "",
       });
     }
   }, [opportunity, currentUser?.uid, form]);
@@ -370,9 +407,39 @@ function OpportunityFormDialog({ open, onClose, opportunity }: OpportunityFormDi
   });
 
   const handleSubmit = form.handleSubmit((data) => {
+    // Package type-specific fields into details JSON
+    const details: Record<string, any> = {};
+    
+    if (data.type === "job") {
+      details.employmentType = data.employmentType;
+      details.experienceRequired = data.experienceRequired;
+      details.skills = data.skills ? data.skills.split(",").map(s => s.trim()).filter(Boolean) : [];
+      details.benefits = data.benefits ? data.benefits.split(",").map(s => s.trim()).filter(Boolean) : [];
+      details.applicationEmail = data.applicationEmail;
+    } else if (data.type === "investment") {
+      details.investmentAmount = data.investmentAmount;
+      details.investmentType = data.investmentType;
+    } else if (data.type === "partnership") {
+      details.partnershipType = data.partnershipType;
+    }
+
+    // Remove the extra fields from the main data object
+    const { 
+      employmentType, 
+      experienceRequired, 
+      skills, 
+      benefits, 
+      applicationEmail,
+      investmentAmount,
+      investmentType,
+      partnershipType,
+      ...opportunityData 
+    } = data;
+
     saveMutation.mutate({
-      ...data,
+      ...opportunityData,
       userId: currentUser?.uid || "",
+      details: Object.keys(details).length > 0 ? details : null,
     });
   });
 
