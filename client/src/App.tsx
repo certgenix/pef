@@ -27,6 +27,7 @@ import InvestorDashboard from "@/pages/dashboards/InvestorDashboard";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
 import AdminLeadership from "@/pages/admin/AdminLeadership";
 import AdminGallery from "@/pages/admin/AdminGallery";
+import AdminOpportunities from "@/pages/admin/AdminOpportunities";
 import AdminMembership from "@/pages/admin/AdminMembership";
 import ProfileComplete from "@/pages/ProfileComplete";
 import ProfileEdit from "@/pages/ProfileEdit";
@@ -74,6 +75,7 @@ function Router() {
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/admin/leadership" component={AdminLeadership} />
       <Route path="/admin/gallery" component={AdminGallery} />
+      <Route path="/admin/opportunities" component={AdminOpportunities} />
       <Route path="/admin/membership" component={AdminMembership} />
       <Route component={NotFound} />
     </Switch>
