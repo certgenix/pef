@@ -285,42 +285,107 @@ interface OpportunityFormDialogProps {
   opportunity: Opportunity | null;
 }
 
-// Extended schema for admin form with all fields from public form
-const adminOpportunitySchema = insertOpportunitySchema.extend({
-  employmentType: z.enum(["full-time", "part-time", "remote", "contract"]).optional(),
-  experienceRequired: z.string().optional(),
-  skills: z.string().optional(),
-  benefits: z.string().optional(),
-  applicationEmail: z.string().optional(),
-  investmentAmount: z.string().optional(),
-  investmentType: z.string().optional(),
-  partnershipType: z.string().optional(),
-}).superRefine((data, ctx) => {
-  // For job opportunities, validate job-specific fields
-  if (data.type === "job") {
-    if (!data.applicationEmail || data.applicationEmail.trim() === "") {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Application email is required for job postings",
-        path: ["applicationEmail"],
-      });
-    } else if (data.applicationEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.applicationEmail)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Please enter a valid email address",
-        path: ["applicationEmail"],
-      });
-    }
-    
-    if (!data.employmentType) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Employment type is required for job postings",
-        path: ["employmentType"],
-      });
-    }
-  }
-});
+// Discriminated union schema with proper validation for each opportunity type
+const adminOpportunitySchema = z.discriminatedUnion("type", [
+  // Job schema - requires employment type and application email
+  z.object({
+    userId: z.string(),
+    title: z.string().trim().min(1, "Title is required"),
+    description: z.string().trim().min(1, "Description is required"),
+    sector: z.string().optional(),
+    country: z.string().optional(),
+    city: z.string().optional(),
+    budgetOrSalary: z.string().optional(),
+    contactPreference: z.string().optional(),
+    details: z.any().optional().nullable(),
+    status: z.enum(["open", "closed"]),
+    approvalStatus: z.enum(["pending", "approved", "rejected"]),
+    type: z.literal("job"),
+    employmentType: z.enum(["full-time", "part-time", "remote", "contract"], {
+      required_error: "Employment type is required for job postings",
+    }),
+    experienceRequired: z.string().optional(),
+    skills: z.string().optional(),
+    benefits: z.string().optional(),
+    applicationEmail: z.string().trim().email("Please enter a valid email address").min(1, "Application email is required for job postings"),
+    // Other type fields (optional for form compatibility)
+    investmentAmount: z.string().optional(),
+    investmentType: z.string().optional(),
+    partnershipType: z.string().optional(),
+  }),
+  // Investment schema - requires investment amount and type
+  z.object({
+    userId: z.string(),
+    title: z.string().trim().min(1, "Title is required"),
+    description: z.string().trim().min(1, "Description is required"),
+    sector: z.string().optional(),
+    country: z.string().optional(),
+    city: z.string().optional(),
+    budgetOrSalary: z.string().optional(),
+    contactPreference: z.string().optional(),
+    details: z.any().optional().nullable(),
+    status: z.enum(["open", "closed"]),
+    approvalStatus: z.enum(["pending", "approved", "rejected"]),
+    type: z.literal("investment"),
+    investmentAmount: z.string().trim().min(1, "Investment amount is required for investment opportunities"),
+    investmentType: z.string().trim().min(1, "Investment type is required for investment opportunities"),
+    // Other type fields (optional for form compatibility)
+    employmentType: z.enum(["full-time", "part-time", "remote", "contract"]).optional(),
+    experienceRequired: z.string().optional(),
+    skills: z.string().optional(),
+    benefits: z.string().optional(),
+    applicationEmail: z.string().optional(),
+    partnershipType: z.string().optional(),
+  }),
+  // Partnership schema - requires partnership type
+  z.object({
+    userId: z.string(),
+    title: z.string().trim().min(1, "Title is required"),
+    description: z.string().trim().min(1, "Description is required"),
+    sector: z.string().optional(),
+    country: z.string().optional(),
+    city: z.string().optional(),
+    budgetOrSalary: z.string().optional(),
+    contactPreference: z.string().optional(),
+    details: z.any().optional().nullable(),
+    status: z.enum(["open", "closed"]),
+    approvalStatus: z.enum(["pending", "approved", "rejected"]),
+    type: z.literal("partnership"),
+    partnershipType: z.string().trim().min(1, "Partnership type is required for partnership opportunities"),
+    // Other type fields (optional for form compatibility)
+    employmentType: z.enum(["full-time", "part-time", "remote", "contract"]).optional(),
+    experienceRequired: z.string().optional(),
+    skills: z.string().optional(),
+    benefits: z.string().optional(),
+    applicationEmail: z.string().optional(),
+    investmentAmount: z.string().optional(),
+    investmentType: z.string().optional(),
+  }),
+  // Collaboration schema - no specific fields required beyond base fields
+  z.object({
+    userId: z.string(),
+    title: z.string().trim().min(1, "Title is required"),
+    description: z.string().trim().min(1, "Description is required"),
+    sector: z.string().optional(),
+    country: z.string().optional(),
+    city: z.string().optional(),
+    budgetOrSalary: z.string().optional(),
+    contactPreference: z.string().optional(),
+    details: z.any().optional().nullable(),
+    status: z.enum(["open", "closed"]),
+    approvalStatus: z.enum(["pending", "approved", "rejected"]),
+    type: z.literal("collaboration"),
+    // Other type fields (optional for form compatibility)
+    employmentType: z.enum(["full-time", "part-time", "remote", "contract"]).optional(),
+    experienceRequired: z.string().optional(),
+    skills: z.string().optional(),
+    benefits: z.string().optional(),
+    applicationEmail: z.string().optional(),
+    investmentAmount: z.string().optional(),
+    investmentType: z.string().optional(),
+    partnershipType: z.string().optional(),
+  }),
+]);
 
 type AdminOpportunityFormData = z.infer<typeof adminOpportunitySchema>;
 
@@ -436,20 +501,54 @@ function OpportunityFormDialog({ open, onClose, opportunity }: OpportunityFormDi
   });
 
   const handleSubmit = form.handleSubmit((data) => {
-    // Package type-specific fields into details JSON
-    const details: Record<string, any> = {};
+    // Start with existing details to preserve unknown fields (especially for collaboration)
+    const existingDetails = (opportunity?.details as Record<string, any>) || {};
+    const details: Record<string, any> = { ...existingDetails };
     
+    // Package type-specific fields into details JSON
     if (data.type === "job") {
       details.employmentType = data.employmentType;
       details.experienceRequired = data.experienceRequired;
       details.skills = data.skills ? data.skills.split(",").map(s => s.trim()).filter(Boolean) : [];
       details.benefits = data.benefits ? data.benefits.split(",").map(s => s.trim()).filter(Boolean) : [];
       details.applicationEmail = data.applicationEmail;
+      
+      // Clean up fields from other types
+      delete details.investmentAmount;
+      delete details.investmentType;
+      delete details.partnershipType;
     } else if (data.type === "investment") {
       details.investmentAmount = data.investmentAmount;
       details.investmentType = data.investmentType;
+      
+      // Clean up fields from other types
+      delete details.employmentType;
+      delete details.experienceRequired;
+      delete details.skills;
+      delete details.benefits;
+      delete details.applicationEmail;
+      delete details.partnershipType;
     } else if (data.type === "partnership") {
       details.partnershipType = data.partnershipType;
+      
+      // Clean up fields from other types
+      delete details.employmentType;
+      delete details.experienceRequired;
+      delete details.skills;
+      delete details.benefits;
+      delete details.applicationEmail;
+      delete details.investmentAmount;
+      delete details.investmentType;
+    } else if (data.type === "collaboration") {
+      // For collaboration, preserve any existing unknown fields but clean up known type-specific fields
+      delete details.employmentType;
+      delete details.experienceRequired;
+      delete details.skills;
+      delete details.benefits;
+      delete details.applicationEmail;
+      delete details.investmentAmount;
+      delete details.investmentType;
+      delete details.partnershipType;
     }
 
     // Remove the extra fields from the main data object
