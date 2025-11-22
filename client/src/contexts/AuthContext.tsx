@@ -374,6 +374,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error(emailCheck.message || "This email is already registered. Please log in with your existing account.");
       }
       
+      // Check if this is an admin email
+      const isAdminEmail = normalizedEmail === "admin@pef.com" || normalizedEmail === "administrator@pef.com";
+      
       let preRegistrationData: any = null;
       let userStatus = "pending";
       
@@ -406,6 +409,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           isEmployer: false,
           isBusinessOwner: false,
           isInvestor: false,
+          isAdmin: isAdminEmail,
+          admin: isAdminEmail,
         },
         professionalData: {},
         jobSeekerData: {},
@@ -415,8 +420,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         registrationSource: "google",
         preRegistered: preRegistrationData !== null,
         preRegisteredAt: preRegistrationData?.createdAt || null,
-        needsRoleSelection: true,
-        skipBackendSync: true,
+        needsRoleSelection: !isAdminEmail, // Admins don't need role selection
+        skipBackendSync: !isAdminEmail, // Don't skip backend sync for admins
       };
 
       await setDoc(doc(db, "users", user.uid), minimalUserData);

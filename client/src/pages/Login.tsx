@@ -24,7 +24,12 @@ export default function Login() {
 
   useEffect(() => {
     if (!authLoading && currentUser && userData) {
-      if (userData.needsRoleSelection) {
+      // Check if user is admin first - admins always go to dashboard
+      const isAdmin = userData.roles?.admin || false;
+      
+      if (isAdmin) {
+        setLocation("/dashboard");
+      } else if (userData.needsRoleSelection) {
         setLocation("/role-selection");
       } else {
         setLocation("/dashboard");
