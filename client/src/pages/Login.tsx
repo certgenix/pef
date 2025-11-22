@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Loader2 } from "lucide-react";
 import { SiGoogle } from "react-icons/si";
 
 export default function Login() {
@@ -17,6 +17,7 @@ export default function Login() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
   const [credentials, setCredentials] = useState({
     email: "",
     password: "",
@@ -24,6 +25,9 @@ export default function Login() {
 
   useEffect(() => {
     if (!authLoading && currentUser && userData) {
+      // Set redirecting state to show loading UI
+      setRedirecting(true);
+      
       // Check if user is admin first - admins always go to dashboard
       const isAdmin = userData.roles?.admin || false;
       
@@ -88,6 +92,22 @@ export default function Login() {
       setGoogleLoading(false);
     }
   };
+
+  // Show loading state when redirecting (without Header to prevent showing authenticated state)
+  if (redirecting) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Card className="border-2 w-full max-w-md mx-4">
+          <CardContent className="pt-6 pb-6">
+            <div className="flex flex-col items-center justify-center gap-4 py-8">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              <p className="text-lg font-medium">Redirecting to your dashboard...</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen">

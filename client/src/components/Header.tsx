@@ -125,7 +125,7 @@ export default function Header() {
             </DropdownMenu>
 
             {currentUser && (
-              <Link href={userData?.roles?.admin ? "/admin" : "/dashboard"}>
+              <Link href="/dashboard">
                 <Button
                   variant="ghost"
                   className="text-white hover:bg-white/10"
