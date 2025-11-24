@@ -559,33 +559,39 @@ export default function AdminDashboard() {
                   </TabsTrigger>
                 </TabsList>
                 
-                {selectedUsers.size > 0 && (
-                  <div className="flex gap-2">
-                    <span className="text-sm text-muted-foreground self-center">
-                      {selectedUsers.size} selected
-                    </span>
-                    <Button
-                      size="sm"
-                      variant="default"
-                      onClick={handleBulkApprove}
-                      disabled={bulkApproveUsersMutation.isPending}
-                      data-testid="button-bulk-approve"
-                    >
-                      <CheckCircle2 className="w-4 h-4 mr-1" />
-                      {bulkApproveUsersMutation.isPending ? "Approving..." : "Approve Selected"}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={handleBulkReject}
-                      disabled={bulkRejectUsersMutation.isPending}
-                      data-testid="button-bulk-reject"
-                    >
-                      <XCircle className="w-4 h-4 mr-1" />
-                      {bulkRejectUsersMutation.isPending ? "Rejecting..." : "Reject Selected"}
-                    </Button>
-                  </div>
-                )}
+                {selectedUsers.size > 0 && (() => {
+                  const selectedUsersData = users.filter(u => selectedUsers.has(u.uid));
+                  const allApproved = selectedUsersData.every(u => u.status === 'approved');
+                  const allRejected = selectedUsersData.every(u => u.status === 'rejected');
+                  
+                  return (
+                    <div className="flex gap-2">
+                      <span className="text-sm text-muted-foreground self-center">
+                        {selectedUsers.size} selected
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="default"
+                        onClick={handleBulkApprove}
+                        disabled={bulkApproveUsersMutation.isPending || allApproved}
+                        data-testid="button-bulk-approve"
+                      >
+                        <CheckCircle2 className="w-4 h-4 mr-1" />
+                        {bulkApproveUsersMutation.isPending ? "Approving..." : "Approve Selected"}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={handleBulkReject}
+                        disabled={bulkRejectUsersMutation.isPending || allRejected}
+                        data-testid="button-bulk-reject"
+                      >
+                        <XCircle className="w-4 h-4 mr-1" />
+                        {bulkRejectUsersMutation.isPending ? "Rejecting..." : "Reject Selected"}
+                      </Button>
+                    </div>
+                  );
+                })()}
               </div>
 
               <TabsContent value="all">
@@ -883,7 +889,16 @@ function UsersTable({
             {users.map((user) => (
               <tr
                 key={user.uid}
-                className="border-b last:border-0 hover-elevate"
+                onClick={() => onSelectUser(user.uid)}
+                className="border-b last:border-0 hover-elevate cursor-pointer"
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onSelectUser(user.uid);
+                  }
+                }}
                 data-testid={`row-user-${user.uid}`}
               >
                 <td className="p-4" onClick={(e) => e.stopPropagation()}>
@@ -894,7 +909,13 @@ function UsersTable({
                     aria-label={`Select ${user.name}`}
                   />
                 </td>
-                <td className="p-4 cursor-pointer" onClick={() => onUserClick(user)}>
+                <td 
+                  className="p-4 cursor-pointer" 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onUserClick(user);
+                  }}
+                >
                   <div className="font-medium" data-testid={`text-user-name-${user.uid}`}>
                     {user.name}
                   </div>
