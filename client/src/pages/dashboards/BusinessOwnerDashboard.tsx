@@ -73,11 +73,11 @@ export default function BusinessOwnerDashboard() {
 
   // Fetch user's posted opportunities
   const { data: myOpportunities = [] } = useQuery<Opportunity[]>({
-    queryKey: ["/api/opportunities", "mine"],
+    queryKey: ["/api/opportunities", "mine", currentUser?.uid],
     enabled: !!currentUser && hasRole("businessOwner"),
     queryFn: async () => {
       if (!currentUser) return [];
-      const token = await currentUser.getIdToken();
+      const token = await currentUser.getIdToken(true);
       const response = await fetch("/api/opportunities?myOpportunities=true", {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -90,8 +90,39 @@ export default function BusinessOwnerDashboard() {
 
   // Fetch registered investors
   const { data: investors = [], isLoading: investorsLoading } = useQuery<InvestorProfile[]>({
-    queryKey: ["/api/investors"],
+    queryKey: ["/api/investors", currentUser?.uid],
+    queryFn: async () => {
+      if (!currentUser) throw new Error("Not authenticated");
+      const token = await currentUser.getIdToken(true);
+      const response = await fetch("/api/investors", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!response.ok) throw new Error("Failed to fetch investors");
+      return response.json();
+    },
     enabled: !!currentUser && hasRole("businessOwner"),
+  });
+
+  // Fetch available investment opportunities posted by others
+  const { data: investmentOpportunities = [], isLoading: investmentsLoading } = useQuery<Opportunity[]>({
+    queryKey: ["/api/opportunities", "investment", currentUser?.uid],
+    enabled: !!currentUser && hasRole("businessOwner"),
+    queryFn: async () => {
+      if (!currentUser) throw new Error("Not authenticated");
+      const token = await currentUser.getIdToken(true);
+      const params = new URLSearchParams({ type: "investment" });
+      const response = await fetch(`/api/opportunities?${params}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!response.ok) throw new Error("Failed to fetch investment opportunities");
+      const data = await response.json();
+      // Filter out user's own opportunities
+      return data.filter((opp: Opportunity) => opp.userId !== currentUser.uid);
+    },
   });
 
   // Mutation to toggle opportunity status (open/closed)
@@ -103,7 +134,7 @@ export default function BusinessOwnerDashboard() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/opportunities"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/opportunities"], exact: false });
       toast({
         title: "Success!",
         description: "Opportunity status updated successfully.",
@@ -127,7 +158,7 @@ export default function BusinessOwnerDashboard() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/opportunities"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/opportunities"], exact: false });
       toast({
         title: "Success!",
         description: "Opportunity deleted successfully.",
@@ -476,26 +507,82 @@ export default function BusinessOwnerDashboard() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Partnership Opportunities</CardTitle>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <CardTitle>Investment Opportunities</CardTitle>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setLocation("/opportunities")}
+                    data-testid="button-view-all-investments"
+                  >
+                    View All
+                  </Button>
+                </div>
+                <CardDescription>Explore investment opportunities from other business owners</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                {[
-                  { company: "SolarPower Co", type: "Technology Partnership", region: "GCC", date: "2 days ago" },
-                  { company: "Clean Energy Ltd", type: "Distribution Partnership", region: "Middle East", date: "1 week ago" },
-                  { company: "EcoSolutions Inc", type: "Joint Venture", region: "International", date: "2 weeks ago" },
-                ].map((opp, idx) => (
-                  <div key={idx} className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-md border">
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium">{opp.company}</p>
-                      <p className="text-sm text-muted-foreground">{opp.type}</p>
-                      <p className="text-xs text-muted-foreground">{opp.region}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-muted-foreground">{opp.date}</span>
-                      <Button size="sm" data-testid={`button-view-partnership-${idx}`}>View</Button>
-                    </div>
+                {investmentsLoading ? (
+                  <div className="text-center py-8">
+                    <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground">Loading investment opportunities...</p>
                   </div>
-                ))}
+                ) : investmentOpportunities.length === 0 ? (
+                  <div className="text-center py-8">
+                    <DollarSign className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                    <p className="text-muted-foreground mb-2">No investment opportunities available</p>
+                    <p className="text-sm text-muted-foreground">Check back soon for new opportunities</p>
+                  </div>
+                ) : (
+                  investmentOpportunities.slice(0, 5).map((opp) => (
+                    <div 
+                      key={opp.id} 
+                      className="p-4 rounded-md border hover-elevate"
+                      data-testid={`card-investment-${opp.id}`}
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold mb-1">{opp.title}</h3>
+                          {opp.sector && (
+                            <p className="text-sm text-muted-foreground mb-1">{opp.sector}</p>
+                          )}
+                        </div>
+                        <Badge variant="secondary" data-testid={`badge-status-${opp.id}`}>
+                          {opp.status === "open" ? "Open" : "Closed"}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+                        {opp.description}
+                      </p>
+                      <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                        <div className="flex flex-wrap gap-3 text-muted-foreground">
+                          {(opp.city || opp.country) && (
+                            <div className="flex items-center gap-1">
+                              <MapPin className="w-3 h-3" />
+                              {[opp.city, opp.country].filter(Boolean).join(", ")}
+                            </div>
+                          )}
+                          {opp.budgetOrSalary && (
+                            <div className="flex items-center gap-1">
+                              <DollarSign className="w-3 h-3" />
+                              {opp.budgetOrSalary}
+                            </div>
+                          )}
+                          <div className="flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
+                            {format(new Date(opp.createdAt), "MMM d, yyyy")}
+                          </div>
+                        </div>
+                        <Button 
+                          size="sm" 
+                          onClick={() => setLocation(`/opportunities/${opp.id}`)}
+                          data-testid={`button-view-investment-${opp.id}`}
+                        >
+                          View Details
+                        </Button>
+                      </div>
+                    </div>
+                  ))
+                )}
               </CardContent>
             </Card>
           </div>

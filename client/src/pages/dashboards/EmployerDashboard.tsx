@@ -35,9 +35,9 @@ export default function EmployerDashboard() {
   const queryClient = useQueryClient();
 
   const { data: myJobs = [], isLoading: jobsLoading } = useQuery<Opportunity[]>({
-    queryKey: ["/api/opportunities", "my-jobs"],
+    queryKey: ["/api/opportunities", "my-jobs", currentUser?.uid],
     queryFn: async () => {
-      const token = await auth.currentUser?.getIdToken();
+      const token = await auth.currentUser?.getIdToken(true);
       const response = await fetch("/api/opportunities?myOpportunities=true&type=job", {
         headers: {
           Authorization: `Bearer ${token}`,

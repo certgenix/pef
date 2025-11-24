@@ -20,8 +20,19 @@ export default function ProfessionalDashboard() {
   const isLoading = authLoading || rolesLoading;
 
   const { data: opportunities = [], isLoading: opportunitiesLoading } = useQuery<Opportunity[]>({
-    queryKey: ["/api/opportunities"],
-    enabled: !isLoading && hasRole("professional"),
+    queryKey: ["/api/opportunities", currentUser?.uid],
+    queryFn: async () => {
+      if (!currentUser) throw new Error("Not authenticated");
+      const token = await currentUser.getIdToken(true);
+      const response = await fetch("/api/opportunities", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!response.ok) throw new Error("Failed to fetch opportunities");
+      return response.json();
+    },
+    enabled: !isLoading && hasRole("professional") && !!currentUser,
   });
 
   // ✅ FIX: Show loading spinner while Firestore is fetching data
@@ -63,10 +74,64 @@ export default function ProfessionalDashboard() {
   const currentEmployer = professionalData.experience || "Independent Professional";
   const skills = professionalData.skills || [];
   const certifications = professionalData.certifications || [];
+  const industry = professionalData.industry || "";
 
-  const relevantOpportunities = opportunities.filter(opp => 
-    opp.status === "open" && opp.approvalStatus === "approved"
-  ).slice(0, 5);
+  // Helper to safely extract skills from opportunity details
+  const getOpportunitySkills = (opp: Opportunity): string[] => {
+    if (!opp.details || typeof opp.details !== 'object') return [];
+    const details = opp.details as Record<string, unknown>;
+    if (!Array.isArray(details.skills)) return [];
+    return details.skills.filter((skill): skill is string => typeof skill === 'string');
+  };
+
+  // Helper to calculate skill match score
+  const calculateMatchScore = (opp: Opportunity) => {
+    let score = 0;
+    
+    // Match by skills
+    if (skills.length > 0) {
+      const oppSkills = getOpportunitySkills(opp);
+      if (oppSkills.length > 0) {
+        const matchedSkills = skills.filter((skill: string) => 
+          oppSkills.some((oppSkill: string) => 
+            oppSkill.toLowerCase().includes(skill.toLowerCase()) ||
+            skill.toLowerCase().includes(oppSkill.toLowerCase())
+          )
+        );
+        score += matchedSkills.length * 3;
+      }
+    }
+    
+    // Match by sector/industry
+    if (industry && opp.sector) {
+      if (opp.sector.toLowerCase().includes(industry.toLowerCase()) ||
+          industry.toLowerCase().includes(opp.sector.toLowerCase())) {
+        score += 2;
+      }
+    }
+    
+    return score;
+  };
+
+  // Get matching skills for an opportunity
+  const getMatchingSkills = (opp: Opportunity): string[] => {
+    if (!skills.length) return [];
+    const oppSkills = getOpportunitySkills(opp);
+    if (oppSkills.length === 0) return [];
+    
+    return skills.filter((skill: string) => 
+      oppSkills.some((oppSkill: string) => 
+        oppSkill.toLowerCase().includes(skill.toLowerCase()) ||
+        skill.toLowerCase().includes(oppSkill.toLowerCase())
+      )
+    );
+  };
+
+  const relevantOpportunities = opportunities
+    .filter(opp => opp.status === "open" && opp.approvalStatus === "approved")
+    .map(opp => ({ ...opp, matchScore: calculateMatchScore(opp) }))
+    .sort((a, b) => b.matchScore - a.matchScore)
+    .slice(0, 6);
 
   const profileCompleteness = () => {
     let score = 0;
@@ -256,35 +321,70 @@ export default function ProfessionalDashboard() {
                     </Button>
                   </div>
                 ) : (
-                  relevantOpportunities.map((opp) => (
-                    <div 
-                      key={opp.id} 
-                      className="flex flex-wrap items-center justify-between gap-4 p-3 rounded-md border hover-elevate"
-                      data-testid={`card-opportunity-${opp.id}`}
-                    >
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium">{opp.title}</p>
-                        <p className="text-sm text-muted-foreground">{opp.sector || "Various Sectors"}</p>
-                        {(opp.city || opp.country) && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {[opp.city, opp.country].filter(Boolean).join(", ")}
-                          </p>
+                  relevantOpportunities.map((opp) => {
+                    const matchingSkills = getMatchingSkills(opp);
+                    const hasMatch = matchingSkills.length > 0 || 
+                                     (industry && opp.sector && 
+                                      (opp.sector.toLowerCase().includes(industry.toLowerCase()) ||
+                                       industry.toLowerCase().includes(opp.sector.toLowerCase())));
+                    
+                    return (
+                      <div 
+                        key={opp.id} 
+                        className={`p-4 rounded-md border hover-elevate ${hasMatch ? 'border-primary/30 bg-primary/5' : ''}`}
+                        data-testid={`card-opportunity-${opp.id}`}
+                      >
+                        <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <p className="font-medium">{opp.title}</p>
+                              {hasMatch && (
+                                <Badge variant="default" className="text-xs" data-testid={`badge-match-${opp.id}`}>
+                                  Match
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-sm text-muted-foreground">{opp.sector || "Various Sectors"}</p>
+                          </div>
+                          <Badge variant="secondary" data-testid={`badge-type-${opp.id}`}>
+                            {opp.type.charAt(0).toUpperCase() + opp.type.slice(1)}
+                          </Badge>
+                        </div>
+                        
+                        {matchingSkills.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mb-2">
+                            {matchingSkills.slice(0, 3).map((skill, idx) => (
+                              <Badge key={idx} variant="outline" className="text-xs" data-testid={`badge-matched-skill-${opp.id}-${idx}`}>
+                                {skill}
+                              </Badge>
+                            ))}
+                            {matchingSkills.length > 3 && (
+                              <Badge variant="outline" className="text-xs">
+                                +{matchingSkills.length - 3} more
+                              </Badge>
+                            )}
+                          </div>
                         )}
-                      </div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Badge variant="secondary" data-testid={`badge-type-${opp.id}`}>
-                          {opp.type.charAt(0).toUpperCase() + opp.type.slice(1)}
-                        </Badge>
+                        
+                        <div className="flex flex-wrap gap-2 text-xs text-muted-foreground mb-3">
+                          {(opp.city || opp.country) && (
+                            <span>{[opp.city, opp.country].filter(Boolean).join(", ")}</span>
+                          )}
+                          <span>•</span>
+                          <span>{format(new Date(opp.createdAt), "MMM d, yyyy")}</span>
+                        </div>
+                        
                         <Button 
                           size="sm" 
-                          onClick={() => setLocation("/opportunities")}
+                          variant={hasMatch ? "default" : "outline"}
+                          onClick={() => setLocation(`/opportunities/${opp.id}`)}
                           data-testid={`button-view-opportunity-${opp.id}`}
                         >
-                          View All
+                          View Details
                         </Button>
                       </div>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </CardContent>
             </Card>

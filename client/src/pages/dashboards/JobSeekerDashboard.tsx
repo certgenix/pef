@@ -14,6 +14,17 @@ import type { Opportunity, Application } from "@shared/schema";
 import { format } from "date-fns";
 import { useState } from "react";
 
+type JobDetails = {
+  employmentType?: string;
+  salaryMin?: number;
+  salaryMax?: number;
+  salaryCurrency?: string;
+  experienceRequired?: string;
+  skills?: string[];
+  benefits?: string[];
+  applicationEmail?: string;
+};
+
 type ApplicationWithOpportunity = Application & { opportunity: Opportunity };
 
 export default function JobSeekerDashboard() {
@@ -26,19 +37,36 @@ export default function JobSeekerDashboard() {
   const isLoading = authLoading || rolesLoading;
 
   const { data: opportunities = [], isLoading: opportunitiesLoading } = useQuery<Opportunity[]>({
-    queryKey: ["/api/opportunities"],
+    queryKey: ["/api/opportunities", "job", currentUser?.uid],
     queryFn: async () => {
+      if (!currentUser) throw new Error("Not authenticated");
+      const token = await currentUser.getIdToken(true);
       const params = new URLSearchParams({ type: "job" });
-      const response = await fetch(`/api/opportunities?${params}`);
+      const response = await fetch(`/api/opportunities?${params}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       if (!response.ok) throw new Error("Failed to fetch opportunities");
       return response.json();
     },
-    enabled: !isLoading && hasRole("jobSeeker"),
+    enabled: !isLoading && hasRole("jobSeeker") && !!currentUser,
   });
 
   const { data: applications = [], isLoading: applicationsLoading } = useQuery<ApplicationWithOpportunity[]>({
-    queryKey: ["/api/applications/me"],
-    enabled: !isLoading && hasRole("jobSeeker"),
+    queryKey: ["/api/applications/me", currentUser?.uid],
+    queryFn: async () => {
+      if (!currentUser) throw new Error("Not authenticated");
+      const token = await currentUser.getIdToken(true);
+      const response = await fetch("/api/applications/me", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!response.ok) throw new Error("Failed to fetch applications");
+      return response.json();
+    },
+    enabled: !isLoading && hasRole("jobSeeker") && !!currentUser,
   });
 
   const applyMutation = useMutation({
@@ -49,7 +77,7 @@ export default function JobSeekerDashboard() {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/applications/me"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/applications"], exact: false });
       toast({
         title: "Success",
         description: "Your application has been submitted!",
@@ -109,7 +137,7 @@ export default function JobSeekerDashboard() {
       opp.description.toLowerCase().includes(query) ||
       (opp.country && opp.country.toLowerCase().includes(query)) ||
       (opp.city && opp.city.toLowerCase().includes(query)) ||
-      (opp.companyName && opp.companyName.toLowerCase().includes(query))
+      (opp.sector && opp.sector.toLowerCase().includes(query))
     );
   });
 
@@ -267,6 +295,8 @@ export default function JobSeekerDashboard() {
                   filteredOpportunities.slice(0, 6).map((job) => {
                     const application = applicationMap.get(job.id);
                     const hasApplied = !!application;
+                    // Safe type guard for details
+                    const details = (job.details && typeof job.details === 'object') ? job.details as JobDetails : null;
 
                     return (
                       <div
@@ -277,7 +307,7 @@ export default function JobSeekerDashboard() {
                         <div className="flex flex-wrap items-start justify-between gap-2 mb-3">
                           <div className="flex-1 min-w-0">
                             <h3 className="font-semibold text-lg mb-1">{job.title}</h3>
-                            <p className="text-muted-foreground mb-2">{job.companyName}</p>
+                            {job.sector && <p className="text-muted-foreground mb-2">{job.sector}</p>}
                           </div>
                           {hasApplied && (
                             <Badge
@@ -298,18 +328,18 @@ export default function JobSeekerDashboard() {
                               {[job.city, job.country].filter(Boolean).join(", ")}
                             </div>
                           )}
-                          {job.details?.employmentType && (
+                          {details?.employmentType && (
                             <div className="flex items-center gap-1">
                               <Briefcase className="w-4 h-4" />
-                              {job.details.employmentType}
+                              {details.employmentType}
                             </div>
                           )}
-                          {job.details?.salaryMin && job.details?.salaryMax && (
+                          {details?.salaryMin && details?.salaryMax && (
                             <div className="flex items-center gap-1">
                               <DollarSign className="w-4 h-4" />
-                              {job.details.salaryCurrency || "$"}
-                              {job.details.salaryMin.toLocaleString()} -{" "}
-                              {job.details.salaryMax.toLocaleString()}
+                              {details.salaryCurrency || "$"}
+                              {details.salaryMin.toLocaleString()} -{" "}
+                              {details.salaryMax.toLocaleString()}
                             </div>
                           )}
                           <div className="flex items-center gap-1">
@@ -377,7 +407,7 @@ export default function JobSeekerDashboard() {
                       <div className="flex-1 min-w-0">
                         <p className="font-medium">{app.opportunity.title}</p>
                         <p className="text-sm text-muted-foreground">
-                          {app.opportunity.companyName}
+                          {app.opportunity.sector || "Job Opportunity"}
                         </p>
                       </div>
                       <div className="flex items-center gap-2">

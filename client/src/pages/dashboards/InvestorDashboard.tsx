@@ -99,7 +99,18 @@ export default function InvestorDashboard() {
 
   // Fetch investment opportunities
   const { data: opportunities = [], isLoading: opportunitiesLoading } = useQuery<Opportunity[]>({
-    queryKey: ["/api/opportunities"],
+    queryKey: ["/api/opportunities", currentUser?.uid],
+    queryFn: async () => {
+      if (!currentUser) throw new Error("Not authenticated");
+      const token = await currentUser.getIdToken(true);
+      const response = await fetch("/api/opportunities", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!response.ok) throw new Error("Failed to fetch opportunities");
+      return response.json();
+    },
     enabled: !!currentUser && hasRole("investor"),
   });
 
@@ -110,7 +121,18 @@ export default function InvestorDashboard() {
 
   // Fetch business owners
   const { data: businessOwners = [], isLoading: businessOwnersLoading } = useQuery<BusinessOwnerProfile[]>({
-    queryKey: ["/api/business-owners"],
+    queryKey: ["/api/business-owners", currentUser?.uid],
+    queryFn: async () => {
+      if (!currentUser) throw new Error("Not authenticated");
+      const token = await currentUser.getIdToken(true);
+      const response = await fetch("/api/business-owners", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!response.ok) throw new Error("Failed to fetch business owners");
+      return response.json();
+    },
     enabled: !!currentUser && hasRole("investor"),
   });
 
