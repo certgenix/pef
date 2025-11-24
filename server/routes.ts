@@ -1021,6 +1021,194 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/admin/users/download-csv", async (req, res) => {
+    try {
+      if (!process.env.FIREBASE_ADMIN_SERVICE_ACCOUNT) {
+        return res.status(503).json({ 
+          error: "Service unavailable", 
+          message: "Firebase Admin SDK must be configured for secure admin exports" 
+        });
+      }
+
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const token = authHeader.substring(7);
+      const uid = await verifyAuthToken(token);
+
+      const userWithRoles = await storage.getUserWithRoles(uid);
+      if (!userWithRoles || !userWithRoles.roles?.admin) {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      const users = await storage.getAllUsers();
+
+      const escapeCSV = (value: any): string => {
+        if (value === null || value === undefined) return "";
+        
+        let str: string;
+        let isArray = false;
+        
+        if (Array.isArray(value)) {
+          str = value.map(item => String(item)).join("; ");
+          isArray = true;
+        } else {
+          str = String(value);
+        }
+        
+        const needsQuoting = isArray || str.includes(",") || str.includes('"') || str.includes("\n") || str.includes("\r");
+        
+        if (needsQuoting) {
+          return `"${str.replace(/"/g, '""')}"`;
+        }
+        return str;
+      };
+
+      const csvHeaders = [
+        "User ID",
+        "Email",
+        "Display Name",
+        "Approval Status",
+        "Created At",
+        "Last Login",
+        "Pre-Registered",
+        "Registration Source",
+        "Full Name",
+        "Phone",
+        "Country",
+        "City",
+        "Languages",
+        "Headline",
+        "Bio",
+        "LinkedIn URL",
+        "Website URL",
+        "Portfolio URL",
+        "Is Professional",
+        "Is Job Seeker",
+        "Is Employer",
+        "Is Business Owner",
+        "Is Investor",
+        "Is Admin",
+        "Years of Experience",
+        "Industry",
+        "Skills",
+        "Certifications",
+        "Current Job Title",
+        "Current Employer",
+        "Target Job Titles",
+        "Preferred Industries",
+        "Employment Type",
+        "Salary Expectation Min",
+        "Salary Expectation Max",
+        "Availability",
+        "Willing to Relocate",
+        "Target Countries",
+        "Company Name",
+        "Employer Industry",
+        "Business Name",
+        "Business Industry",
+        "Company Size",
+        "Years in Operation",
+        "Business Country",
+        "Business City",
+        "Looking For",
+        "Revenue Range",
+        "Capital Required",
+        "Expansion Countries",
+        "Investment Range Min",
+        "Investment Range Max",
+        "Preferred Sectors",
+        "Preferred Investment Countries",
+        "Investment Stage",
+        "Investment Type",
+        "Investment Thesis",
+        "Contact Preference"
+      ];
+
+      const csvRows = users.map(user => {
+        const profile = user.profile || {};
+        const roles = user.roles || {};
+        const professionalData = user.professionalData || {};
+        const jobSeekerData = user.jobSeekerData || {};
+        const employerData = user.employerData || {};
+        const businessOwnerData = user.businessOwnerData || {};
+        const investorData = user.investorData || {};
+
+        return [
+          user.uid,
+          user.email,
+          user.displayName,
+          user.approvalStatus,
+          user.createdAt ? new Date(user.createdAt).toISOString() : "",
+          user.lastLogin ? new Date(user.lastLogin).toISOString() : "",
+          user.preRegistered,
+          user.registrationSource,
+          profile.fullName,
+          profile.phone,
+          profile.country,
+          profile.city,
+          profile.languages,
+          profile.headline,
+          profile.bio,
+          profile.linkedinUrl,
+          profile.websiteUrl,
+          profile.portfolioUrl,
+          roles.isProfessional || roles.professional,
+          roles.isJobSeeker || roles.jobSeeker,
+          roles.isEmployer || roles.employer,
+          roles.isBusinessOwner || roles.businessOwner,
+          roles.isInvestor || roles.investor,
+          roles.isAdmin || roles.admin,
+          professionalData.yearsOfExperience,
+          professionalData.industry,
+          professionalData.skills,
+          professionalData.certifications,
+          professionalData.currentJobTitle,
+          professionalData.currentEmployer,
+          jobSeekerData.targetJobTitles,
+          jobSeekerData.preferredIndustries,
+          jobSeekerData.employmentType,
+          jobSeekerData.salaryExpectationMin,
+          jobSeekerData.salaryExpectationMax,
+          jobSeekerData.availability,
+          jobSeekerData.willingToRelocate,
+          jobSeekerData.targetCountries,
+          employerData.companyName,
+          employerData.industry,
+          businessOwnerData.businessName,
+          businessOwnerData.industry,
+          businessOwnerData.companySize,
+          businessOwnerData.yearsInOperation,
+          businessOwnerData.country,
+          businessOwnerData.city,
+          businessOwnerData.lookingFor,
+          businessOwnerData.revenueRange,
+          businessOwnerData.capitalRequired,
+          businessOwnerData.expansionCountries,
+          investorData.investmentRangeMin,
+          investorData.investmentRangeMax,
+          investorData.preferredSectors,
+          investorData.preferredCountries,
+          investorData.investmentStage,
+          investorData.investmentType,
+          investorData.investmentThesis,
+          investorData.contactPreference
+        ].map(escapeCSV).join(",");
+      });
+
+      const csv = [csvHeaders.join(","), ...csvRows].join("\n");
+
+      res.setHeader("Content-Type", "text/csv");
+      res.setHeader("Content-Disposition", `attachment; filename="users-export-${new Date().toISOString().split('T')[0]}.csv"`);
+      return res.send(csv);
+    } catch (error) {
+      console.error("CSV export error:", error);
+      return res.status(500).json({ error: "Failed to export users" });
+    }
+  });
+
   app.post("/api/admin/users/:userId/status", async (req, res) => {
     try {
       const authHeader = req.headers.authorization;

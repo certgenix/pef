@@ -29,6 +29,7 @@ import {
   Pencil,
   Trash2,
   Star,
+  Download,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { auth } from "@/lib/firebase";
@@ -212,6 +213,57 @@ export default function AdminDashboard() {
   const handleBulkHide = () => {
     if (selectedVideos.size === 0) return;
     bulkUpdateVideosMutation.mutate({ videoIds: Array.from(selectedVideos), visible: false });
+  };
+
+  const [isDownloadingCSV, setIsDownloadingCSV] = useState(false);
+
+  const handleDownloadCSV = async () => {
+    try {
+      setIsDownloadingCSV(true);
+      const token = await auth.currentUser?.getIdToken();
+      if (!token) {
+        toast({
+          title: "Error",
+          description: "Authentication required",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const response = await fetch("/api/admin/users/download-csv", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to download CSV");
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `users-export-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast({
+        title: "Success",
+        description: "User data exported successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to export user data",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDownloadingCSV(false);
+    }
   };
 
   useEffect(() => {
@@ -540,6 +592,16 @@ export default function AdminDashboard() {
                   <SelectItem value="admin">Admin</SelectItem>
                 </SelectContent>
               </Select>
+              <Button
+                onClick={handleDownloadCSV}
+                disabled={isDownloadingCSV}
+                variant="outline"
+                className="flex items-center gap-2"
+                data-testid="button-download-csv"
+              >
+                <Download className="w-4 h-4" />
+                {isDownloadingCSV ? "Downloading..." : "Download CSV"}
+              </Button>
             </div>
             
             <Tabs value={statusTab} onValueChange={setStatusTab} className="space-y-4">
