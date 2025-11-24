@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useLocation, Link } from "wouter";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import LoadingOverlay from "@/components/LoadingOverlay";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -93,20 +94,9 @@ export default function Login() {
     }
   };
 
-  // Show loading state when redirecting (without Header to prevent showing authenticated state)
+  // Show loading overlay when redirecting
   if (redirecting) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Card className="border-2 w-full max-w-md mx-4">
-          <CardContent className="pt-6 pb-6">
-            <div className="flex flex-col items-center justify-center gap-4 py-8">
-              <Loader2 className="w-8 h-8 animate-spin text-primary" />
-              <p className="text-lg font-medium">Redirecting to your dashboard...</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
+    return <LoadingOverlay message="Redirecting to your dashboard..." />;
   }
 
   return (
