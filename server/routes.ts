@@ -1038,6 +1038,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const users = await storage.getAllUsers();
 
+      const safeDate = (dateValue: any): string => {
+        if (!dateValue) return "";
+        try {
+          const date = new Date(dateValue);
+          if (isNaN(date.getTime())) return "";
+          return date.toISOString();
+        } catch {
+          return "";
+        }
+      };
+
       const escapeCSV = (value: any): string => {
         if (value === null || value === undefined) return "";
         
@@ -1134,8 +1145,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           user.email,
           user.displayName,
           user.approvalStatus,
-          user.createdAt ? new Date(user.createdAt).toISOString() : "",
-          user.lastLogin ? new Date(user.lastLogin).toISOString() : "",
+          safeDate(user.createdAt),
+          safeDate(user.lastLogin),
           user.preRegistered,
           user.registrationSource,
           profile.fullName,
