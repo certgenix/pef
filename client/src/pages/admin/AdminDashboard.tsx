@@ -889,14 +889,14 @@ function UsersTable({
             {users.map((user) => (
               <tr
                 key={user.uid}
-                onClick={() => onSelectUser(user.uid)}
+                onClick={() => onUserClick(user)}
                 className="border-b last:border-0 hover-elevate cursor-pointer"
                 role="button"
                 tabIndex={0}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
-                    onSelectUser(user.uid);
+                    onUserClick(user);
                   }
                 }}
                 data-testid={`row-user-${user.uid}`}
@@ -909,13 +909,7 @@ function UsersTable({
                     aria-label={`Select ${user.name}`}
                   />
                 </td>
-                <td 
-                  className="p-4 cursor-pointer" 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onUserClick(user);
-                  }}
-                >
+                <td className="p-4">
                   <div className="font-medium" data-testid={`text-user-name-${user.uid}`}>
                     {user.name}
                   </div>
