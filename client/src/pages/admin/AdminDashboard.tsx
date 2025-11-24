@@ -600,7 +600,7 @@ export default function AdminDashboard() {
                 data-testid="button-download-csv"
               >
                 <Download className="w-4 h-4" />
-                {isDownloadingCSV ? "Downloading..." : "Download CSV"}
+                {isDownloadingCSV ? "Exporting..." : "Export User Data"}
               </Button>
             </div>
             

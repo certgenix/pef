@@ -1023,13 +1023,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/admin/users/download-csv", async (req, res) => {
     try {
-      if (!process.env.FIREBASE_ADMIN_SERVICE_ACCOUNT) {
-        return res.status(503).json({ 
-          error: "Service unavailable", 
-          message: "Firebase Admin SDK must be configured for secure admin exports" 
-        });
-      }
-
       const authHeader = req.headers.authorization;
       if (!authHeader || !authHeader.startsWith("Bearer ")) {
         return res.status(401).json({ error: "Unauthorized" });
