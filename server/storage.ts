@@ -690,8 +690,18 @@ export class FirestoreStorage implements IStorage {
     const usersSnapshot = await getDocs(collection(db, "users"));
     const results: TalentProfile[] = [];
     
+    console.log(`🔍 getTalentByRole called for role: ${role}`);
+    console.log(`📚 Total users in collection: ${usersSnapshot.docs.length}`);
+    
     for (const userDoc of usersSnapshot.docs) {
       const userData = userDoc.data();
+      
+      console.log(`👤 Checking user ${userData.email}:`, {
+        roles: userData.roles,
+        approvalStatus: userData.approvalStatus,
+        hasProfessionalRole: userData.roles?.professional,
+        hasJobSeekerRole: userData.roles?.jobSeeker,
+      });
       
       // Check if user has the requested role
       const hasRole = role === "professional" 
@@ -699,13 +709,17 @@ export class FirestoreStorage implements IStorage {
         : userData.roles?.jobSeeker;
       
       if (!hasRole) {
+        console.log(`  ❌ User ${userData.email} does not have ${role} role`);
         continue;
       }
       
       // Only include approved users
       if (userData.approvalStatus !== "approved") {
+        console.log(`  ⚠️  User ${userData.email} has ${role} role but approvalStatus is ${userData.approvalStatus}`);
         continue;
       }
+      
+      console.log(`  ✅ User ${userData.email} matches criteria!`);
       
       // Debug logging to see what fields are available
       console.log(`📊 Talent user ${userData.email}:`, {
