@@ -687,65 +687,77 @@ export class FirestoreStorage implements IStorage {
   }
 
   async getTalentByRole(role: "professional" | "jobSeeker"): Promise<TalentProfile[]> {
-    const roleField = role === "professional" ? "isProfessional" : "isJobSeeker";
-    
-    const rolesQuery = query(
-      collection(db, "userRoles"),
-      where(roleField, "==", true)
-    );
-    
-    const rolesSnapshot = await getDocs(rolesQuery);
+    const usersSnapshot = await getDocs(collection(db, "users"));
     const results: TalentProfile[] = [];
     
-    for (const roleDoc of rolesSnapshot.docs) {
-      const userId = roleDoc.data().userId;
+    for (const userDoc of usersSnapshot.docs) {
+      const userData = userDoc.data();
       
-      const user = await this.getUserById(userId);
-      if (!user || user.approvalStatus !== "approved") {
+      // Check if user has the requested role
+      const hasRole = role === "professional" 
+        ? userData.roles?.professional 
+        : userData.roles?.jobSeeker;
+      
+      if (!hasRole) {
         continue;
       }
       
-      const profileQuery = query(
-        collection(db, "userProfiles"),
-        where("userId", "==", userId)
-      );
-      const profileSnapshot = await getDocs(profileQuery);
-      
-      if (profileSnapshot.empty) {
+      // Only include approved users
+      if (userData.approvalStatus !== "approved") {
         continue;
       }
       
-      const profile = normalizeDocData<UserProfile>({ 
-        id: profileSnapshot.docs[0].id, 
-        ...profileSnapshot.docs[0].data() 
-      });
+      const user = normalizeDocData<User>({ id: userDoc.id, ...userData });
       
+      // Create profile from user data
+      const profile: UserProfile = {
+        id: userDoc.id,
+        userId: userDoc.id,
+        fullName: userData.profile?.fullName || userData.displayName || "",
+        phone: userData.profile?.phone || null,
+        country: userData.profile?.country || "",
+        city: userData.profile?.city || null,
+        languages: userData.profile?.languages || null,
+        headline: userData.profile?.headline || null,
+        bio: userData.profile?.bio || null,
+        linkedinUrl: userData.profile?.linkedinUrl || null,
+        websiteUrl: userData.profile?.websiteUrl || null,
+        portfolioUrl: userData.profile?.portfolioUrl || null,
+        createdAt: userData.createdAt?.toDate?.() || new Date(),
+        updatedAt: userData.lastUpdated?.toDate?.() || new Date(),
+      };
+      
+      // Get role-specific profile data
       let roleSpecificProfile = null;
       
-      if (role === "professional") {
-        const profQuery = query(
-          collection(db, "professionalProfiles"),
-          where("userId", "==", userId)
-        );
-        const profSnapshot = await getDocs(profQuery);
-        if (!profSnapshot.empty) {
-          roleSpecificProfile = normalizeDocData<ProfessionalProfile>({ 
-            id: profSnapshot.docs[0].id, 
-            ...profSnapshot.docs[0].data() 
-          });
-        }
-      } else {
-        const jobSeekerQuery = query(
-          collection(db, "jobSeekerProfiles"),
-          where("userId", "==", userId)
-        );
-        const jobSeekerSnapshot = await getDocs(jobSeekerQuery);
-        if (!jobSeekerSnapshot.empty) {
-          roleSpecificProfile = normalizeDocData<JobSeekerProfile>({ 
-            id: jobSeekerSnapshot.docs[0].id, 
-            ...jobSeekerSnapshot.docs[0].data() 
-          });
-        }
+      if (role === "professional" && userData.professionalData) {
+        roleSpecificProfile = {
+          id: userDoc.id,
+          userId: userDoc.id,
+          yearsOfExperience: userData.professionalData.yearsOfExperience || null,
+          industry: userData.professionalData.industry || null,
+          skills: userData.professionalData.skills || null,
+          certifications: userData.professionalData.certifications || null,
+          currentJobTitle: userData.professionalData.currentJobTitle || null,
+          currentEmployer: userData.professionalData.currentEmployer || null,
+          createdAt: userData.professionalData.createdAt?.toDate?.() || new Date(),
+          updatedAt: userData.professionalData.updatedAt?.toDate?.() || new Date(),
+        } as ProfessionalProfile;
+      } else if (role === "jobSeeker" && userData.jobSeekerData) {
+        roleSpecificProfile = {
+          id: userDoc.id,
+          userId: userDoc.id,
+          targetJobTitles: userData.jobSeekerData.targetJobTitles || null,
+          preferredIndustries: userData.jobSeekerData.preferredIndustries || null,
+          employmentType: userData.jobSeekerData.employmentType || null,
+          salaryExpectationMin: userData.jobSeekerData.salaryExpectationMin || null,
+          salaryExpectationMax: userData.jobSeekerData.salaryExpectationMax || null,
+          availability: userData.jobSeekerData.availability || null,
+          willingToRelocate: userData.jobSeekerData.willingToRelocate || null,
+          targetCountries: userData.jobSeekerData.targetCountries || null,
+          createdAt: userData.jobSeekerData.createdAt?.toDate?.() || new Date(),
+          updatedAt: userData.jobSeekerData.updatedAt?.toDate?.() || new Date(),
+        } as JobSeekerProfile;
       }
       
       results.push({
