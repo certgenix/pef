@@ -10,7 +10,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { Briefcase, Search, Building2, Handshake, TrendingUp, ArrowRight, ArrowLeft, CheckCircle, Circle, Eye, EyeOff } from "lucide-react";
+import { checkEmailForCreateAccount } from "@/lib/emailValidation";
+import { Briefcase, Search, Building2, Handshake, TrendingUp, ArrowRight, ArrowLeft, CheckCircle, Circle, Eye, EyeOff, Info } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const roles = [
   {
@@ -103,6 +105,7 @@ export default function Signup() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isReturningUser, setIsReturningUser] = useState(false);
 
   const [accountInfo, setAccountInfo] = useState({
     email: "",
@@ -292,9 +295,42 @@ export default function Signup() {
     return true;
   };
 
-  const handleNextFromStep1 = () => {
-    if (validateAccountInfo()) {
+  const handleNextFromStep1 = async () => {
+    if (!validateAccountInfo()) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const emailCheck = await checkEmailForCreateAccount(accountInfo.email.trim().toLowerCase());
+      
+      if (emailCheck.exists && emailCheck.source === "users") {
+        toast({
+          title: "Account Already Exists",
+          description: emailCheck.message,
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+
+      if (emailCheck.source === "registrations") {
+        setIsReturningUser(true);
+        toast({
+          title: "Welcome Back!",
+          description: "We found you in our database from your Join Now submission. Please complete your account creation below.",
+        });
+      }
+
       setStep(2);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to verify email. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -396,6 +432,15 @@ export default function Signup() {
 
                 {step === 2 && (
                   <div className="space-y-6">
+                    {isReturningUser && (
+                      <Alert className="bg-primary/10 border-primary/20">
+                        <Info className="h-4 w-4 text-primary" />
+                        <AlertDescription className="text-primary">
+                          Welcome back! We found you in our database from your "Join Now" submission. 
+                          Please complete your profile below to finish creating your account.
+                        </AlertDescription>
+                      </Alert>
+                    )}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="fullName">Full Name *</Label>

@@ -5,6 +5,7 @@ export interface EmailCheckResult {
   exists: boolean;
   source?: "registrations" | "users";
   message?: string;
+  data?: any;
 }
 
 export async function checkEmailExists(email: string): Promise<EmailCheckResult> {
@@ -43,6 +44,86 @@ export async function checkEmailExists(email: string): Promise<EmailCheckResult>
     };
   } catch (error) {
     console.error("Error checking email existence:", error);
+    throw new Error("Failed to verify email. Please try again.");
+  }
+}
+
+export async function checkEmailForJoinNow(email: string): Promise<EmailCheckResult> {
+  const normalizedEmail = email.trim().toLowerCase();
+
+  try {
+    const usersRef = collection(db, "users");
+    const usersQuery = query(usersRef, where("email", "==", normalizedEmail));
+    const usersSnapshot = await getDocs(usersQuery);
+
+    if (!usersSnapshot.empty) {
+      return {
+        exists: true,
+        source: "users",
+        message: "You already have an account! Please log in instead.",
+      };
+    }
+
+    const registrationsRef = collection(db, "registrations");
+    const registrationsQuery = query(
+      registrationsRef,
+      where("email", "==", normalizedEmail)
+    );
+    const registrationsSnapshot = await getDocs(registrationsQuery);
+
+    if (!registrationsSnapshot.empty) {
+      return {
+        exists: true,
+        source: "registrations",
+        message: "You've already submitted this form. Please check your email for updates.",
+      };
+    }
+
+    return {
+      exists: false,
+    };
+  } catch (error) {
+    console.error("Error checking email for Join Now:", error);
+    throw new Error("Failed to verify email. Please try again.");
+  }
+}
+
+export async function checkEmailForCreateAccount(email: string): Promise<EmailCheckResult> {
+  const normalizedEmail = email.trim().toLowerCase();
+
+  try {
+    const usersRef = collection(db, "users");
+    const usersQuery = query(usersRef, where("email", "==", normalizedEmail));
+    const usersSnapshot = await getDocs(usersQuery);
+
+    if (!usersSnapshot.empty) {
+      return {
+        exists: true,
+        source: "users",
+        message: "An account with this email already exists. Please log in instead.",
+      };
+    }
+
+    const registrationsRef = collection(db, "registrations");
+    const registrationsQuery = query(
+      registrationsRef,
+      where("email", "==", normalizedEmail)
+    );
+    const registrationsSnapshot = await getDocs(registrationsQuery);
+
+    if (!registrationsSnapshot.empty) {
+      return {
+        exists: false,
+        source: "registrations",
+        message: "welcome_back",
+      };
+    }
+
+    return {
+      exists: false,
+    };
+  } catch (error) {
+    console.error("Error checking email for Create Account:", error);
     throw new Error("Failed to verify email. Please try again.");
   }
 }

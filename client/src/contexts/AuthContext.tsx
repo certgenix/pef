@@ -280,10 +280,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     console.log("Starting registration process...");
     const normalizedEmail = email.trim().toLowerCase();
     
-    console.log("Checking if email already exists...");
-    const emailCheck = await checkEmailExists(normalizedEmail);
-    if (emailCheck.exists) {
-      throw new Error(emailCheck.message || "This email is already registered.");
+    console.log("Checking if email already has a full account...");
+    const usersRef = collection(db, "users");
+    const usersQuery = query(usersRef, where("email", "==", normalizedEmail));
+    const usersSnapshot = await getDocs(usersQuery);
+    
+    if (!usersSnapshot.empty) {
+      throw new Error("An account with this email already exists. Please log in instead.");
     }
 
     console.log("Creating Firebase user...");
