@@ -162,6 +162,13 @@ export default function Signup() {
     }
 
     setLoading(true);
+    
+    // Show progress toast
+    toast({
+      title: "Creating your account...",
+      description: "Please wait while we set up your profile.",
+    });
+
     try {
       // Prepare profile data
       const profileData = {
@@ -176,6 +183,8 @@ export default function Signup() {
         portfolioUrl: basicInfo.portfolioUrl?.trim() || null,
       };
 
+      console.log("Submitting registration form...");
+
       // Call register from AuthContext
       await register(
         accountInfo.email,
@@ -184,6 +193,8 @@ export default function Signup() {
         selectedRoles,
         profileData
       );
+
+      console.log("Registration successful, showing success message");
 
       toast({
         title: "Account Created!",
@@ -202,6 +213,8 @@ export default function Signup() {
         errorMessage = "Password should be at least 6 characters.";
       } else if (error.code === "auth/invalid-email") {
         errorMessage = "Invalid email address.";
+      } else if (error.message) {
+        errorMessage = error.message;
       }
 
       toast({
@@ -210,6 +223,7 @@ export default function Signup() {
         variant: "destructive",
       });
     } finally {
+      console.log("Registration form submission complete, clearing loading state");
       setLoading(false);
     }
   };

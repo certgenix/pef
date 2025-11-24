@@ -65,23 +65,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   async function hydrateBackendRoles(firebaseUser: FirebaseUser, existingUserData: User): Promise<User | null> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+    
     try {
       const token = await firebaseUser.getIdToken();
+      
       const response = await fetch("/api/auth/me", {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
         },
+        signal: controller.signal,
       });
 
       if (!response.ok) {
-        console.error("Failed to fetch backend roles:", response.status);
+        console.error("Failed to fetch backend roles:", response.status, await response.text());
         return null;
       }
 
       const data = await response.json();
       const backendRoles = data.roles;
 
+      // Treat null/missing roles as an empty role set instead of failing
+      // This handles the case where a fresh account hasn't been fully persisted yet
       const mergedUserData: User = {
         ...existingUserData,
         roles: {
@@ -97,8 +104,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUserData(mergedUserData);
       return mergedUserData;
     } catch (error) {
-      console.error("Error hydrating backend roles:", error);
+      if ((error as any).name === 'AbortError') {
+        console.error("Backend roles fetch timed out");
+      } else {
+        console.error("Error hydrating backend roles:", error);
+      }
       return null;
+    } finally {
+      clearTimeout(timeoutId);
     }
   }
 
@@ -106,7 +119,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let lastError: Error | null = null;
     
     for (let attempt = 0; attempt < retries; attempt++) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+      
       try {
+        console.log(`Syncing user to backend (attempt ${attempt + 1}/${retries})...`);
         const token = await firebaseUser.getIdToken();
         
         const response = await fetch("/api/auth/complete-registration", {
@@ -130,49 +147,70 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             },
             roles: user.roles || {},
           }),
+          signal: controller.signal,
         });
 
         if (response.ok) {
+          console.log("Backend registration successful, fetching roles...");
           const hydratedUser = await hydrateBackendRoles(firebaseUser, user);
           if (!hydratedUser) {
             lastError = new Error("Failed to fetch roles from backend");
             if (attempt < retries - 1) {
+              console.log("Retrying after delay...");
               await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
               continue;
             }
+            console.error("All retries exhausted for role hydration");
             return false;
           }
+          console.log("User successfully synced to backend with roles");
           return true;
         }
 
         const error = await response.json();
         if (error.error === "User already registered") {
+          console.log("User already registered, fetching roles...");
           const hydratedUser = await hydrateBackendRoles(firebaseUser, user);
           if (!hydratedUser) {
             lastError = new Error("User registered but failed to fetch roles from backend");
             if (attempt < retries - 1) {
+              console.log("Retrying after delay...");
               await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
               continue;
             }
+            console.error("All retries exhausted for role hydration");
             return false;
           }
+          console.log("User roles successfully fetched");
           return true;
         }
 
         lastError = new Error(error.error || "Backend sync failed");
+        console.error("Backend sync error:", error);
         
         if (attempt < retries - 1) {
+          console.log("Retrying after delay...");
           await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
         }
       } catch (syncError) {
-        lastError = syncError as Error;
+        if ((syncError as any).name === 'AbortError') {
+          lastError = new Error("Backend sync request timed out");
+          console.error("Backend sync timed out");
+        } else {
+          lastError = syncError as Error;
+          console.error("Backend sync error:", syncError);
+        }
+        
         if (attempt < retries - 1) {
+          console.log("Retrying after delay...");
           await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
         }
+      } finally {
+        clearTimeout(timeoutId);
       }
     }
 
-    console.error("Failed to sync user to backend after retries:", lastError);
+    console.error("Failed to sync user to backend after all retries:", lastError);
     return false;
   }
 
@@ -239,19 +277,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     roles: UserRoles,
     profileData?: ProfileData
   ) {
+    console.log("Starting registration process...");
     const normalizedEmail = email.trim().toLowerCase();
     
+    console.log("Checking if email already exists...");
     const emailCheck = await checkEmailExists(normalizedEmail);
     if (emailCheck.exists) {
       throw new Error(emailCheck.message || "This email is already registered.");
     }
 
+    console.log("Creating Firebase user...");
     const userCredential = await createUserWithEmailAndPassword(
       auth,
       normalizedEmail,
       password
     );
 
+    console.log("Sending email verification...");
     await sendEmailVerification(userCredential.user);
 
     // Check if email exists in pre-registrations (Join Now submissions)
@@ -306,6 +348,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       registrationSource: preRegistrationData ? "join_now" : "direct",
     };
 
+    console.log("Saving user data to Firestore...");
     await setDoc(doc(db, "users", userCredential.user.uid), firestoreData);
 
     const newUser: Omit<User, "uid"> = {
@@ -333,13 +376,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       uid: userCredential.user.uid,
     };
 
+    console.log("Syncing user data to backend...");
     const synced = await syncUserToBackend(userData, userCredential.user);
     if (!synced) {
+      console.error("Backend sync failed, signing out user");
       await firebaseSignOut(auth);
       throw new Error("Failed to complete registration. Please try again or contact support.");
     }
 
+    console.log("Registration complete, signing out user for email verification");
     await firebaseSignOut(auth);
+    console.log("Registration process finished successfully");
   }
 
   async function login(email: string, password: string) {
