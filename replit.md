@@ -57,7 +57,12 @@ Firebase Authentication handles user registration, login, and password resets. F
 
 ### Third-Party Integrations
 - **Replit Plugins**: Development-specific tools.
-- **Resend Email Service**: Transactional email service for contact forms and opportunity submissions (API key required).
+- **Resend Email Service**: Transactional email service with abstraction layer for easy provider switching.
+  - Current provider: Resend
+  - Sender email: onboarding@resend.dev (requires domain verification for production)
+  - Admin notifications sent to: abdulmoiz.cloud25@gmail.com
+  - Email service abstraction layer located at: `server/services/email.service.ts`
+  - To switch to SendGrid: Follow instructions in email.service.ts comments
 
 ### Asset Management
 - **Attached Assets**: Generated images stored locally with Vite alias.
@@ -70,3 +75,45 @@ Firebase Authentication handles user registration, login, and password resets. F
 ### Session & Security
 - **connect-pg-simple**: PostgreSQL session store.
 - **Environment Variables**: `DATABASE_URL`, `NODE_ENV`, `RESEND_API_KEY`.
+
+## Email Service Architecture
+
+The platform uses an abstraction layer for email services, making it easy to switch providers without changing application code.
+
+### Current Setup
+- **Provider**: Resend
+- **Service File**: `server/services/email.service.ts`
+- **Sender Email**: onboarding@resend.dev (temporary, requires domain verification)
+- **Admin Email**: abdulmoiz.cloud25@gmail.com
+
+### Email Notifications
+1. **Contact Form Submissions**
+   - Admin notification: Sent to admin with full contact details and reply-to address
+   - User confirmation: Sent to user confirming receipt and expected response time
+
+2. **Opportunity Submissions**
+   - Admin notification: Sent to admin with opportunity details and approval link
+   - User confirmation: Sent to submitter confirming receipt and review process
+
+### Switching Email Providers
+
+To switch from Resend to SendGrid (or another provider):
+
+1. Install the new provider's package:
+   ```bash
+   npm install @sendgrid/mail
+   ```
+
+2. Update `server/services/email.service.ts`:
+   - Follow the detailed comments at the top of the file
+   - Replace Resend implementation with SendGrid code (example provided)
+   - Update the email sending logic in the `sendEmail()` method
+
+3. Update environment variable:
+   - Change `RESEND_API_KEY` to `SENDGRID_API_KEY`
+   - Update the secret in Replit Secrets
+
+4. Update sender email:
+   - Change `fromEmail` in EmailService class to your verified domain
+
+No other files need to be modified - all email sending is abstracted through the EmailService class.
