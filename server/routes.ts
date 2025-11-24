@@ -831,8 +831,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let uid: string;
 
       if (!process.env.FIREBASE_ADMIN_SERVICE_ACCOUNT) {
-        const decodedToken = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
-        uid = decodedToken.user_id;
+        try {
+          const tokenParts = token.split('.');
+          if (tokenParts.length !== 3) {
+            return res.status(401).json({ error: "Invalid token format" });
+          }
+          const decodedToken = JSON.parse(Buffer.from(tokenParts[1], 'base64').toString());
+          uid = decodedToken.user_id;
+        } catch (decodeError) {
+          console.error("Token decode error:", decodeError);
+          return res.status(401).json({ error: "Invalid token" });
+        }
       } else {
         return res.status(500).json({ error: "Firebase Admin SDK not configured yet" });
       }

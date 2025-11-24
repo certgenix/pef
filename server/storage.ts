@@ -707,6 +707,14 @@ export class FirestoreStorage implements IStorage {
         continue;
       }
       
+      // Debug logging to see what fields are available
+      console.log(`📊 Talent user ${userData.email}:`, {
+        hasProfessionalData: !!userData.professionalData,
+        hasJobSeekerData: !!userData.jobSeekerData,
+        professionalDataKeys: userData.professionalData ? Object.keys(userData.professionalData) : [],
+        jobSeekerDataKeys: userData.jobSeekerData ? Object.keys(userData.jobSeekerData) : [],
+      });
+      
       const user = normalizeDocData<User>({ id: userDoc.id, ...userData });
       
       // Create profile from user data
