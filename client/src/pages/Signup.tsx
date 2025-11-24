@@ -314,11 +314,39 @@ export default function Signup() {
         return;
       }
 
-      if (emailCheck.source === "registrations") {
+      if (emailCheck.source === "registrations" && emailCheck.data) {
         setIsReturningUser(true);
+        
+        const data = emailCheck.data;
+        setBasicInfo((prev) => ({
+          ...prev,
+          fullName: data.fullName || "",
+          phone: data.phone?.replace(/^\+\d+\s*/, "") || "",
+          phoneCode: data.phone?.match(/^\+\d+/)?.[0] || prev.phoneCode,
+          country: data.country || prev.country,
+          city: data.city || "",
+          languages: Array.isArray(data.languages) ? data.languages.join(", ") : "",
+          headline: data.headline || "",
+          bio: data.bio || "",
+          linkedinUrl: data.linkedinUrl || "",
+          websiteUrl: data.websiteUrl || "",
+          portfolioUrl: data.portfolioUrl || "",
+        }));
+
+        if (data.roles) {
+          setSelectedRoles((prev) => ({
+            ...prev,
+            professional: data.roles.professional || false,
+            jobSeeker: data.roles.jobSeeker || false,
+            employer: data.roles.employer || false,
+            businessOwner: data.roles.businessOwner || false,
+            investor: data.roles.investor || false,
+          }));
+        }
+        
         toast({
           title: "Welcome Back!",
-          description: "We found you in our database from your Join Now submission. Please complete your account creation below.",
+          description: "Your information has been pre-filled. Review and complete your profile to create your account.",
         });
       }
 
@@ -436,8 +464,8 @@ export default function Signup() {
                       <Alert className="bg-primary/10 border-primary/20">
                         <Info className="h-4 w-4 text-primary" />
                         <AlertDescription className="text-primary">
-                          Welcome back! We found you in our database from your "Join Now" submission. 
-                          Please complete your profile below to finish creating your account.
+                          Great to see you again! We've pre-filled your information from your earlier submission. 
+                          Review the details below and add anything missing to complete your account.
                         </AlertDescription>
                       </Alert>
                     )}

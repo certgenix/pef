@@ -112,10 +112,14 @@ export async function checkEmailForCreateAccount(email: string): Promise<EmailCh
     const registrationsSnapshot = await getDocs(registrationsQuery);
 
     if (!registrationsSnapshot.empty) {
+      const registrationDoc = registrationsSnapshot.docs[0];
+      const registrationData = registrationDoc.data();
+      
       return {
         exists: false,
         source: "registrations",
         message: "welcome_back",
+        data: registrationData,
       };
     }
 
