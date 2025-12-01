@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -47,55 +48,17 @@ const roles = [
   },
 ];
 
-const countries = [
-  "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Antigua and Barbuda", "Argentina", "Armenia", 
-  "Australia", "Austria", "Azerbaijan", "Bahamas", "Bahrain", "Bangladesh", "Barbados", "Belarus", "Belgium", 
-  "Belize", "Benin", "Bhutan", "Bolivia", "Bosnia and Herzegovina", "Botswana", "Brazil", "Brunei", "Bulgaria", 
-  "Burkina Faso", "Burundi", "Cabo Verde", "Cambodia", "Cameroon", "Canada", "Central African Republic", "Chad", 
-  "Chile", "China", "Colombia", "Comoros", "Congo", "Costa Rica", "Croatia", "Cuba", "Cyprus", "Czech Republic", 
-  "Denmark", "Djibouti", "Dominica", "Dominican Republic", "Ecuador", "Egypt", "El Salvador", "Equatorial Guinea", 
-  "Eritrea", "Estonia", "Eswatini", "Ethiopia", "Fiji", "Finland", "France", "Gabon", "Gambia", "Georgia", "Germany", 
-  "Ghana", "Greece", "Grenada", "Guatemala", "Guinea", "Guinea-Bissau", "Guyana", "Haiti", "Honduras", "Hungary", 
-  "Iceland", "India", "Indonesia", "Iran", "Iraq", "Ireland", "Israel", "Italy", "Jamaica", "Japan", "Jordan", 
-  "Kazakhstan", "Kenya", "Kiribati", "Kosovo", "Kuwait", "Kyrgyzstan", "Laos", "Latvia", "Lebanon", "Lesotho", 
-  "Liberia", "Libya", "Liechtenstein", "Lithuania", "Luxembourg", "Madagascar", "Malawi", "Malaysia", "Maldives", 
-  "Mali", "Malta", "Marshall Islands", "Mauritania", "Mauritius", "Mexico", "Micronesia", "Moldova", "Monaco", 
-  "Mongolia", "Montenegro", "Morocco", "Mozambique", "Myanmar", "Namibia", "Nauru", "Nepal", "Netherlands", 
-  "New Zealand", "Nicaragua", "Niger", "Nigeria", "North Korea", "North Macedonia", "Norway", "Oman", "Pakistan", 
-  "Palau", "Palestine", "Panama", "Papua New Guinea", "Paraguay", "Peru", "Philippines", "Poland", "Portugal", 
-  "Qatar", "Romania", "Russia", "Rwanda", "Saint Kitts and Nevis", "Saint Lucia", "Saint Vincent and the Grenadines", 
-  "Samoa", "San Marino", "Sao Tome and Principe", "Saudi Arabia", "Senegal", "Serbia", "Seychelles", "Sierra Leone", 
-  "Singapore", "Slovakia", "Slovenia", "Solomon Islands", "Somalia", "South Africa", "South Korea", "South Sudan", 
-  "Spain", "Sri Lanka", "Sudan", "Suriname", "Sweden", "Switzerland", "Syria", "Taiwan", "Tajikistan", "Tanzania", 
-  "Thailand", "Timor-Leste", "Togo", "Tonga", "Trinidad and Tobago", "Tunisia", "Turkey", "Turkmenistan", "Tuvalu", 
-  "Uganda", "Ukraine", "United Arab Emirates", "United Kingdom", "United States", "Uruguay", "Uzbekistan", "Vanuatu", 
-  "Vatican City", "Venezuela", "Vietnam", "Yemen", "Zambia", "Zimbabwe"
-];
+interface Country {
+  id: string;
+  code: string;
+  name: string;
+  phoneCode: string;
+}
 
-const countryPhoneCodes: Record<string, string> = {
-  "Afghanistan": "+93", "Albania": "+355", "Algeria": "+213", "Saudi Arabia": "+966", "Pakistan": "+92",
-  "United Arab Emirates": "+971", "United Kingdom": "+44", "United States": "+1", "Canada": "+1",
-  "Germany": "+49", "Italy": "+39", "India": "+91", "China": "+86", "Japan": "+81", "Australia": "+61"
-};
-
-const uniquePhoneCodes = [
-  { code: "+1", label: "+1 (USA, Canada)" },
-  { code: "+20", label: "+20 (Egypt)" },
-  { code: "+27", label: "+27 (South Africa)" },
-  { code: "+30", label: "+30 (Greece)" },
-  { code: "+31", label: "+31 (Netherlands)" },
-  { code: "+33", label: "+33 (France)" },
-  { code: "+39", label: "+39 (Italy)" },
-  { code: "+44", label: "+44 (UK)" },
-  { code: "+49", label: "+49 (Germany)" },
-  { code: "+61", label: "+61 (Australia)" },
-  { code: "+81", label: "+81 (Japan)" },
-  { code: "+86", label: "+86 (China)" },
-  { code: "+91", label: "+91 (India)" },
-  { code: "+92", label: "+92 (Pakistan)" },
-  { code: "+966", label: "+966 (Saudi Arabia)" },
-  { code: "+971", label: "+971 (UAE)" },
-];
+interface City {
+  id: string;
+  name: string;
+}
 
 export default function Signup() {
   const [, setLocation] = useLocation();
@@ -135,6 +98,15 @@ export default function Signup() {
     investor: false,
   });
 
+  const { data: countries = [] } = useQuery<Country[]>({
+    queryKey: ["/api/locations/countries"],
+  });
+
+  const { data: cities = [] } = useQuery<City[]>({
+    queryKey: ["/api/locations/countries", basicInfo.country, "cities"],
+    enabled: !!basicInfo.country,
+  });
+
   const handleRoleToggle = (roleId: keyof typeof selectedRoles) => {
     setSelectedRoles((prev) => ({ ...prev, [roleId]: !prev[roleId] }));
   };
@@ -145,12 +117,32 @@ export default function Signup() {
 
   const handleBasicInfoChange = (field: string, value: string) => {
     if (field === "country") {
-      const phoneCode = countryPhoneCodes[value] || "+1";
+      const selectedCountry = countries.find((c) => c.id === value);
+      const phoneCode = selectedCountry?.phoneCode || "+1";
       setBasicInfo((prev) => ({ ...prev, country: value, phoneCode }));
     } else {
       setBasicInfo((prev) => ({ ...prev, [field]: value }));
     }
   };
+
+  // Get unique phone codes from countries for the dropdown
+  const uniquePhoneCodes = countries
+    .filter((c) => c.phoneCode && c.phoneCode.trim())
+    .reduce((acc: { code: string; label: string }[], country) => {
+      const existing = acc.find((item) => item.code === country.phoneCode);
+      if (!existing) {
+        acc.push({
+          code: country.phoneCode,
+          label: `${country.phoneCode}`,
+        });
+      }
+      return acc;
+    }, [])
+    .sort((a, b) => {
+      const aNum = parseInt(a.code.slice(1));
+      const bNum = parseInt(b.code.slice(1));
+      return aNum - bNum;
+    });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -493,8 +485,8 @@ export default function Signup() {
                           </SelectTrigger>
                           <SelectContent>
                             {countries.map((country) => (
-                              <SelectItem key={country} value={country}>
-                                {country}
+                              <SelectItem key={country.id} value={country.id}>
+                                {country.name}
                               </SelectItem>
                             ))}
                           </SelectContent>

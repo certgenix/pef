@@ -17,7 +17,7 @@ import {
 import { db } from "./firebase-admin";
 import { db as pgDb } from "./db";
 import { leaders, galleryImages, membershipTiers, membershipApplications } from "@shared/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and, asc } from "drizzle-orm";
 import { 
   type User,
   type UserProfile,
@@ -47,6 +47,14 @@ import {
   type MembershipApplication,
   type InsertMembershipApplication,
   insertMembershipApplicationSchema,
+  type Country,
+  type InsertCountry,
+  type City,
+  type InsertCity,
+  type FirestoreCountry,
+  type FirestoreCity,
+  type InsertFirestoreCountry,
+  type InsertFirestoreCity,
 } from "@shared/schema";
 import { toFirestoreRoles } from "@shared/roleUtils";
 
@@ -150,6 +158,23 @@ export interface IStorage {
   getMembershipApplicationById(id: string): Promise<MembershipApplication | undefined>;
   updateMembershipApplication(id: string, data: Partial<InsertMembershipApplication>): Promise<MembershipApplication | undefined>;
   deleteMembershipApplication(id: string): Promise<void>;
+  
+  // Country/City management
+  createCountry(country: InsertCountry): Promise<Country>;
+  getAllCountries(): Promise<Country[]>;
+  getEnabledCountries(): Promise<Country[]>;
+  getCountryById(id: string): Promise<Country | undefined>;
+  updateCountry(id: string, data: Partial<InsertCountry>): Promise<Country | undefined>;
+  deleteCountry(id: string): Promise<void>;
+  bulkCreateCountries(countriesData: InsertCountry[]): Promise<Country[]>;
+  
+  createCity(city: InsertCity): Promise<City>;
+  getCitiesByCountryId(countryId: string): Promise<City[]>;
+  getEnabledCitiesByCountryId(countryId: string): Promise<City[]>;
+  getCityById(id: string): Promise<City | undefined>;
+  updateCity(id: string, data: Partial<InsertCity>): Promise<City | undefined>;
+  deleteCity(id: string): Promise<void>;
+  bulkCreateCities(citiesData: InsertCity[]): Promise<City[]>;
 }
 
 export class FirestoreStorage implements IStorage {
@@ -1307,6 +1332,376 @@ export class FirestoreStorage implements IStorage {
     // Delete from Firestore 'registrations' collection
     const docRef = doc(db, "registrations", id);
     await deleteDoc(docRef);
+  }
+
+  // Country/City management methods using Firestore
+  // Structure: countries collection with cities as embedded array in each country document
+  
+  async createCountry(country: InsertCountry): Promise<Country> {
+    const countryId = this.generateId();
+    const now = new Date();
+    const newCountry: FirestoreCountry = {
+      id: countryId,
+      code: country.code,
+      name: country.name,
+      displayName: country.displayName || null,
+      phoneCode: country.phoneCode || null,
+      enabled: country.enabled ?? false,
+      sortOrder: country.sortOrder ?? 0,
+      cities: [],
+      createdAt: now,
+      updatedAt: now,
+    };
+    
+    await setDoc(doc(db, "countries", countryId), newCountry);
+    
+    return {
+      id: countryId,
+      code: country.code,
+      name: country.name,
+      displayName: country.displayName || null,
+      phoneCode: country.phoneCode || null,
+      enabled: country.enabled ?? false,
+      sortOrder: country.sortOrder ?? 0,
+      createdAt: now,
+      updatedAt: now,
+    };
+  }
+
+  async getAllCountries(): Promise<Country[]> {
+    const querySnapshot = await getDocs(collection(db, "countries"));
+    const countriesList = querySnapshot.docs.map(docSnap => {
+      const data = docSnap.data();
+      return normalizeDocData<Country>({
+        id: docSnap.id,
+        code: data.code,
+        name: data.name,
+        displayName: data.displayName || null,
+        phoneCode: data.phoneCode || null,
+        enabled: data.enabled ?? false,
+        sortOrder: data.sortOrder ?? 0,
+        createdAt: data.createdAt,
+        updatedAt: data.updatedAt,
+      });
+    });
+    
+    return countriesList.sort((a, b) => {
+      if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
+      return a.name.localeCompare(b.name);
+    });
+  }
+
+  async getEnabledCountries(): Promise<Country[]> {
+    const q = query(collection(db, "countries"), where("enabled", "==", true));
+    const querySnapshot = await getDocs(q);
+    const countriesList = querySnapshot.docs.map(docSnap => {
+      const data = docSnap.data();
+      return normalizeDocData<Country>({
+        id: docSnap.id,
+        code: data.code,
+        name: data.name,
+        displayName: data.displayName || null,
+        phoneCode: data.phoneCode || null,
+        enabled: data.enabled ?? false,
+        sortOrder: data.sortOrder ?? 0,
+        createdAt: data.createdAt,
+        updatedAt: data.updatedAt,
+      });
+    });
+    
+    return countriesList.sort((a, b) => {
+      if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
+      return a.name.localeCompare(b.name);
+    });
+  }
+
+  async getCountryById(id: string): Promise<Country | undefined> {
+    const docRef = doc(db, "countries", id);
+    const docSnap = await getDoc(docRef);
+    
+    if (!docSnap.exists()) return undefined;
+    
+    const data = docSnap.data();
+    return normalizeDocData<Country>({
+      id: docSnap.id,
+      code: data.code,
+      name: data.name,
+      displayName: data.displayName || null,
+      phoneCode: data.phoneCode || null,
+      enabled: data.enabled ?? false,
+      sortOrder: data.sortOrder ?? 0,
+      createdAt: data.createdAt,
+      updatedAt: data.updatedAt,
+    });
+  }
+
+  async updateCountry(id: string, data: Partial<InsertCountry>): Promise<Country | undefined> {
+    const docRef = doc(db, "countries", id);
+    const docSnap = await getDoc(docRef);
+    
+    if (!docSnap.exists()) return undefined;
+    
+    const updateData: Record<string, any> = { ...data, updatedAt: new Date() };
+    await updateDoc(docRef, updateData);
+    
+    return this.getCountryById(id);
+  }
+
+  async deleteCountry(id: string): Promise<void> {
+    const docRef = doc(db, "countries", id);
+    await deleteDoc(docRef);
+  }
+
+  async bulkCreateCountries(countriesData: InsertCountry[]): Promise<Country[]> {
+    if (countriesData.length === 0) return [];
+    
+    const { writeBatch } = await import("firebase/firestore");
+    const batch = writeBatch(db);
+    const createdCountries: Country[] = [];
+    const now = new Date();
+    
+    for (const country of countriesData) {
+      const countryId = this.generateId();
+      const newCountry: FirestoreCountry = {
+        id: countryId,
+        code: country.code,
+        name: country.name,
+        displayName: country.displayName || null,
+        phoneCode: country.phoneCode || null,
+        enabled: country.enabled ?? false,
+        sortOrder: country.sortOrder ?? 0,
+        cities: [],
+        createdAt: now,
+        updatedAt: now,
+      };
+      
+      batch.set(doc(db, "countries", countryId), newCountry);
+      
+      createdCountries.push({
+        id: countryId,
+        code: country.code,
+        name: country.name,
+        displayName: country.displayName || null,
+        phoneCode: country.phoneCode || null,
+        enabled: country.enabled ?? false,
+        sortOrder: country.sortOrder ?? 0,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+    
+    await batch.commit();
+    return createdCountries;
+  }
+
+  async createCity(city: InsertCity): Promise<City> {
+    const { arrayUnion } = await import("firebase/firestore");
+    const countryRef = doc(db, "countries", city.countryId);
+    const countrySnap = await getDoc(countryRef);
+    
+    if (!countrySnap.exists()) {
+      throw new Error(`Country with id ${city.countryId} not found`);
+    }
+    
+    const cityId = this.generateId();
+    const now = new Date();
+    const newCity: FirestoreCity = {
+      id: cityId,
+      name: city.name,
+      displayName: city.displayName || null,
+      enabled: city.enabled ?? false,
+      sortOrder: city.sortOrder ?? 0,
+      createdAt: now,
+      updatedAt: now,
+    };
+    
+    await updateDoc(countryRef, { 
+      cities: arrayUnion(newCity),
+      updatedAt: now
+    });
+    
+    return {
+      id: cityId,
+      countryId: city.countryId,
+      name: city.name,
+      displayName: city.displayName || null,
+      enabled: city.enabled ?? false,
+      sortOrder: city.sortOrder ?? 0,
+      createdAt: now,
+      updatedAt: now,
+    };
+  }
+
+  async getCitiesByCountryId(countryId: string): Promise<City[]> {
+    const countryRef = doc(db, "countries", countryId);
+    const countrySnap = await getDoc(countryRef);
+    
+    if (!countrySnap.exists()) return [];
+    
+    const countryData = countrySnap.data();
+    const cities = (countryData.cities || []).map((city: FirestoreCity) => ({
+      id: city.id,
+      countryId: countryId,
+      name: city.name,
+      displayName: city.displayName || null,
+      enabled: city.enabled ?? false,
+      sortOrder: city.sortOrder ?? 0,
+      createdAt: normalizeDate(city.createdAt),
+      updatedAt: normalizeDate(city.updatedAt),
+    }));
+    
+    return cities.sort((a: City, b: City) => {
+      if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
+      return a.name.localeCompare(b.name);
+    });
+  }
+
+  async getEnabledCitiesByCountryId(countryId: string): Promise<City[]> {
+    const allCities = await this.getCitiesByCountryId(countryId);
+    return allCities.filter(city => city.enabled);
+  }
+
+  async getCityById(id: string): Promise<City | undefined> {
+    const querySnapshot = await getDocs(collection(db, "countries"));
+    
+    for (const countryDoc of querySnapshot.docs) {
+      const countryData = countryDoc.data();
+      const cities = countryData.cities || [];
+      const city = cities.find((c: FirestoreCity) => c.id === id);
+      
+      if (city) {
+        return {
+          id: city.id,
+          countryId: countryDoc.id,
+          name: city.name,
+          displayName: city.displayName || null,
+          enabled: city.enabled ?? false,
+          sortOrder: city.sortOrder ?? 0,
+          createdAt: normalizeDate(city.createdAt),
+          updatedAt: normalizeDate(city.updatedAt),
+        };
+      }
+    }
+    
+    return undefined;
+  }
+
+  async updateCity(id: string, data: Partial<InsertCity>): Promise<City | undefined> {
+    const querySnapshot = await getDocs(collection(db, "countries"));
+    
+    for (const countryDoc of querySnapshot.docs) {
+      const countryData = countryDoc.data();
+      const cities = countryData.cities || [];
+      const cityIndex = cities.findIndex((c: FirestoreCity) => c.id === id);
+      
+      if (cityIndex !== -1) {
+        const now = new Date();
+        const updatedCity = {
+          ...cities[cityIndex],
+          ...data,
+          updatedAt: now,
+        };
+        delete (updatedCity as any).countryId;
+        
+        cities[cityIndex] = updatedCity;
+        
+        await updateDoc(doc(db, "countries", countryDoc.id), {
+          cities: cities,
+          updatedAt: now,
+        });
+        
+        return {
+          id: updatedCity.id,
+          countryId: countryDoc.id,
+          name: updatedCity.name,
+          displayName: updatedCity.displayName || null,
+          enabled: updatedCity.enabled ?? false,
+          sortOrder: updatedCity.sortOrder ?? 0,
+          createdAt: normalizeDate(updatedCity.createdAt),
+          updatedAt: normalizeDate(updatedCity.updatedAt),
+        };
+      }
+    }
+    
+    return undefined;
+  }
+
+  async deleteCity(id: string): Promise<void> {
+    const querySnapshot = await getDocs(collection(db, "countries"));
+    
+    for (const countryDoc of querySnapshot.docs) {
+      const countryData = countryDoc.data();
+      const cities = countryData.cities || [];
+      const cityIndex = cities.findIndex((c: FirestoreCity) => c.id === id);
+      
+      if (cityIndex !== -1) {
+        cities.splice(cityIndex, 1);
+        
+        await updateDoc(doc(db, "countries", countryDoc.id), {
+          cities: cities,
+          updatedAt: new Date(),
+        });
+        
+        return;
+      }
+    }
+  }
+
+  async bulkCreateCities(citiesData: InsertCity[]): Promise<City[]> {
+    if (citiesData.length === 0) return [];
+    
+    const now = new Date();
+    const createdCities: City[] = [];
+    
+    const citiesByCountry = new Map<string, InsertCity[]>();
+    for (const city of citiesData) {
+      const existing = citiesByCountry.get(city.countryId) || [];
+      existing.push(city);
+      citiesByCountry.set(city.countryId, existing);
+    }
+    
+    for (const [countryId, cities] of Array.from(citiesByCountry)) {
+      const countryRef = doc(db, "countries", countryId);
+      const countrySnap = await getDoc(countryRef);
+      
+      if (!countrySnap.exists()) continue;
+      
+      const countryData = countrySnap.data();
+      const existingCities = countryData.cities || [];
+      
+      for (const city of cities) {
+        const cityId = this.generateId();
+        const newCity: FirestoreCity = {
+          id: cityId,
+          name: city.name,
+          displayName: city.displayName || null,
+          enabled: city.enabled ?? false,
+          sortOrder: city.sortOrder ?? 0,
+          createdAt: now,
+          updatedAt: now,
+        };
+        
+        existingCities.push(newCity);
+        
+        createdCities.push({
+          id: cityId,
+          countryId: countryId,
+          name: city.name,
+          displayName: city.displayName || null,
+          enabled: city.enabled ?? false,
+          sortOrder: city.sortOrder ?? 0,
+          createdAt: now,
+          updatedAt: now,
+        });
+      }
+      
+      await updateDoc(countryRef, {
+        cities: existingCities,
+        updatedAt: now,
+      });
+    }
+    
+    return createdCities;
   }
 }
 
