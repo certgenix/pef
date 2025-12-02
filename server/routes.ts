@@ -126,6 +126,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: "Registration completed successfully. Welcome!",
         user: result.user,
         profile: result.profile,
+        roles: result.roles,
       });
     } catch (error) {
       console.error("Registration error:", error);
@@ -1041,7 +1042,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Admin access required" });
       }
 
-      const users = await storage.getAllUsers();
+      let users = await storage.getAllUsers();
+      
+      const countryFilter = req.query.country as string | undefined;
+      if (countryFilter) {
+        users = users.filter((user: any) => {
+          const userCountry = user.profile?.country;
+          return userCountry && userCountry === countryFilter;
+        });
+      }
 
       const safeDate = (dateValue: any): string => {
         if (!dateValue) return "";
@@ -1263,14 +1272,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const token = authHeader.substring(7);
-      let uid: string;
-
-      if (!process.env.FIREBASE_ADMIN_SERVICE_ACCOUNT) {
-        const decodedToken = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
-        uid = decodedToken.user_id;
-      } else {
-        return res.status(500).json({ error: "Firebase Admin SDK not configured yet" });
-      }
+      const uid = await verifyAuthToken(token);
 
       const userWithRoles = await storage.getUserWithRoles(uid);
       if (!userWithRoles || !userWithRoles.roles?.admin) {
@@ -2352,7 +2354,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         id: c.id,
         code: c.code,
         name: c.displayName || c.name,
-        phoneCode: c.phoneCode
+        phoneCode: c.phoneCode,
+        isPrimary: c.isPrimary ?? false,
+        comingSoon: c.comingSoon ?? false
       })));
     } catch (error) {
       console.error("Error fetching countries:", error);
@@ -2414,12 +2418,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { id } = req.params;
-      const { enabled, displayName, sortOrder } = req.body;
+      const { enabled, displayName, sortOrder, isPrimary, comingSoon } = req.body;
       
       const updateData: any = {};
       if (enabled !== undefined) updateData.enabled = enabled;
       if (displayName !== undefined) updateData.displayName = displayName;
       if (sortOrder !== undefined) updateData.sortOrder = sortOrder;
+      if (isPrimary !== undefined) updateData.isPrimary = isPrimary;
+      if (comingSoon !== undefined) updateData.comingSoon = comingSoon;
 
       const updated = await storage.updateCountry(id, updateData);
       if (!updated) {
