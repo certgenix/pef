@@ -6,7 +6,20 @@ The Professional Executive Forum (PEF) is a global digital platform designed to 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 
-## Recent Changes (Dec 1, 2025)
+## Recent Changes (Dec 2, 2025)
+- **Admin Dashboard Stats Updated** - Replaced Videos stat card with Applications count showing total job applications
+- **Role Counting Fixed** - Admin stats now correctly count users across all three role data patterns (legacy nested, `is*` prefix nested, and top-level booleans)
+- **User Roles Chart Improved** - Legend shows role names only; counts appear on hover tooltip
+- **Admin Dashboard Filter UI Fixed** - Updated filter controls with proper bordered styling matching design reference (Search, All Roles, All Countries dropdowns)
+- **CSV Download by Country Fixed** - Country filtering now uses country names consistently between frontend and backend, enabling proper country-wise user exports
+- **Global Reach Country Management with Firestore** - Complete Firestore integration for country management with isPrimary and comingSoon fields
+- **Selected Countries Section** - New admin panel section showing all enabled countries in a visual grid with flags
+- **Primary Market & Coming Soon Flags** - Toggle buttons persist to Firestore and immediately reflect on home page
+- **Admin Location Tab Enhanced** - Star icon (Primary), Clock icon (Coming Soon), and quick remove (X) buttons
+- **Dynamic Global Reach Display** - Home page section fetches countries from API and displays dynamically with proper sorting
+- **Flag Rendering** - Uses country-flag-icons library with graceful fallback for unmapped country codes
+
+## Previous Changes (Dec 1, 2025)
 - **Centralized Country-City Management System** - Fully implemented with admin CRUD operations at `/admin/locations`
 - **Country-City Data in PostgreSQL** - 198 countries with phone codes seeded and synced with Drizzle ORM
 - **Public API Endpoints** - `/api/locations/countries` and `/api/locations/countries/:countryId/cities` for dropdowns

@@ -17,7 +17,7 @@ import {
 import { db } from "./firebase-admin";
 import { db as pgDb } from "./db";
 import { leaders, galleryImages, membershipTiers, membershipApplications } from "@shared/schema";
-import { eq, desc, and, asc } from "drizzle-orm";
+import { eq, desc, and, asc, count } from "drizzle-orm";
 import { 
   type User,
   type UserProfile,
@@ -98,7 +98,7 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   updateUserLastLogin(id: string): Promise<void>;
   
-  completeRegistration(data: RegistrationData): Promise<{ user: User; profile: UserProfile }>;
+  completeRegistration(data: RegistrationData): Promise<{ user: User; profile: UserProfile; roles: { professional: boolean; jobSeeker: boolean; employer: boolean; businessOwner: boolean; investor: boolean; admin: boolean } }>;
   
   createUserProfile(profile: InsertUserProfile): Promise<UserProfile>;
   createUserRoles(roles: InsertUserRoles): Promise<UserRoles>;
@@ -263,11 +263,31 @@ export class FirestoreStorage implements IStorage {
     });
   }
 
-  async completeRegistration(data: RegistrationData): Promise<{ user: User; profile: UserProfile }> {
+  async completeRegistration(data: RegistrationData): Promise<{ user: User; profile: UserProfile; roles: { professional: boolean; jobSeeker: boolean; employer: boolean; businessOwner: boolean; investor: boolean; admin: boolean } }> {
     try {
       // Get existing user document to preserve fields like name, status, lastUpdated
       const existingUserSnap = await getDoc(doc(db, "users", data.userId));
       const existingUserData = existingUserSnap.exists() ? existingUserSnap.data() : {};
+      
+      // IMPORTANT: Preserve existing admin status - never remove admin role during registration
+      const existingRoles = existingUserData.roles || {};
+      const wasAdmin = existingRoles.isAdmin === true || existingRoles.admin === true;
+      
+      // Build roles object, preserving admin status if user was already an admin
+      const newRoles = toFirestoreRoles(data.roles);
+      if (wasAdmin) {
+        newRoles.isAdmin = true;
+      }
+      
+      // Build the actual roles to return (with admin preserved)
+      const preservedRoles = {
+        professional: data.roles.professional || false,
+        jobSeeker: data.roles.jobSeeker || false,
+        employer: data.roles.employer || false,
+        businessOwner: data.roles.businessOwner || false,
+        investor: data.roles.investor || false,
+        admin: wasAdmin || data.roles.admin || false,
+      };
       
       // Consolidated structure: everything in one users document
       // Use merge to preserve existing fields set during registration
@@ -295,7 +315,7 @@ export class FirestoreStorage implements IStorage {
           websiteUrl: data.profile.websiteUrl || null,
           portfolioUrl: data.profile.portfolioUrl || null,
         },
-        roles: toFirestoreRoles(data.roles),
+        roles: newRoles,
         professionalData: existingUserData.professionalData || {},
         jobSeekerData: existingUserData.jobSeekerData || {},
         employerData: existingUserData.employerData || {},
@@ -336,7 +356,7 @@ export class FirestoreStorage implements IStorage {
         updatedAt: new Date(),
       };
 
-      return { user, profile };
+      return { user, profile, roles: preservedRoles };
     } catch (error) {
       console.error("Registration error:", error);
       throw error;
@@ -905,6 +925,9 @@ export class FirestoreStorage implements IStorage {
   async getAdminStats(): Promise<any> {
     const usersSnapshot = await getDocs(collection(db, "users"));
     
+    // Count membership applications from Firestore 'registrations' collection
+    const registrationsSnapshot = await getDocs(collection(db, "registrations"));
+    
     const stats = {
       totalUsers: 0,
       professionals: 0,
@@ -916,18 +939,20 @@ export class FirestoreStorage implements IStorage {
       pendingApprovals: 0,
       approved: 0,
       rejected: 0,
+      totalApplications: registrationsSnapshot.size,
     };
     
     for (const userDoc of usersSnapshot.docs) {
       const userData = userDoc.data();
       stats.totalUsers++;
       
-      if (userData.roles?.professional || userData.roles?.professional) stats.professionals++;
-      if (userData.roles?.jobSeeker || userData.roles?.jobSeeker) stats.jobSeekers++;
-      if (userData.roles?.employer || userData.roles?.employer) stats.employers++;
-      if (userData.roles?.businessOwner || userData.roles?.businessOwner) stats.businessOwners++;
-      if (userData.roles?.investor || userData.roles?.investor) stats.investors++;
-      if (userData.roles?.admin || userData.roles?.admin) stats.admins++;
+      const roles = userData.roles || {};
+      if (roles.professional || roles.isProfessional || userData.isProfessional) stats.professionals++;
+      if (roles.jobSeeker || roles.isJobSeeker || userData.isJobSeeker) stats.jobSeekers++;
+      if (roles.employer || roles.isEmployer || userData.isEmployer) stats.employers++;
+      if (roles.businessOwner || roles.isBusinessOwner || userData.isBusinessOwner) stats.businessOwners++;
+      if (roles.investor || roles.isInvestor || userData.isInvestor) stats.investors++;
+      if (roles.admin || roles.isAdmin || userData.isAdmin) stats.admins++;
       
       if (userData.status === "pending") stats.pendingApprovals++;
       if (userData.status === "approved") stats.approved++;
@@ -1347,6 +1372,8 @@ export class FirestoreStorage implements IStorage {
       displayName: country.displayName || null,
       phoneCode: country.phoneCode || null,
       enabled: country.enabled ?? false,
+      isPrimary: country.isPrimary ?? false,
+      comingSoon: country.comingSoon ?? false,
       sortOrder: country.sortOrder ?? 0,
       cities: [],
       createdAt: now,
@@ -1362,6 +1389,8 @@ export class FirestoreStorage implements IStorage {
       displayName: country.displayName || null,
       phoneCode: country.phoneCode || null,
       enabled: country.enabled ?? false,
+      isPrimary: country.isPrimary ?? false,
+      comingSoon: country.comingSoon ?? false,
       sortOrder: country.sortOrder ?? 0,
       createdAt: now,
       updatedAt: now,
@@ -1379,6 +1408,8 @@ export class FirestoreStorage implements IStorage {
         displayName: data.displayName || null,
         phoneCode: data.phoneCode || null,
         enabled: data.enabled ?? false,
+        isPrimary: data.isPrimary ?? false,
+        comingSoon: data.comingSoon ?? false,
         sortOrder: data.sortOrder ?? 0,
         createdAt: data.createdAt,
         updatedAt: data.updatedAt,
@@ -1403,6 +1434,8 @@ export class FirestoreStorage implements IStorage {
         displayName: data.displayName || null,
         phoneCode: data.phoneCode || null,
         enabled: data.enabled ?? false,
+        isPrimary: data.isPrimary ?? false,
+        comingSoon: data.comingSoon ?? false,
         sortOrder: data.sortOrder ?? 0,
         createdAt: data.createdAt,
         updatedAt: data.updatedAt,
@@ -1429,6 +1462,8 @@ export class FirestoreStorage implements IStorage {
       displayName: data.displayName || null,
       phoneCode: data.phoneCode || null,
       enabled: data.enabled ?? false,
+      isPrimary: data.isPrimary ?? false,
+      comingSoon: data.comingSoon ?? false,
       sortOrder: data.sortOrder ?? 0,
       createdAt: data.createdAt,
       updatedAt: data.updatedAt,
@@ -1469,6 +1504,8 @@ export class FirestoreStorage implements IStorage {
         displayName: country.displayName || null,
         phoneCode: country.phoneCode || null,
         enabled: country.enabled ?? false,
+        isPrimary: country.isPrimary ?? false,
+        comingSoon: country.comingSoon ?? false,
         sortOrder: country.sortOrder ?? 0,
         cities: [],
         createdAt: now,
@@ -1484,6 +1521,8 @@ export class FirestoreStorage implements IStorage {
         displayName: country.displayName || null,
         phoneCode: country.phoneCode || null,
         enabled: country.enabled ?? false,
+        isPrimary: country.isPrimary ?? false,
+        comingSoon: country.comingSoon ?? false,
         sortOrder: country.sortOrder ?? 0,
         createdAt: now,
         updatedAt: now,
